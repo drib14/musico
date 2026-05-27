@@ -255,6 +255,61 @@ router.get('/my-uploads', protect, async (req, res) => {
   }
 });
 
+// @desc    Update a track
+// @route   PUT /api/tracks/:id
+// @access  Private
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const track = await Track.findById(req.params.id);
+
+    if (!track) {
+      return res.status(404).json({ message: 'Track not found' });
+    }
+
+    // Ensure user owns the track
+    if (track.artist.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized to update this track' });
+    }
+
+    const { title, genre, lyrics } = req.body;
+
+    track.title = title || track.title;
+    track.genre = genre || track.genre;
+    track.lyrics = lyrics !== undefined ? lyrics : track.lyrics;
+
+    const updatedTrack = await track.save();
+    res.json(updatedTrack);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error updating track' });
+  }
+});
+
+// @desc    Delete a track
+// @route   DELETE /api/tracks/:id
+// @access  Private
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const track = await Track.findById(req.params.id);
+
+    if (!track) {
+      return res.status(404).json({ message: 'Track not found' });
+    }
+
+    // Ensure user owns the track
+    if (track.artist.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized to delete this track' });
+    }
+
+    await track.deleteOne();
+
+    res.json({ message: 'Track removed successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error deleting track' });
+  }
+});
+
 // @desc    Increment plays count & log geolocation stream analytics
 // @route   PUT /api/tracks/:id/play
 // @access  Public
