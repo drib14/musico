@@ -289,23 +289,6 @@ const MusicPlayer = () => {
           ))}
         </div>
 
-        {/* Lyrics/Mic Toggle Button */}
-        {currentTrack && (
-          <button 
-            className={`control-btn ${showLyrics ? 'active' : ''}`}
-            style={{ marginRight: '16px' }}
-            onClick={() => setShowLyrics(!showLyrics)}
-            title={showLyrics ? 'Hide Lyrics' : 'Show Lyrics'}
-          >
-            <Mic 
-              className="w-4 h-4" 
-              style={{
-                color: showLyrics ? 'var(--accent)' : 'var(--text-secondary)'
-              }}
-            />
-          </button>
-        )}
-
         {/* Speaker Volume adjust */}
         <div className="volume-box">
           <button className="control-btn" onClick={() => setMuted(!muted)} title={muted ? 'Unmute' : 'Mute'}>

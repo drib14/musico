@@ -252,9 +252,9 @@ const ProfileView = () => {
             
             {/* Spotify Monthly Listeners stats */}
             <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
-              <span><strong>149,308</strong> Monthly Listeners</span>
+              <span><strong>{user.monthlyListeners?.toLocaleString() || 0}</strong> Monthly Listeners</span>
               <span>•</span>
-              <span><strong>{tracks.length}</strong> Direct Upload Streams</span>
+              <span><strong>{user.totalPlays?.toLocaleString() || 0}</strong> Lifetime Streams</span>
             </div>
           </div>
         </section>

@@ -433,14 +433,31 @@ router.get('/users/:id', async (req, res) => {
     // Fetch tracks uploaded by this artist
     const Track = require('../models/Track');
     const Playlist = require('../models/Playlist');
+    const PlayLog = require('../models/PlayLog');
 
     const tracks = await Track.find({ artist: user._id }).sort({ createdAt: -1 });
-    
+    const trackIds = tracks.map(t => t._id);
+
+    // Calculate dynamic monthly listener counts (within the last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const monthlyListeners = await PlayLog.countDocuments({
+      track: { $in: trackIds },
+      createdAt: { $gte: thirtyDaysAgo }
+    });
+
+    const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+
+    const userObj = user.toObject();
+    userObj.monthlyListeners = monthlyListeners || 0;
+    userObj.totalPlays = totalPlays || 0;
+
     // Fetch public playlists created by this user
     const playlists = await Playlist.find({ creator: user._id, isPublic: true }).sort({ createdAt: -1 });
 
     res.json({
-      user,
+      user: userObj,
       tracks,
       playlists
     });

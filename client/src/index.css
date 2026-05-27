@@ -103,6 +103,13 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
 }
 
+.app-container.has-right-panel {
+  grid-template-columns: var(--sidebar-width) 1fr 350px;
+  grid-template-areas: 
+    "sidebar main rightpanel"
+    "player player player";
+}
+
 /* Sidebar Styling */
 .sidebar {
   grid-area: sidebar;
@@ -1874,5 +1881,18 @@ h1, h2, h3, h4, h5, h6 {
 
   .hero-title {
     font-size: 28px !important;
+  }
+}
+
+/* 3-panel responsive tablet/mobile adjust */
+@media (max-width: 1200px) {
+  .right-sidebar {
+    display: none !important;
+  }
+  .app-container.has-right-panel {
+    grid-template-columns: var(--sidebar-width) 1fr !important;
+    grid-template-areas: 
+      "sidebar main"
+      "player player" !important;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { AppProvider, AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
+import RightSidebar from './components/RightSidebar';
 import MusicPlayer from './components/MusicPlayer';
 import AuthModal from './components/AuthModal';
 import { User, Settings, Crown } from 'lucide-react';
@@ -68,7 +69,7 @@ const MainAppContent = () => {
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${currentTrack ? 'has-right-panel' : ''}`}>
       {/* Sidebar navigation */}
       <Sidebar onOpenAuth={openAuthModal} />
 
@@ -148,6 +149,9 @@ const MainAppContent = () => {
 
         {renderView()}
       </main>
+
+      {/* Right side panel */}
+      {currentTrack && <RightSidebar />}
 
       {/* Bottom persistent playback controller */}
       <MusicPlayer />
