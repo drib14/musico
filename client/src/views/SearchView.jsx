@@ -178,27 +178,6 @@ const SearchView = () => {
                         {track.artistName}
                       </div>
                       <div className="song-card-genre" style={{ marginBottom: '4px' }}>{track.genre}</div>
-                      {track.isJamendo && (
-                        <button
-                          onClick={(e) => handleSaveToDb(e, track._id)}
-                          disabled={savingId === track._id}
-                          style={{
-                            width: '100%',
-                            marginTop: '4px',
-                            marginBottom: '4px',
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            backgroundColor: 'var(--bg-tertiary)',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          {savingId === track._id ? 'Saving...' : 'Save to DB'}
-                        </button>
-                      )}
 
                       {/* Inline Dropdown menu to add to custom playlists */}
                       {token && userPlaylists && userPlaylists.length > 0 && (

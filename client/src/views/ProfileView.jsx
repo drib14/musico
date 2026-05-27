@@ -8,6 +8,11 @@ const ProfileView = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
   useEffect(() => {
     if (activeProfileId) {
       fetchProfileDetails();
@@ -253,7 +258,7 @@ const ProfileView = () => {
               margin: 0,
               whiteSpace: 'pre-wrap'
             }}>
-              {user.artistBio}
+              {stripHtml(user.artistBio)}
             </p>
 
             {user.website && (
@@ -363,6 +368,74 @@ const ProfileView = () => {
           </div>
         )}
       </section>
+
+      {/* 4. UPCOMING CONCERTS */}
+      {user.concerts && user.concerts.length > 0 && (
+        <section style={{ animation: 'fadeIn 0.3s ease' }}>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar className="w-6 h-6 text-accent" /> Upcoming Concerts & Events
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+            {user.concerts.map((c, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: 'var(--glass-shadow)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    color: 'var(--accent)',
+                    backgroundColor: 'var(--accent-light)',
+                    padding: '4px 10px',
+                    borderRadius: '20px'
+                  }}>
+                    Live Show
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold' }}>{c.date}</span>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>{c.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{c.venue}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{c.city}</p>
+                </div>
+                <a 
+                  href={`https://www.ticketmaster.com/search?q=${encodeURIComponent(user.artistName || user.name)}`}
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-primary"
+                  style={{
+                    marginTop: '8px',
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    borderRadius: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Get Tickets
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );

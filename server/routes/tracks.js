@@ -9,6 +9,8 @@ const Playlist = require('../models/Playlist');
 const PlayLog = require('../models/PlayLog');
 const { protect } = require('../middleware/authMiddleware');
 
+const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -118,6 +120,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
 // @access  Public
 router.get('/trending', async (req, res) => {
   const { period, scope, city } = req.query; // period: 'week', 'month', 'year'; scope: 'global', 'local'
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
   try {
     let dateLimit = new Date();

@@ -240,26 +240,22 @@ const MusicPlayer = () => {
             src={currentTrack.coverUrl} 
             alt={currentTrack.title} 
             onClick={() => {
-              if (window.innerWidth <= 1200) {
-                setShowLyrics(!showLyrics);
-              }
+              setActiveView('song-details');
             }}
             style={{ 
               cursor: 'pointer',
               transition: 'transform var(--transition-fast)'
             }}
-            title="Click to toggle full-screen lyrics"
+            title="Click to view song details"
           />
         ) : (
           <div 
             className="player-cover" 
             style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', cursor: 'pointer' }}
             onClick={() => {
-              if (window.innerWidth <= 1200) {
-                setShowLyrics(!showLyrics);
-              }
+              setActiveView('song-details');
             }}
-            title="Click to toggle full-screen lyrics"
+            title="Click to view song details"
           >
             <Music className="w-6 h-6 text-accent" />
           </div>

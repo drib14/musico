@@ -482,29 +482,58 @@ const HomeView = () => {
                 >
                   {track.artistName}
                 </div>
-                 <div className="song-card-genre">
-                   {track.genre}
-                 </div>
-                 {track.isJamendo && (
-                   <button
-                     onClick={(e) => handleSaveToDb(e, track._id)}
-                     disabled={savingId === track._id}
-                     style={{
-                       width: '100%',
-                       marginTop: '6px',
-                       padding: '4px 8px',
-                       fontSize: '11px',
-                       borderRadius: '8px',
-                       cursor: 'pointer',
-                       backgroundColor: 'var(--bg-tertiary)',
-                       border: '1px solid var(--border-color)',
-                       color: 'var(--text-primary)',
-                       fontWeight: 'bold'
-                     }}
-                   >
-                     {savingId === track._id ? 'Saving...' : 'Save to DB'}
-                   </button>
-                 )}
+                <div className="song-card-genre">{track.genre}</div>
+                  {/* Inline Dropdown menu to add to custom playlists */}
+                  {token && userPlaylists && userPlaylists.length > 0 && (
+                    <div 
+                      style={{ width: '100%', marginTop: '6px' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <select 
+                        defaultValue=""
+                        onChange={async (e) => {
+                          const playlistId = e.target.value;
+                          if (!playlistId) return;
+                          try {
+                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ trackId: track._id })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              showToast('Added to playlist successfully!');
+                              loadUserPlaylists();
+                            } else {
+                              showToast(data.message || 'Error adding to playlist', 'error');
+                            }
+                          } catch (err) {
+                            showToast('Failed to add track', 'error');
+                          }
+                          e.target.value = ""; // Reset select
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          width: '100%',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="" disabled>+ Add to Playlist</option>
+                        {userPlaylists.map(pl => (
+                          <option key={pl._id} value={pl._id}>{pl.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                </div>
             ))}
           </div>
@@ -561,27 +590,58 @@ const HomeView = () => {
                 >
                   {track.artistName}
                 </div>
-                 <div className="song-card-genre">{track.genre}</div>
-                 {track.isJamendo && (
-                   <button
-                     onClick={(e) => handleSaveToDb(e, track._id)}
-                     disabled={savingId === track._id}
-                     style={{
-                       width: '100%',
-                       marginTop: '6px',
-                       padding: '4px 8px',
-                       fontSize: '11px',
-                       borderRadius: '8px',
-                       cursor: 'pointer',
-                       backgroundColor: 'var(--bg-tertiary)',
-                       border: '1px solid var(--border-color)',
-                       color: 'var(--text-primary)',
-                       fontWeight: 'bold'
-                     }}
-                   >
-                     {savingId === track._id ? 'Saving...' : 'Save to DB'}
-                   </button>
-                 )}
+                <div className="song-card-genre">{track.genre}</div>
+                  {/* Inline Dropdown menu to add to custom playlists */}
+                  {token && userPlaylists && userPlaylists.length > 0 && (
+                    <div 
+                      style={{ width: '100%', marginTop: '6px' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <select 
+                        defaultValue=""
+                        onChange={async (e) => {
+                          const playlistId = e.target.value;
+                          if (!playlistId) return;
+                          try {
+                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ trackId: track._id })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              showToast('Added to playlist successfully!');
+                              loadUserPlaylists();
+                            } else {
+                              showToast(data.message || 'Error adding to playlist', 'error');
+                            }
+                          } catch (err) {
+                            showToast('Failed to add track', 'error');
+                          }
+                          e.target.value = ""; // Reset select
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          width: '100%',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="" disabled>+ Add to Playlist</option>
+                        {userPlaylists.map(pl => (
+                          <option key={pl._id} value={pl._id}>{pl.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                </div>
             ))}
           </div>

@@ -236,7 +236,7 @@ const RightSidebar = () => {
       flexDirection: 'column',
       gap: '24px',
       overflowY: 'auto',
-      height: 'calc(100vh - var(--player-height))',
+      height: '100%',
       zIndex: '10',
       transition: 'background-color var(--transition-normal)'
     }}>
@@ -441,6 +441,21 @@ const RightSidebar = () => {
                       <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)' }}>{c.date}</span>
                       <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{c.title}</span>
                       <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</span>
+                      <a 
+                        href={`https://www.ticketmaster.com/search?q=${encodeURIComponent(artistInfo.artistName || artistInfo.name)}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{
+                          marginTop: '6px',
+                          fontSize: '11px',
+                          color: 'var(--accent)',
+                          textDecoration: 'underline',
+                          fontWeight: 'bold',
+                          display: 'inline-block'
+                        }}
+                      >
+                        Get Tickets
+                      </a>
                     </div>
                   ))}
                 </div>

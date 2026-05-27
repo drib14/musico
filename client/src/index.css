@@ -116,19 +116,26 @@ h1, h2, h3, h4, h5, h6 {
 .app-container {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  grid-template-rows: 1fr var(--player-height);
+  grid-template-rows: 1fr;
   grid-template-areas: 
-    "sidebar main"
-    "player player";
+    "sidebar main";
   height: 100vh;
   width: 100vw;
   position: relative;
   background-color: var(--bg-primary);
-  padding: 8px 8px 0 8px;
+  padding: 8px 8px 8px 8px;
   gap: 8px;
 }
 
-.app-container.has-right-panel {
+.app-container.has-player {
+  grid-template-rows: 1fr var(--player-height);
+  grid-template-areas: 
+    "sidebar main"
+    "player player";
+  padding: 8px 8px 0 8px;
+}
+
+.app-container.has-right-panel.has-player {
   grid-template-columns: var(--sidebar-width) 1fr 350px;
   grid-template-areas: 
     "sidebar main rightpanel"
@@ -621,6 +628,30 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding: 20px 10px;
+    perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid-container::-webkit-scrollbar {
+    display: none;
+  }
+  .song-card {
+    flex: 0 0 220px !important;
+    scroll-snap-align: center;
+    transform: rotateY(-8deg) translateZ(0px);
+    transition: transform var(--transition-normal), background-color var(--transition-normal);
+  }
+  .song-card:hover, .song-card:active {
+    transform: rotateY(0deg) scale(1.04) translateZ(15px) !important;
+  }
 }
 
 .song-card {

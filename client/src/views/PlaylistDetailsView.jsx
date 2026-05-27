@@ -23,6 +23,11 @@ const PlaylistDetailsView = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
 
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
   const handleSaveToDb = async (e, trackId) => {
     e.stopPropagation();
     if (!token) {
@@ -220,7 +225,7 @@ const PlaylistDetailsView = () => {
             {playlist.name}
           </h1>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            {playlist.description || 'No description provided.'}
+            {stripHtml(playlist.description) || 'No description provided.'}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
             <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{playlist.creator?.name || 'Musico User'}</span>

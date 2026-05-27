@@ -17,6 +17,7 @@ import ProfileView from './views/ProfileView';
 import PlaylistDetailsView from './views/PlaylistDetailsView';
 import ChartDetailsView from './views/ChartDetailsView';
 import LyricsView from './views/LyricsView';
+import SongDetailsView from './views/SongDetailsView';
 
 const MainAppContent = () => {
   const { 
@@ -61,13 +62,15 @@ const MainAppContent = () => {
         return <PlaylistDetailsView />;
       case 'chart-details':
         return <ChartDetailsView />;
+      case 'song-details':
+        return <SongDetailsView />;
       default:
         return <HomeView />;
     }
   };
 
   return (
-    <div className={`app-container ${currentTrack ? 'has-right-panel' : ''}`}>
+    <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
       {/* Sidebar navigation */}
       <Sidebar onOpenAuth={openAuthModal} />
 
@@ -139,7 +142,7 @@ const MainAppContent = () => {
       </main>
 
       {/* Right side panel */}
-      {currentTrack && <RightSidebar />}
+      {currentTrack && currentTrack._id && <RightSidebar />}
 
       {/* Bottom persistent playback controller */}
       <MusicPlayer />
