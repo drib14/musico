@@ -8,6 +8,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
 const sendVerificationEmail = async (email, code, name) => {
   const mailOptions = {
     from: `"Musico Support" <${process.env.EMAIL_USER}>`,
@@ -30,6 +32,8 @@ const sendVerificationEmail = async (email, code, name) => {
           <p style="color: #94a3b8; font-size: 14px; margin-top: 25px;">
             This verification code is valid for 15 minutes. If you did not request this code, please ignore this email.
           </p>
+          <p style="font-size: 14px; color: #64748b; margin-top: 24px;">If you're having trouble with the code, you can also log in directly and enter it there:</p>
+          <a href="${CLIENT_URL}" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Open Musico App</a>
         </div>
         <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 12px;">
           &copy; 2026 Musico, Inc. All rights reserved.
@@ -69,6 +73,8 @@ const sendResetPasswordEmail = async (email, code, name) => {
           <p style="color: #94a3b8; font-size: 14px; margin-top: 25px;">
             This recovery code is valid for 15 minutes. If you did not request this reset, you can safely ignore this email.
           </p>
+          <p style="font-size: 14px; color: #64748b; margin-top: 24px;">Click the button below to return to the application and enter your code:</p>
+          <a href="${CLIENT_URL}" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Return to Musico</a>
         </div>
         <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 12px;">
           &copy; 2026 Musico, Inc. All rights reserved.
