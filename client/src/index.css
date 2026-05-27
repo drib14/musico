@@ -1810,3 +1810,63 @@ h1, h2, h3, h4, h5, h6 {
     transform: translateY(0);
   }
 }
+
+/* Global Mobile Fixes for Layout Constraints */
+@media (max-width: 768px) {
+  /* Fix player controls wrapping on small screens */
+  .music-player {
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto !important;
+    grid-template-areas: "left center" !important;
+    padding: 10px 16px !important;
+    height: 72px !important;
+    gap: 12px !important;
+  }
+
+  .player-right {
+    display: none !important;
+  }
+
+  .player-center {
+    width: auto !important;
+    margin-top: 0 !important;
+  }
+
+  .player-scrubber {
+    display: none !important;
+  }
+
+  .player-controls {
+    gap: 12px !important;
+  }
+
+  /* Optimize layout spacing for grid lists in search/library */
+  .grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .song-card {
+    padding: 12px !important;
+  }
+
+  .song-card-cover-wrapper {
+    margin-bottom: 10px !important;
+  }
+
+  .song-card-title {
+    font-size: 13px !important;
+  }
+
+  .song-card-artist {
+    font-size: 11px !important;
+  }
+
+  .hero-banner {
+    padding: 32px 24px !important;
+  }
+
+  .hero-title {
+    font-size: 28px !important;
+  }
+}
