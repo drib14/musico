@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
+import ArtistProfileWizard from '../components/ArtistProfileWizard';
 import { 
   UploadCloud, 
   Music, 
@@ -184,6 +185,21 @@ const UploadView = () => {
     }
   };
 
+  // RENDER: REQUIRED ARTIST PROFILE SEED
+  if (!user?.artistName) {
+    return (
+      <div style={{ maxWidth: '650px', margin: '40px auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Direct Song Distribution</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+            Before you can distribute original tracks on the Musico network, you must establish your Artist Profile.
+          </p>
+        </div>
+        <ArtistProfileWizard onComplete={checkUploadLimit} />
+      </div>
+    );
+  }
+
   // RENDER: UPGRADE WARNING CARD IF TIER CONSTRAINT HIT
   if (limitReached) {
     return (
@@ -265,6 +281,66 @@ const UploadView = () => {
         <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
           Distribute your tracks directly on Musico. Files are uploaded directly to our cloud network and made instantly streamable.
         </p>
+
+        {/* Dynamic Artist Persona Indicator */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '10px 16px',
+          marginTop: '16px',
+          width: 'fit-content',
+          boxShadow: 'var(--glass-shadow)',
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          {user?.artistAvatar ? (
+            <img 
+              src={user.artistAvatar} 
+              alt={user.artistName} 
+              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+            />
+          ) : (
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '12px'
+            }}>
+              {user?.artistName?.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Publishing under official artist identity: <strong style={{ color: 'var(--text-primary)' }}>{user?.artistName}</strong>
+          </span>
+          {user?.isArtistVerified && (
+            <span 
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '15px',
+                height: '15px',
+                borderRadius: '50%',
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                fontSize: '8px',
+                fontWeight: 'bold'
+              }}
+              title="Verified check badge"
+            >
+              ✓
+            </span>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

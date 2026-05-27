@@ -14,6 +14,7 @@ import BillingView from './views/BillingView';
 import SettingsView from './views/SettingsView';
 import ProfileView from './views/ProfileView';
 import PlaylistDetailsView from './views/PlaylistDetailsView';
+import ChartDetailsView from './views/ChartDetailsView';
 import LyricsView from './views/LyricsView';
 
 const MainAppContent = () => {
@@ -59,6 +60,8 @@ const MainAppContent = () => {
         return <ProfileView />;
       case 'playlist-details':
         return <PlaylistDetailsView />;
+      case 'chart-details':
+        return <ChartDetailsView />;
       default:
         return <HomeView />;
     }
@@ -78,9 +81,17 @@ const MainAppContent = () => {
               <div 
                 className="mobile-avatar-circle" 
                 onClick={() => setActiveView('settings')}
-                style={{ cursor: 'pointer', position: 'relative' }}
+                style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
               >
-                {user.name.charAt(0).toUpperCase()}
+                {user.userAvatar ? (
+                  <img 
+                    src={user.userAvatar} 
+                    alt={user.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
                 {user.isPremium && (
                   <div className="mobile-avatar-crown-indicator">
                     <Crown className="w-2.5 h-2.5" />

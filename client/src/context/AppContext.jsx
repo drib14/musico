@@ -47,6 +47,7 @@ export const AppProvider = ({ children }) => {
 
   // --- Playlist Details State ---
   const [activePlaylistId, setActivePlaylistId] = useState(null);
+  const [activeChart, setActiveChart] = useState(null); // { id, title, scope, limit, gradient }
   const [userPlaylists, setUserPlaylists] = useState([]);
 
   // --- Lyrics Visual Drawer State ---
@@ -469,6 +470,8 @@ export const AppProvider = ({ children }) => {
         setAdCountdown,
         activePlaylistId,
         setActivePlaylistId,
+        activeChart,
+        setActiveChart,
         userPlaylists,
         setUserPlaylists,
         loadUserPlaylists,

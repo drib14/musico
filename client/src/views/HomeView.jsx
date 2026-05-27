@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3 } from 'lucide-react';
+import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
 
 const HomeView = () => {
-  const { API_URL, playTrack, history, user, token, userPlaylists, loadUserPlaylists, setActiveView, triggerProfileView, userLocation, showToast } = useContext(AppContext);
+  const { API_URL, playTrack, history, user, token, userPlaylists, loadUserPlaylists, activeView, setActiveView, setActiveChart, triggerProfileView, userLocation, showToast } = useContext(AppContext);
   
   // Trending local direct uploads charts states
   const [trendingTracks, setTrendingTracks] = useState([]);
@@ -91,177 +91,135 @@ const HomeView = () => {
       </div>
 
 
-      {/* 5. DYNAMIC TOP CHARTS TIME PERIOD / SCOPE SWITCHARDS */}
-      <section style={{ 
-        backgroundColor: 'var(--bg-secondary)', 
-        border: '1px solid var(--border-color)', 
-        borderRadius: '16px', 
-        padding: '24px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          flexWrap: 'wrap',
-          gap: '16px',
-          marginBottom: '20px'
-        }}>
-          <div>
-            <h2 style={{ fontSize: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Disc className="w-6 h-6 text-accent" /> Musico Local Charts
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-              Streamed tracks sorted by play frequencies {scope === 'local' ? `in ${userLocation.city}` : 'globally'}.
-            </p>
-          </div>
-
-          {/* Switchers Control Panel */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            
-            {/* Scope: Global vs Local */}
-            <div style={{ display: 'flex', backgroundColor: 'var(--bg-tertiary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <button
-                className={`btn ${scope === 'global' ? 'btn-primary' : ''}`}
-                style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px', background: scope !== 'global' ? 'none' : undefined, boxShadow: scope !== 'global' ? 'none' : undefined }}
-                onClick={() => setScope('global')}
+      {/* 5. IMMERSIVE SPOTIFY-STYLE TOP CHART CARDS */}
+      <section>
+        <h2 style={{ fontSize: '24px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Disc className="w-6 h-6 text-accent" /> Featured Top Charts
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
+          {[
+            {
+              id: 'top-10-global',
+              title: 'Top 10 Global Hits',
+              desc: 'The ten most streamed tracks across the globe this week.',
+              scope: 'global',
+              limit: 10,
+              gradient: 'linear-gradient(135deg, #0d1b3e 0%, #1d4ed8 100%)',
+              icon: Globe
+            },
+            {
+              id: 'top-10-local',
+              title: 'Top 10 Local Hits',
+              desc: `Trending tracks getting the most plays in ${userLocation.city || 'your city'}.`,
+              scope: 'local',
+              limit: 10,
+              gradient: 'linear-gradient(135deg, #451a03 0%, #d97706 100%)',
+              icon: MapPin
+            },
+            {
+              id: 'top-20-global',
+              title: 'Top 20 Global Charts',
+              desc: 'Top 20 hottest releases updated hourly based on streaming activity.',
+              scope: 'global',
+              limit: 20,
+              gradient: 'linear-gradient(135deg, #064e3b 0%, #059669 100%)',
+              icon: Disc
+            },
+            {
+              id: 'top-50-global',
+              title: 'Top 50 Global Charts',
+              desc: 'The complete top 50 direct distribution tracks globally.',
+              scope: 'global',
+              limit: 50,
+              gradient: 'linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)',
+              icon: Star
+            }
+          ].map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.id}
+                onClick={() => {
+                  setActiveChart({
+                    title: card.title,
+                    scope: card.scope,
+                    limit: card.limit,
+                    gradient: card.gradient
+                  });
+                  setActiveView('chart-details');
+                }}
+                style={{
+                  background: card.gradient,
+                  borderRadius: '16px',
+                  padding: '24px',
+                  height: '220px',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: 'var(--glass-shadow)',
+                  transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-6px)';
+                  e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'var(--glass-shadow)';
+                }}
               >
-                <Globe className="w-3.5 h-3.5" /> Global
-              </button>
-              <button
-                className={`btn ${scope === 'local' ? 'btn-primary' : ''}`}
-                style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px', background: scope !== 'local' ? 'none' : undefined, boxShadow: scope !== 'local' ? 'none' : undefined }}
-                onClick={() => setScope('local')}
-                title={`Geolocated to: ${userLocation.city}`}
-              >
-                <MapPin className="w-3.5 h-3.5" /> Local ({userLocation.city})
-              </button>
-            </div>
+                {/* Visual decoration overlay */}
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  bottom: '-10px',
+                  opacity: 0.1,
+                  transform: 'rotate(-10deg)',
+                  pointerEvents: 'none'
+                }}>
+                  <Icon style={{ width: '130px', height: '130px', color: '#fff' }} />
+                </div>
 
-            {/* Period: Week vs Month vs Year */}
-            <div style={{ display: 'flex', backgroundColor: 'var(--bg-tertiary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              {[
-                { id: 'week', label: 'Weekly' },
-                { id: 'month', label: 'Monthly' },
-                { id: 'year', label: 'Yearly' }
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  className={`btn ${period === opt.id ? 'btn-primary' : ''}`}
-                  style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px', background: period !== opt.id ? 'none' : undefined, boxShadow: period !== opt.id ? 'none' : undefined }}
-                  onClick={() => setPeriod(opt.id)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2 }}>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    padding: '3px 8px',
+                    borderRadius: '20px',
+                    width: 'fit-content',
+                    color: '#fff'
+                  }}>
+                    Top {card.limit}
+                  </span>
+                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', marginTop: '6px' }}>{card.title}</h3>
+                  <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: '1.4', marginTop: '4px' }}>
+                    {card.desc}
+                  </p>
+                </div>
 
-          </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  color: '#fff',
+                  zIndex: 2
+                }}>
+                  <span>View Chart Details</span>
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        {/* Charts lists */}
-        {chartsLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}>
-            <div className="spinner"></div>
-          </div>
-        ) : trendingTracks.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)' }}>
-            <Music className="w-8 h-8 text-muted" style={{ margin: '0 auto 8px auto' }} />
-            <p style={{ fontSize: '13px' }}>No plays logged for this criteria yet.</p>
-          </div>
-        ) : (
-          <table className="track-table">
-            <thead>
-              <tr>
-                <th className="table-index">Rank</th>
-                <th>Track Title</th>
-                <th>Genre</th>
-                <th style={{ textAlign: 'right' }}>Streams</th>
-                <th style={{ width: '120px', textAlign: 'center' }}>Add</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trendingTracks.slice(0, 5).map((track, idx) => (
-                <tr key={track._id} onClick={() => playTrack(track, trendingTracks)} style={{ cursor: 'pointer' }}>
-                  <td className="table-index" style={{ fontWeight: '800', fontSize: '15px', color: idx === 0 ? 'var(--premium-color)' : 'var(--text-primary)' }}>
-                    {idx + 1}
-                  </td>
-                  <td>
-                    <div className="table-track-info">
-                      <img className="table-cover" src={track.coverUrl} alt={track.title} />
-                      <div>
-                        <div className="table-title">{track.title}</div>
-                        
-                        {/* Clickable Artist Profile Link */}
-                        <div 
-                          className="table-artist" 
-                          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }}
-                          onClick={(e) => {
-                            e.stopPropagation(); // Avoid playing song on profile click
-                            triggerProfileView(track.artist);
-                          }}
-                        >
-                          {track.artistName}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="table-genre">{track.genre}</td>
-                  <td style={{ textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>
-                    {track.plays || 0}
-                  </td>
-                  <td style={{ width: '120px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-                    {token && userPlaylists && userPlaylists.length > 0 && (
-                      <select 
-                        defaultValue=""
-                        onChange={async (e) => {
-                          const playlistId = e.target.value;
-                          if (!playlistId) return;
-                          try {
-                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
-                              },
-                              body: JSON.stringify({ trackId: track._id })
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              showToast('Added to playlist successfully!');
-                              loadUserPlaylists();
-                            } else {
-                              showToast(data.message || 'Error adding to playlist', 'error');
-                            }
-                          } catch (err) {
-                            showToast('Failed to add track', 'error');
-                          }
-                          e.target.value = ""; // Reset select
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '12px',
-                          fontSize: '11px',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                          maxWidth: '110px',
-                          outline: 'none'
-                        }}
-                      >
-                        <option value="" disabled>+ Add to...</option>
-                        {userPlaylists.map(pl => (
-                          <option key={pl._id} value={pl._id}>{pl.name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </section>
 
       {/* 6. RECENT LISTEN HISTORY (LOCAL) */}

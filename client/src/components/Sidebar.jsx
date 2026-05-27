@@ -163,9 +163,17 @@ const Sidebar = ({ onOpenAuth }) => {
         {/* User Card */}
         {user ? (
           <div className="user-sidebar-card">
-            <div className="avatar-initial">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {user.userAvatar ? (
+              <img 
+                src={user.userAvatar} 
+                alt={user.name} 
+                style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} 
+              />
+            ) : (
+              <div className="avatar-initial">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="user-info">
               <div className="user-name">{user.name}</div>
               {user.isPremium ? (

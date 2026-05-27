@@ -157,6 +157,11 @@ router.post(
         return res.status(400).json({ message: 'Audio track file is required' });
       }
 
+      // Validate presence of Artist Profile
+      if (!req.user.artistName) {
+        return res.status(400).json({ message: 'You must set up your Artist Profile before distributing tracks on Musico.' });
+      }
+
       // Check Spotify-like premium upload limitations
       if (!req.user.isPremium) {
         const uploadCount = await Track.countDocuments({ artist: req.user._id });
@@ -195,7 +200,7 @@ router.post(
       const track = await Track.create({
         title,
         artist: req.user._id,
-        artistName: req.user.name,
+        artistName: req.user.artistName,
         audioUrl: audioResult.secure_url,
         coverUrl,
         duration: audioResult.duration || 0,
