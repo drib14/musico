@@ -17,7 +17,8 @@ const HomeView = () => {
     triggerProfileView, 
     userLocation, 
     showToast,
-    setActivePlaylistId 
+    setActivePlaylistId,
+    setSearchGenre
   } = useContext(AppContext);
   
   // Trending local direct uploads charts states
@@ -98,13 +99,23 @@ const HomeView = () => {
     fetchTracks();
   }, []);
 
-  const genresList = [
-    { name: 'Pop', color: '#3B82F6', cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150&auto=format&fit=crop' },
-    { name: 'Rock', color: '#EF4444', cover: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop' },
-    { name: 'Hip Hop', color: '#10B981', cover: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop' },
-    { name: 'Lo-Fi', color: '#8B5CF6', cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop' },
-    { name: 'Electronic', color: '#F59E0B', cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop' },
-  ];
+  // Dynamic genres state loaded from Jamendo API
+  const [genresList, setGenresList] = useState([]);
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const res = await fetch(`${API_URL}/tracks/jamendo/genres`);
+        if (res.ok) {
+          const data = await res.json();
+          setGenresList(data);
+        }
+      } catch (err) {
+        console.error('Error loading Jamendo dynamic genres:', err);
+      }
+    };
+    fetchGenres();
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
@@ -528,7 +539,10 @@ const HomeView = () => {
                 boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
                 transition: 'transform var(--transition-fast)'
               }}
-              onClick={() => setActiveView('search')}
+              onClick={() => {
+                setSearchGenre(g.name);
+                setActiveView('search');
+              }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >

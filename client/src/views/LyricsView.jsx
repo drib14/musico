@@ -130,8 +130,27 @@ const LyricsView = () => {
 
   return (
     <div className="lyrics-view-overlay">
+      {/* Immersive blurred cover art background overlay (Musixmatch / Spotify UX) */}
+      {currentTrack.coverUrl && (
+        <div 
+          className="lyrics-artwork-bg"
+          style={{ 
+            backgroundImage: `url(${currentTrack.coverUrl})`,
+            position: 'absolute',
+            inset: 0,
+            filter: 'blur(70px) brightness(0.25)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            zIndex: 0,
+            opacity: 0.75,
+            transition: 'background-image 0.5s ease-in-out',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+      
       {/* Dynamic colorful glowing orb in background */}
-      <div className="lyrics-glow-orb"></div>
+      <div className="lyrics-glow-orb" style={{ zIndex: 1 }}></div>
       
       {/* Top Header Row */}
       <div className="lyrics-header">

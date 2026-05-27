@@ -443,16 +443,21 @@ router.get('/users/:id', async (req, res) => {
     const tracks = await Track.find({ artist: user._id }).sort({ createdAt: -1 });
     const trackIds = tracks.map(t => t._id);
 
-    // Calculate dynamic monthly listener counts (within the last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const monthlyListeners = await PlayLog.countDocuments({
+    const uniqueMonthlyUsers = await PlayLog.distinct('user', {
       track: { $in: trackIds },
-      createdAt: { $gte: thirtyDaysAgo }
+      createdAt: { $gte: thirtyDaysAgo },
+      user: { $ne: null }
     });
+    const monthlyListeners = uniqueMonthlyUsers.length;
 
-    const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+    const uniqueTotalUsers = await PlayLog.distinct('user', {
+      track: { $in: trackIds },
+      user: { $ne: null }
+    });
+    const totalPlays = uniqueTotalUsers.length;
 
     const userObj = user.toObject();
     userObj.monthlyListeners = monthlyListeners || 0;
@@ -485,8 +490,14 @@ router.get('/artists/top', async (req, res) => {
 
     // Aggregate streams dynamically for each artist
     const localWithStats = await Promise.all(artists.map(async (art) => {
+      const PlayLog = require('../models/PlayLog');
       const tracks = await Track.find({ artist: art._id });
-      const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+      const trackIds = tracks.map(t => t._id);
+      const uniqueTotalUsers = await PlayLog.distinct('user', {
+        track: { $in: trackIds },
+        user: { $ne: null }
+      });
+      const totalPlays = uniqueTotalUsers.length;
       const artObj = art.toObject();
       artObj.totalPlays = totalPlays;
       artObj.tracksCount = tracks.length;

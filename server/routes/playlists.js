@@ -102,7 +102,7 @@ router.get('/:id', async (req, res) => {
 
       try {
         const jamRes = await fetch(
-          `https://api.jamendo.com/v3.0/albums/tracks/?client_id=${clientId}&format=json&id=${numericId}`
+          `https://api.jamendo.com/v3.0/albums/tracks/?client_id=${clientId}&format=json&id=${numericId}&include=lyrics`
         );
         if (!jamRes.ok) throw new Error('Failed to retrieve album from Jamendo');
 
@@ -133,7 +133,8 @@ router.get('/:id', async (req, res) => {
             plays: 24500,
             isJamendo: true,
             jamendoArtistId: album.artist_id,
-            jamendoTrackId: t.id
+            jamendoTrackId: t.id,
+            lyrics: t.lyrics || ''
           }))
         };
 

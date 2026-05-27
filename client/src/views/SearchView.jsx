@@ -11,11 +11,12 @@ const SearchView = () => {
     userPlaylists, 
     showToast,
     setActiveView,
-    setActivePlaylistId
+    setActivePlaylistId,
+    searchGenre: genre,
+    setSearchGenre: setGenre
   } = useContext(AppContext);
   
   const [search, setSearch] = useState('');
-  const [genre, setGenre] = useState('All');
   
   // Categorized search results state
   const [searchResults, setSearchResults] = useState({

@@ -1631,12 +1631,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .lyrics-lines-wrapper {
-  max-width: 720px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 20px 0 80px 0;
+  padding: 30px 24px 100px 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .lyrics-text-line {
@@ -1819,6 +1819,34 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Small Screens Lyrics Adjustments */
+/* Premium Responsive Scale overrides for Timed Lyrics & Platform containers */
+@media (min-width: 1440px) {
+  .lyrics-text-line {
+    font-size: 46px !important;
+    padding-left: 48px !important;
+  }
+  .lyrics-text-line::before {
+    font-size: 18px !important;
+    left: 12px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 210px;
+  }
+  .search-box {
+    width: 280px !important;
+  }
+  .search-box:focus-within {
+    width: 320px !important;
+  }
+  .lyrics-text-line {
+    font-size: 30px !important;
+    padding-left: 28px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .lyrics-view-overlay {
     border-radius: 12px;
@@ -1827,8 +1855,14 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .lyrics-text-line {
-    font-size: 22px;
-    line-height: 1.4;
+    font-size: 24px !important;
+    line-height: 1.4 !important;
+    padding-left: 24px !important;
+  }
+  
+  .lyrics-text-line::before {
+    font-size: 13px !important;
+    left: 4px !important;
   }
   
   .lyrics-premium-gate-card {
@@ -1838,6 +1872,17 @@ h1, h2, h3, h4, h5, h6 {
   
   .gate-title {
     font-size: 19px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lyrics-text-line {
+    font-size: 20px !important;
+    padding-left: 20px !important;
+  }
+  .lyrics-text-line::before {
+    font-size: 11px !important;
+    left: 2px !important;
   }
 }
 
