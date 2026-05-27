@@ -800,20 +800,35 @@ router.get('/jamendo/genres', async (req, res) => {
 // @route   GET /api/tracks/jamendo/artist/:id
 // @access  Public
 router.get('/jamendo/artist/:id', async (req, res) => {
-  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
-
+  const artistId = req.params.id;
   try {
+    // 1. Try to find mirrored/cached artist in our database
+    let dbUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
+    
+    // Fetch from Jamendo to make sure details are loaded/refreshed
     const jamendoRes = await fetch(
-      `https://api.jamendo.com/v3.0/artists/musicinfo/?client_id=${clientId}&id=${req.params.id}`
+      `https://api.jamendo.com/v3.0/artists/musicinfo/?client_id=${clientId}&id=${artistId}`
     );
 
     if (!jamendoRes.ok) {
+      if (dbUser) {
+        // Fallback to cached DB profile if Jamendo API is offline
+        const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
+        return res.json({
+          user: dbUser,
+          tracks: dbTracks,
+          playlists: []
+        });
+      }
       throw new Error('Failed to fetch artist details from Jamendo API');
     }
 
     const data = await jamendoRes.json();
-    
     if (!data.results || data.results.length === 0) {
+      if (dbUser) {
+        const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
+        return res.json({ user: dbUser, tracks: dbTracks, playlists: [] });
+      }
       return res.status(404).json({ message: 'Artist not found on Jamendo' });
     }
 
@@ -834,27 +849,49 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
     ];
 
-    const artistDetails = {
-      _id: artist.id,
-      artistName: artist.name,
-      name: artist.name,
-      artistAvatar: artist.image || '',
-      userAvatar: artist.image || '',
-      artistBio: bioText,
-      website: artist.website || `https://www.jamendo.com/artist/${artist.id}`, // contact details
-      facebook: artist.musicinfo?.facebook || '',
-      twitter: artist.musicinfo?.twitter || '',
-      instagram: artist.musicinfo?.instagram || '',
-      concerts,
-      source: 'Jamendo Music API Description',
-      monthlyListeners: artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500,
-      totalPlays: artist.stats?.playcount_total || 142000,
-      isArtistVerified: true,
-      isPremium: true,
-      createdAt: artist.joindate || new Date().toISOString()
-    };
+    const monthlyListeners = artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500;
+    const totalPlays = artist.stats?.playcount_total || 142000;
 
-    // Dynamically fetch tracks of this artist from Jamendo API
+    // 2. Automatically mirror/save artist details & concerts inside MongoDB schema!
+    if (!dbUser) {
+      // Create a mirrored system artist user
+      dbUser = new User({
+        name: artist.name,
+        email: `jamendo-artist-${artist.id}@musico.com`,
+        password: `jamendo-artist-dummy-pass-123456`, // dummy secure pass
+        artistName: artist.name,
+        userAvatar: artist.image || '',
+        artistAvatar: artist.image || '',
+        artistBio: bioText,
+        website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
+        facebook: artist.musicinfo?.facebook || '',
+        twitter: artist.musicinfo?.twitter || '',
+        instagram: artist.musicinfo?.instagram || '',
+        monthlyListeners,
+        totalPlays,
+        concerts,
+        isJamendoArtist: true,
+        jamendoArtistId: artist.id,
+        isArtistVerified: true,
+        isPremium: true
+      });
+      await dbUser.save();
+    } else {
+      // Update existing cached mirrored artist details
+      dbUser.artistName = artist.name;
+      dbUser.artistAvatar = artist.image || '';
+      dbUser.userAvatar = artist.image || '';
+      dbUser.artistBio = bioText;
+      dbUser.website = artist.website || dbUser.website;
+      dbUser.facebook = artist.musicinfo?.facebook || dbUser.facebook;
+      dbUser.twitter = artist.musicinfo?.twitter || dbUser.twitter;
+      dbUser.instagram = artist.musicinfo?.instagram || dbUser.instagram;
+      dbUser.monthlyListeners = monthlyListeners;
+      dbUser.totalPlays = totalPlays;
+      await dbUser.save();
+    }
+
+    // 3. Dynamically fetch tracks of this artist from Jamendo API
     let tracksList = [];
     try {
       const tracksRes = await fetch(
@@ -865,7 +902,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
         tracksList = (tracksData.results || []).map((t) => ({
           _id: `jamendo-${t.id}`,
           title: t.name,
-          artist: t.artist_id,
+          artist: dbUser._id, // Assign the local MongoDB mirrored user ID!
           artistName: t.artist_name,
           audioUrl: t.audio,
           coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
@@ -880,10 +917,38 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       console.error('Error fetching tracks for Jamendo artist profile:', err);
     }
 
+    // 4. Dynamically fetch albums of this artist from Jamendo API to represent their profile playlists!
+    let albumsList = [];
+    try {
+      const albumsRes = await fetch(
+        `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=5&artist_id=${artist.id}`
+      );
+      if (albumsRes.ok) {
+        const albumsData = await albumsRes.json();
+        albumsList = (albumsData.results || []).map((al) => ({
+          _id: `jamendo-album-${al.id}`,
+          name: al.name,
+          description: `Licensed Album by ${artist.name}. Released on Jamendo.`,
+          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          tracksCount: 10,
+          isJamendoAlbum: true,
+          artistName: artist.name,
+          artistId: artist.id,
+          creator: {
+            _id: dbUser._id,
+            name: artist.name
+          },
+          tracks: new Array(10) // mock tracks array representation
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching albums for Jamendo artist profile:', err);
+    }
+
     res.json({
-      user: artistDetails,
+      user: dbUser,
       tracks: tracksList,
-      playlists: []
+      playlists: albumsList
     });
   } catch (error) {
     console.error('Jamendo artist fetch error:', error);

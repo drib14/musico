@@ -43,7 +43,8 @@ const MusicPlayer = () => {
     userPlaylists,
     loadUserPlaylists,
     showToast,
-    API_URL
+    API_URL,
+    triggerProfileView
   } = useContext(AppContext);
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -261,8 +262,26 @@ const MusicPlayer = () => {
           </div>
         )}
         <div className="player-track-info">
-          <div className="player-title">{currentTrack.title}</div>
-          <div className="player-artist">{currentTrack.artistName}</div>
+          <div 
+            className="player-title" 
+            onClick={() => setActiveView('song-details')}
+            style={{ cursor: 'pointer', textDecoration: 'none' }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            title="Click to view song details"
+          >
+            {currentTrack.title}
+          </div>
+          <div 
+            className="player-artist"
+            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.jamendoArtistId || currentTrack.artist)}
+            style={{ cursor: 'pointer', textDecoration: 'none', color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            title="Click to view artist profile"
+          >
+            {currentTrack.artistName}
+          </div>
         </div>
         
         {/* Like/Heart Action */}

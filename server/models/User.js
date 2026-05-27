@@ -75,6 +75,46 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    website: {
+      type: String,
+      default: '',
+    },
+    facebook: {
+      type: String,
+      default: '',
+    },
+    twitter: {
+      type: String,
+      default: '',
+    },
+    instagram: {
+      type: String,
+      default: '',
+    },
+    monthlyListeners: {
+      type: Number,
+      default: 0,
+    },
+    totalPlays: {
+      type: Number,
+      default: 0,
+    },
+    concerts: [
+      {
+        date: { type: String, default: '' },
+        city: { type: String, default: '' },
+        venue: { type: String, default: '' },
+        title: { type: String, default: '' },
+      }
+    ],
+    isJamendoArtist: {
+      type: Boolean,
+      default: false,
+    },
+    jamendoArtistId: {
+      type: String,
+      default: '',
+    },
     likedTracks: [
       {
         type: mongoose.Schema.Types.ObjectId,

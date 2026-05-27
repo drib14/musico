@@ -13,7 +13,18 @@ connectDB();
 
 const app = express();
 
-// Secure HTTP response headers with Helmet (configured to allow dynamic media assets streams)
+// 1. Standard Middlewares - CORS must be at the very top of the stack
+const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
+// 2. Secure HTTP response headers with Helmet (configured to allow dynamic media assets streams)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -29,10 +40,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// Protect backend API paths from high-frequency floodings (max 100 reqs per 15 mins per IP)
+// 3. Protect backend API paths from high-frequency floodings (generous limit in dev to allow hot reloading)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'development' || !process.env.NODE_ENV ? 5000 : 100, // 5000 requests max in dev/local
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -41,16 +52,6 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// Standard Middlewares
-const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

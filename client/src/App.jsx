@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import RightSidebar from './components/RightSidebar';
 import MusicPlayer from './components/MusicPlayer';
 import AuthModal from './components/AuthModal';
-import { User, Settings, Crown } from 'lucide-react';
+import { User, Settings, Crown, LogOut } from 'lucide-react';
 
 // Views
 import HomeView from './views/HomeView';
@@ -27,7 +27,8 @@ const MainAppContent = () => {
     setShowLyrics, 
     currentTrack, 
     user, 
-    setActiveView 
+    setActiveView,
+    logoutUser
   } = useContext(AppContext);
   
   // Auth modal management state
@@ -124,6 +125,16 @@ const MainAppContent = () => {
                   title="Profile Settings"
                 >
                   <Settings className="w-4 h-4" />
+                </button>
+                <button 
+                  className="btn-icon" 
+                  style={{ width: '32px', height: '32px', border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
+                  onClick={() => {
+                    logoutUser();
+                  }}
+                  title="Log Out"
+                >
+                  <LogOut className="w-4 h-4" />
                 </button>
               </>
             ) : (
