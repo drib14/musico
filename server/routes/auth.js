@@ -467,4 +467,34 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
+// @desc    Get top verified artists / creators
+// @route   GET /api/auth/artists/top
+// @access  Public
+router.get('/artists/top', async (req, res) => {
+  try {
+    const Track = require('../models/Track');
+
+    // Find all users who have set up an artist profile
+    const artists = await User.find({ artistName: { $ne: '' } }).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
+
+    // Aggregate streams dynamically for each artist
+    const artistsWithStats = await Promise.all(artists.map(async (art) => {
+      const tracks = await Track.find({ artist: art._id });
+      const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+      const artObj = art.toObject();
+      artObj.totalPlays = totalPlays;
+      artObj.tracksCount = tracks.length;
+      return artObj;
+    }));
+
+    // Sort by total plays descending
+    artistsWithStats.sort((a, b) => b.totalPlays - a.totalPlays);
+
+    res.json(artistsWithStats.slice(0, 10)); // return top 10
+  } catch (error) {
+    console.error('Top artists fetch error:', error);
+    res.status(500).json({ message: 'Server error retrieving top artists' });
+  }
+});
+
 module.exports = router;

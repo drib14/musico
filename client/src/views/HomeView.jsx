@@ -3,13 +3,34 @@ import { AppContext } from '../context/AppContext';
 import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
 
 const HomeView = () => {
-  const { API_URL, playTrack, history, user, token, userPlaylists, loadUserPlaylists, activeView, setActiveView, setActiveChart, triggerProfileView, userLocation, showToast } = useContext(AppContext);
+  const { 
+    API_URL, 
+    playTrack, 
+    history, 
+    user, 
+    token, 
+    userPlaylists, 
+    loadUserPlaylists, 
+    activeView, 
+    setActiveView, 
+    setActiveChart, 
+    triggerProfileView, 
+    userLocation, 
+    showToast,
+    setActivePlaylistId 
+  } = useContext(AppContext);
   
   // Trending local direct uploads charts states
   const [trendingTracks, setTrendingTracks] = useState([]);
   const [period, setPeriod] = useState('week'); // 'week', 'month', 'year'
   const [scope, setScope] = useState('global'); // 'global', 'local'
   const [chartsLoading, setChartsLoading] = useState(false);
+
+  // Home extra Spotify Tops and Jamendo states
+  const [topArtists, setTopArtists] = useState([]);
+  const [topPlaylists, setTopPlaylists] = useState([]);
+  const [jamendoTracks, setJamendoTracks] = useState([]);
+  const [jamendoLoading, setJamendoLoading] = useState(true);
 
   // All local pools states
   const [tracks, setTracks] = useState([]);
@@ -39,6 +60,36 @@ const HomeView = () => {
       setChartsLoading(false);
     }
   };
+
+  // Load Spotify Tops & Jamendo licensed catalog
+  useEffect(() => {
+    const fetchHomeExtras = async () => {
+      try {
+        const artistsRes = await fetch(`${API_URL}/auth/artists/top`);
+        if (artistsRes.ok) {
+          const artistsData = await artistsRes.json();
+          setTopArtists(artistsData);
+        }
+
+        const playlistsRes = await fetch(`${API_URL}/playlists`);
+        if (playlistsRes.ok) {
+          const playlistsData = await playlistsRes.json();
+          setTopPlaylists(playlistsData.slice(0, 10)); // Top 10 public playlists
+        }
+
+        const jamendoRes = await fetch(`${API_URL}/tracks/jamendo`);
+        if (jamendoRes.ok) {
+          const jamendoData = await jamendoRes.json();
+          setJamendoTracks(jamendoData);
+        }
+      } catch (err) {
+        console.error('Error loading home featured sections:', err);
+      } finally {
+        setJamendoLoading(false);
+      }
+    };
+    fetchHomeExtras();
+  }, []);
 
   // Load overall local tracks list
   useEffect(() => {
@@ -90,10 +141,200 @@ const HomeView = () => {
         </div>
       </div>
 
+      {/* 2. Featured Playlists & Featured Albums (Spotify Style) */}
+      <section>
+        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
+        </h2>
+        {topPlaylists.length === 0 ? (
+          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '13px' }}>Create public playlists to show them here on the global charts!</p>
+          </div>
+        ) : (
+          <div className="grid-container">
+            {topPlaylists.map((pl) => (
+              <div
+                key={pl._id}
+                className="song-card"
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
+              >
+                <div className="song-card-cover-wrapper">
+                  {pl.coverUrl ? (
+                    <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
+                  ) : (
+                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
+                      <Music className="w-12 h-12 text-accent" />
+                    </div>
+                  )}
+                </div>
+                <div className="song-card-title">{pl.name}</div>
+                <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
+                  By {pl.creator?.name || 'Musico'} • {pl.tracks?.length || 0} tracks
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 3. POPULAR ARTISTS (Spotify Style slot circles) */}
+      <section>
+        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Users className="w-6 h-6 text-accent" /> Popular Artists
+        </h2>
+        {topArtists.length === 0 ? (
+          <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No trending creators yet.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' }}>
+            {topArtists.map((artist) => (
+              <div
+                key={artist._id}
+                onClick={() => triggerProfileView(artist._id)}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '20px 16px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '12px',
+                  transition: 'all 0.25s ease',
+                  boxShadow: 'var(--glass-shadow)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                }}
+              >
+                {artist.artistAvatar || artist.userAvatar ? (
+                  <img
+                    src={artist.artistAvatar || artist.userAvatar}
+                    alt={artist.artistName || artist.name}
+                    style={{
+                      width: '90px',
+                      height: '90px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2.5px solid var(--accent)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    background: 'var(--accent-gradient)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '32px',
+                    fontWeight: 'bold',
+                    fontFamily: 'Outfit'
+                  }}>
+                    {(artist.artistName || artist.name).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '120px'
+                  }}>
+                    {artist.artistName || artist.name}
+                    {artist.isArtistVerified && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        backgroundColor: '#3b82f6',
+                        color: '#fff',
+                        fontSize: '7px',
+                        fontWeight: 'bold'
+                      }}>
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Artist</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. LICENSED GLOBAL CATALOG (Jamendo Integration) */}
+      <section>
+        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Globe className="w-6 h-6 text-accent" /> Licensed Global Hits (Jamendo API)
+        </h2>
+        {jamendoLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+            <div className="spinner"></div>
+          </div>
+        ) : jamendoTracks.length === 0 ? (
+          <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Licensed catalog temporarily unavailable.</div>
+        ) : (
+          <div className="grid-container">
+            {jamendoTracks.slice(0, 10).map((track) => (
+              <div
+                key={track._id}
+                className="song-card"
+                onClick={() => playTrack(track, jamendoTracks)}
+              >
+                <div className="song-card-cover-wrapper">
+                  <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
+                  <div className="song-card-play-hover">
+                    <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
+                  </div>
+                </div>
+                <div className="song-card-title">{track.title}</div>
+                
+                {/* Clickable Jamendo Artist Profile Link */}
+                <div
+                  className="song-card-artist"
+                  style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    triggerProfileView(track.artist); // Passes numeric Jamendo artist ID
+                  }}
+                >
+                  {track.artistName}
+                </div>
+                <div className="song-card-genre" style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981', fontWeight: 'bold' }}>
+                  {track.genre}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* 5. IMMERSIVE SPOTIFY-STYLE TOP CHART CARDS */}
       <section>
-        <h2 style={{ fontSize: '24px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Disc className="w-6 h-6 text-accent" /> Featured Top Charts
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>

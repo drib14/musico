@@ -1217,7 +1217,13 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .logo-text, .user-sidebar-card .user-info {
-    display: none;
+    display: none !important;
+  }
+  
+  .sidebar .logo-container {
+    justify-content: center;
+    padding-left: 0;
+    margin-bottom: 24px;
   }
   
   .nav-item {
@@ -1226,7 +1232,27 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .nav-item span {
-    display: none;
+    display: none !important;
+  }
+  
+  .sidebar .btn-secondary, .sidebar .btn-primary {
+    padding: 8px !important;
+    justify-content: center !important;
+  }
+  
+  .sidebar .btn-secondary span, .sidebar .btn-primary span, .sidebar .sidebar-footer span {
+    display: none !important;
+  }
+  
+  .sidebar .user-sidebar-card {
+    padding: 4px !important;
+    justify-content: center !important;
+    background: none !important;
+    border: none !important;
+  }
+  
+  .sidebar .user-sidebar-card button {
+    display: none !important;
   }
   
   .music-player {

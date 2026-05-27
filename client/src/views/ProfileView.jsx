@@ -16,7 +16,12 @@ const ProfileView = () => {
   const fetchProfileDetails = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/users/${activeProfileId}`);
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(activeProfileId);
+      const endpoint = isMongoId
+        ? `${API_URL}/auth/users/${activeProfileId}`
+        : `${API_URL}/tracks/jamendo/artist/${activeProfileId}`;
+        
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error('Failed to load profile details');
       const data = await res.json();
       setProfileData(data);
@@ -249,9 +254,23 @@ const ProfileView = () => {
             }}>
               {user.artistBio}
             </p>
+
+            {user.website && (
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                <strong>Contact/Website:</strong>{' '}
+                <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                  {user.website}
+                </a>
+              </div>
+            )}
+            {user.source && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '4px' }}>
+                Description Source: {user.source}
+              </div>
+            )}
             
             {/* Spotify Monthly Listeners stats */}
-            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap' }}>
               <span><strong>{user.monthlyListeners?.toLocaleString() || 0}</strong> Monthly Listeners</span>
               <span>•</span>
               <span><strong>{user.totalPlays?.toLocaleString() || 0}</strong> Lifetime Streams</span>

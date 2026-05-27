@@ -178,9 +178,28 @@ const MusicPlayer = () => {
             className={`player-cover ${isPlaying ? 'playing' : ''}`} 
             src={currentTrack.coverUrl} 
             alt={currentTrack.title} 
+            onClick={() => {
+              if (window.innerWidth <= 1200) {
+                setShowLyrics(!showLyrics);
+              }
+            }}
+            style={{ 
+              cursor: 'pointer',
+              transition: 'transform var(--transition-fast)'
+            }}
+            title="Click to toggle full-screen lyrics"
           />
         ) : (
-          <div className="player-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+          <div 
+            className="player-cover" 
+            style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', cursor: 'pointer' }}
+            onClick={() => {
+              if (window.innerWidth <= 1200) {
+                setShowLyrics(!showLyrics);
+              }
+            }}
+            title="Click to toggle full-screen lyrics"
+          >
             <Music className="w-6 h-6 text-accent" />
           </div>
         )}

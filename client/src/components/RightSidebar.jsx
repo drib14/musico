@@ -31,7 +31,11 @@ const RightSidebar = () => {
 
   const fetchArtistDetails = async () => {
     try {
-      const res = await fetch(`${API_URL}/auth/users/${currentTrack.artist}`);
+      const url = currentTrack.isJamendo
+        ? `${API_URL}/tracks/jamendo/artist/${currentTrack.artist}`
+        : `${API_URL}/auth/users/${currentTrack.artist}`;
+        
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setArtistInfo(data.user);
@@ -329,6 +333,20 @@ const RightSidebar = () => {
               >
                 {artistInfo.artistBio}
               </p>
+            )}
+
+            {artistInfo.website && (
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', wordBreak: 'break-all' }}>
+                <strong>Contact/Website:</strong>{' '}
+                <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
+                  {artistInfo.website}
+                </a>
+              </div>
+            )}
+            {artistInfo.source && (
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+                Description Source: {artistInfo.source}
+              </div>
             )}
           </div>
         </section>
