@@ -10,7 +10,8 @@ import {
   Volume2, 
   VolumeX, 
   Heart,
-  Music
+  Music,
+  Mic
 } from 'lucide-react';
 
 const MusicPlayer = () => {
@@ -33,7 +34,9 @@ const MusicPlayer = () => {
     toggleLike,
     adActive,
     adCountdown,
-    setActiveView
+    setActiveView,
+    showLyrics,
+    setShowLyrics
   } = useContext(AppContext);
 
   const [currentTime, setCurrentTime] = useState(0);
@@ -199,6 +202,23 @@ const MusicPlayer = () => {
                 color: isLiked ? 'var(--danger)' : 'var(--text-secondary)',
                 fill: isLiked ? 'var(--danger)' : 'none'
               }} 
+            />
+          </button>
+        )}
+
+        {/* Lyrics/Mic Toggle Button */}
+        {currentTrack && (
+          <button 
+            className={`control-btn ${showLyrics ? 'active' : ''}`}
+            style={{ marginLeft: '10px' }}
+            onClick={() => setShowLyrics(!showLyrics)}
+            title={showLyrics ? 'Hide Lyrics' : 'Show Lyrics'}
+          >
+            <Mic 
+              className="w-4 h-4" 
+              style={{
+                color: showLyrics ? 'var(--accent)' : 'var(--text-secondary)'
+              }}
             />
           </button>
         )}

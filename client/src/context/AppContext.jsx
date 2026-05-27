@@ -49,6 +49,9 @@ export const AppProvider = ({ children }) => {
   const [activePlaylistId, setActivePlaylistId] = useState(null);
   const [userPlaylists, setUserPlaylists] = useState([]);
 
+  // --- Lyrics Visual Drawer State ---
+  const [showLyrics, setShowLyrics] = useState(false);
+
   // Audio HTML5 Object Ref
   const audioRef = useRef(null);
 
@@ -469,6 +472,8 @@ export const AppProvider = ({ children }) => {
         userPlaylists,
         setUserPlaylists,
         loadUserPlaylists,
+        showLyrics,
+        setShowLyrics,
         
         currentTrack,
         isPlaying,

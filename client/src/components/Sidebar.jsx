@@ -21,7 +21,8 @@ const Sidebar = ({ onOpenAuth }) => {
     activeView, 
     setActiveView, 
     theme, 
-    setTheme 
+    setTheme,
+    setShowLyrics
   } = useContext(AppContext);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
@@ -39,6 +40,7 @@ const Sidebar = ({ onOpenAuth }) => {
       onOpenAuth('login');
       return;
     }
+    setShowLyrics(false);
     setActiveView(viewId);
   };
 
@@ -72,10 +74,12 @@ const Sidebar = ({ onOpenAuth }) => {
             // Render custom styling for upgrade option
             if (item.id === 'billing' && user?.isPremium) return null;
 
+            const isMobileHide = item.id === 'settings' || item.id === 'billing';
+
             return (
               <div
                 key={item.id}
-                className={`nav-item ${isSelected ? 'active' : ''} ${item.highlight ? 'upgrade-item' : ''}`}
+                className={`nav-item ${isSelected ? 'active' : ''} ${item.highlight ? 'upgrade-item' : ''} ${isMobileHide ? 'mobile-hide' : ''}`}
                 onClick={() => handleNavClick(item.id)}
               >
                 <Icon />
@@ -87,7 +91,7 @@ const Sidebar = ({ onOpenAuth }) => {
       </div>
 
       {/* Footer Settings & Auth Profiles */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
         {/* Theme Settings Selector */}
         <div style={{ position: 'relative' }}>

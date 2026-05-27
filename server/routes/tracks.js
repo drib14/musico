@@ -39,7 +39,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 30 * 1024 * 1024, // 30MB max file size
+    fileSize: 50 * 1024 * 1024, // 50MB max file size
   },
 });
 
@@ -147,7 +147,7 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { title, genre } = req.body;
+      const { title, genre, lyrics } = req.body;
 
       if (!title) {
         return res.status(400).json({ message: 'Track title is required' });
@@ -200,6 +200,7 @@ router.post(
         coverUrl,
         duration: audioResult.duration || 0,
         genre: genre || 'Unknown',
+        lyrics: lyrics || '',
       });
 
       res.status(201).json({

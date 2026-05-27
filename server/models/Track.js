@@ -37,6 +37,10 @@ const trackSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    lyrics: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

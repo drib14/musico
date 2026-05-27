@@ -17,6 +17,7 @@ const UploadView = () => {
   const [coverFile, setCoverFile] = useState(null);
   const [title, setTitle] = useState('');
   const [genre, setGenre] = useState('Pop');
+  const [lyrics, setLyrics] = useState('');
 
   // Operational states
   const [loading, setLoading] = useState(false);
@@ -86,8 +87,8 @@ const UploadView = () => {
       showToast('Please upload a valid audio track file (MP3/WAV/etc.)', 'error');
       return;
     }
-    if (file.size > 30 * 1024 * 1024) {
-      showToast('Audio file size exceeds 30MB limit', 'error');
+    if (file.size > 50 * 1024 * 1024) {
+      showToast('Audio file size exceeds 50MB limit', 'error');
       return;
     }
     setAudioFile(file);
@@ -143,6 +144,7 @@ const UploadView = () => {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('genre', genre);
+    formData.append('lyrics', lyrics);
     formData.append('audio', audioFile);
     if (coverFile) formData.append('cover', coverFile);
 
@@ -170,6 +172,7 @@ const UploadView = () => {
       setCoverFile(null);
       setTitle('');
       setGenre('Pop');
+      setLyrics('');
       
       // Update upload limits check and go to Libraryuploads list
       await checkUploadLimit();
@@ -297,7 +300,7 @@ const UploadView = () => {
                 <>
                   <UploadCloud className="dropzone-icon" />
                   <div className="dropzone-title">Drag & Drop track file here</div>
-                  <div className="dropzone-subtitle">or click to browse local files (max 30MB)</div>
+                  <div className="dropzone-subtitle">or click to browse local files (max 50MB)</div>
                 </>
               )}
             </div>
@@ -373,6 +376,31 @@ const UploadView = () => {
             </select>
           </div>
 
+        </div>
+
+        {/* Row 3: Optional Scrolling Lyrics */}
+        <div className="form-group">
+          <label className="form-label">Lyrics (Optional)</label>
+          <textarea
+            className="form-input"
+            rows="6"
+            style={{
+              padding: '12px 14px',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+              resize: 'vertical',
+              backgroundColor: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              width: '100%',
+              minHeight: '120px',
+              outline: 'none'
+            }}
+            placeholder="Type or paste the song lyrics here..."
+            value={lyrics}
+            onChange={(e) => setLyrics(e.target.value)}
+          />
         </div>
 
         {/* Action Publish Buttons */}
