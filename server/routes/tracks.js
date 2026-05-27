@@ -706,6 +706,8 @@ router.get('/jamendo', async (req, res) => {
   } catch (error) {
     console.error('Jamendo tracks fetch error:', error);
     res.status(500).json({ message: 'Error retrieving Jamendo licensed catalog', error: error.message });
+  }
+});
 
 // @desc    Get popular music genres from Jamendo API
 // @route   GET /api/tracks/jamendo/genres
@@ -761,8 +763,6 @@ router.get('/jamendo/genres', async (req, res) => {
       };
     });
     res.json(defaultList);
-  }
-});
   }
 });
 
