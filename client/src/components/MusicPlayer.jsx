@@ -45,10 +45,27 @@ const MusicPlayer = () => {
   
   const progressInterval = useRef(null);
 
-  // Sync liked state with user's likedTracks array
+  // Sync liked state with user's likedTracks array supporting Jamendo mirrored track ObjectIds
   useEffect(() => {
     if (user && currentTrack) {
-      setIsLiked(user.likedTracks?.includes(currentTrack._id) || false);
+      const liked = user.likedTracks?.some(t => {
+        if (!t) return false;
+        const tId = typeof t === 'object' ? t._id : t;
+        if (tId === currentTrack._id) return true;
+        
+        if (currentTrack.isJamendo && t.isJamendo) {
+          const jamId1 = currentTrack._id.startsWith('jamendo-') ? currentTrack._id.replace('jamendo-', '') : (currentTrack.jamendoTrackId || '');
+          const jamId2 = t._id.startsWith('jamendo-') ? t._id.replace('jamendo-', '') : (t.jamendoTrackId || '');
+          if (jamId1 && jamId1 === jamId2) return true;
+        }
+        
+        if (currentTrack._id.startsWith('jamendo-') && t.isJamendo) {
+          if (currentTrack._id.replace('jamendo-', '') === t.jamendoTrackId) return true;
+        }
+        
+        return false;
+      }) || false;
+      setIsLiked(liked);
     } else {
       setIsLiked(false);
     }

@@ -41,6 +41,18 @@ const trackSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    isJamendo: {
+      type: Boolean,
+      default: false,
+    },
+    jamendoArtistId: {
+      type: String,
+      default: '',
+    },
+    jamendoTrackId: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

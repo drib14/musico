@@ -1,14 +1,28 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Search, Music, Play, Star, Users, Disc3 } from 'lucide-react';
+import { Search, Music, Play, Star, Users, Disc3, Disc, CheckCircle } from 'lucide-react';
 
 const SearchView = () => {
-  const { API_URL, playTrack, triggerProfileView, token, userPlaylists, showToast } = useContext(AppContext);
+  const { 
+    API_URL, 
+    playTrack, 
+    triggerProfileView, 
+    token, 
+    userPlaylists, 
+    showToast,
+    setActiveView,
+    setActivePlaylistId
+  } = useContext(AppContext);
+  
   const [search, setSearch] = useState('');
   const [genre, setGenre] = useState('All');
   
-  // Local direct uploads matches state
-  const [localTracks, setLocalTracks] = useState([]);
+  // Categorized search results state
+  const [searchResults, setSearchResults] = useState({
+    tracks: [],
+    artists: [],
+    albums: []
+  });
   
   const [loading, setLoading] = useState(false);
 
@@ -26,19 +40,22 @@ const SearchView = () => {
   const fetchFilteredTracks = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Local Direct Uploads
-      let localQueryParams = [];
-      if (search) localQueryParams.push(`search=${encodeURIComponent(search)}`);
-      if (genre && genre !== 'All') localQueryParams.push(`genre=${encodeURIComponent(genre)}`);
+      let queryParams = [];
+      if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
+      if (genre && genre !== 'All') queryParams.push(`genre=${encodeURIComponent(genre)}`);
 
-      const localQueryString = localQueryParams.length > 0 ? `?${localQueryParams.join('&')}` : '';
-      const localRes = await fetch(`${API_URL}/tracks${localQueryString}`);
-      if (localRes.ok) {
-        const localData = await localRes.json();
-        setLocalTracks(localData);
+      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      const res = await fetch(`${API_URL}/tracks/search${queryString}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSearchResults({
+          tracks: data.tracks || [],
+          artists: data.artists || [],
+          albums: data.albums || []
+        });
       }
     } catch (error) {
-      console.error('Local search indexing failed:', error);
+      console.error('Unified search index load failed:', error);
     } finally {
       setLoading(false);
     }
@@ -54,7 +71,7 @@ const SearchView = () => {
           <Search className="w-5 h-5 text-text-secondary" />
           <input
             type="text"
-            placeholder="Search songs, artists, albums..."
+            placeholder="Search songs, artists, playlists, albums..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -85,25 +102,25 @@ const SearchView = () => {
           <div className="spinner"></div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
           
-          {/* SECTION A: DIRECT UPLOADS (LOCAL DATABASE) */}
+          {/* SECTION 1: SONGS (TRACKS) */}
           <section>
-            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)' }}>
-              Musico Direct Uploads
+            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Music className="w-5 h-5 text-accent" /> Songs
             </h2>
             
-            {localTracks.length === 0 ? (
+            {searchResults.tracks.length === 0 ? (
               <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p style={{ fontSize: '14px' }}>No local user uploads found matching criteria.</p>
+                <p style={{ fontSize: '14px' }}>No songs found matching criteria.</p>
               </div>
             ) : (
               <div className="grid-container">
-                  {localTracks.map((track) => (
+                  {searchResults.tracks.map((track) => (
                     <div 
                       key={track._id} 
                       className="song-card"
-                      onClick={() => playTrack(track, localTracks)}
+                      onClick={() => playTrack(track, searchResults.tracks)}
                     >
                       <div className="song-card-cover-wrapper">
                         <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
@@ -119,7 +136,7 @@ const SearchView = () => {
                         style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          triggerProfileView(track.artist);
+                          triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId);
                         }}
                       >
                         {track.artistName}
@@ -181,6 +198,160 @@ const SearchView = () => {
               </div>
             )}
           </section>
+
+          {/* SECTION 2: ARTISTS */}
+          <section>
+            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users className="w-5 h-5 text-accent" /> Artists
+            </h2>
+            
+            {searchResults.artists.length === 0 ? (
+              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '14px' }}>No creators or artists found matching criteria.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '20px' }}>
+                {searchResults.artists.map((artist) => (
+                  <div
+                    key={artist._id}
+                    onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '20px 16px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px',
+                      transition: 'all 0.25s ease',
+                      boxShadow: 'var(--glass-shadow)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                    }}
+                  >
+                    {artist.artistAvatar || artist.userAvatar ? (
+                      <img
+                        src={artist.artistAvatar || artist.userAvatar}
+                        alt={artist.artistName || artist.name}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid var(--accent)',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-gradient)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '28px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Outfit'
+                      }}>
+                        {(artist.artistName || artist.name).charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                      <div style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '120px'
+                      }}>
+                        {artist.artistName || artist.name}
+                        {artist.isArtistVerified && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            color: '#fff',
+                            fontSize: '7px',
+                            fontWeight: 'bold'
+                          }}>
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {artist.isJamendo ? 'Licensed Artist' : 'Musico Creator'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* SECTION 3: PLAYLISTS & ALBUMS */}
+          <section>
+            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Disc3 className="w-5 h-5 text-accent" /> Playlists & Albums
+            </h2>
+            
+            {searchResults.albums.length === 0 ? (
+              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <p style={{ fontSize: '14px' }}>No playlists or albums found matching criteria.</p>
+              </div>
+            ) : (
+              <div className="grid-container">
+                {searchResults.albums.map((pl) => (
+                  <div
+                    key={pl._id}
+                    className="song-card"
+                    onClick={() => {
+                      setActivePlaylistId(pl._id);
+                      setActiveView('playlist-details');
+                    }}
+                  >
+                    <div className="song-card-cover-wrapper">
+                      {pl.coverUrl ? (
+                        <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
+                      ) : (
+                        <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
+                          <Music className="w-12 h-12 text-accent" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="song-card-title">{pl.name}</div>
+                    <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
+                      {pl.isJamendoAlbum 
+                        ? `Album by ${pl.artistName}` 
+                        : `Playlist • ${pl.creator?.name || 'Musico User'}`
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
         </div>
       )}
 

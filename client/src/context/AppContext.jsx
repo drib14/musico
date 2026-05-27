@@ -277,8 +277,12 @@ export const AppProvider = ({ children }) => {
   };
 
   // Profile View Transition Trigger Helper
-  const triggerProfileView = (profileId) => {
-    setActiveProfileId(profileId);
+  const triggerProfileView = (profileId, isJamendo = false, jamendoArtistId = null) => {
+    if (isJamendo && jamendoArtistId) {
+      setActiveProfileId(jamendoArtistId);
+    } else {
+      setActiveProfileId(profileId);
+    }
     setActiveView('profile');
   };
 

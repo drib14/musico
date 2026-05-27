@@ -26,11 +26,9 @@ const HomeView = () => {
   const [scope, setScope] = useState('global'); // 'global', 'local'
   const [chartsLoading, setChartsLoading] = useState(false);
 
-  // Home extra Spotify Tops and Jamendo states
+  // Home extra Spotify Tops states
   const [topArtists, setTopArtists] = useState([]);
   const [topPlaylists, setTopPlaylists] = useState([]);
-  const [jamendoTracks, setJamendoTracks] = useState([]);
-  const [jamendoLoading, setJamendoLoading] = useState(true);
 
   // All local pools states
   const [tracks, setTracks] = useState([]);
@@ -61,7 +59,7 @@ const HomeView = () => {
     }
   };
 
-  // Load Spotify Tops & Jamendo licensed catalog
+  // Load Spotify Tops
   useEffect(() => {
     const fetchHomeExtras = async () => {
       try {
@@ -76,16 +74,8 @@ const HomeView = () => {
           const playlistsData = await playlistsRes.json();
           setTopPlaylists(playlistsData.slice(0, 10)); // Top 10 public playlists
         }
-
-        const jamendoRes = await fetch(`${API_URL}/tracks/jamendo`);
-        if (jamendoRes.ok) {
-          const jamendoData = await jamendoRes.json();
-          setJamendoTracks(jamendoData);
-        }
       } catch (err) {
         console.error('Error loading home featured sections:', err);
-      } finally {
-        setJamendoLoading(false);
       }
     };
     fetchHomeExtras();
@@ -285,52 +275,7 @@ const HomeView = () => {
         )}
       </section>
 
-      {/* 4. LICENSED GLOBAL CATALOG (Jamendo Integration) */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Globe className="w-6 h-6 text-accent" /> Licensed Global Hits (Jamendo API)
-        </h2>
-        {jamendoLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-            <div className="spinner"></div>
-          </div>
-        ) : jamendoTracks.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Licensed catalog temporarily unavailable.</div>
-        ) : (
-          <div className="grid-container">
-            {jamendoTracks.slice(0, 10).map((track) => (
-              <div
-                key={track._id}
-                className="song-card"
-                onClick={() => playTrack(track, jamendoTracks)}
-              >
-                <div className="song-card-cover-wrapper">
-                  <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                  <div className="song-card-play-hover">
-                    <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                  </div>
-                </div>
-                <div className="song-card-title">{track.title}</div>
-                
-                {/* Clickable Jamendo Artist Profile Link */}
-                <div
-                  className="song-card-artist"
-                  style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerProfileView(track.artist); // Passes numeric Jamendo artist ID
-                  }}
-                >
-                  {track.artistName}
-                </div>
-                <div className="song-card-genre" style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981', fontWeight: 'bold' }}>
-                  {track.genre}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+
 
       {/* 5. IMMERSIVE SPOTIFY-STYLE TOP CHART CARDS */}
       <section>

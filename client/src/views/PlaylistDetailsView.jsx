@@ -12,7 +12,8 @@ const PlaylistDetailsView = () => {
     currentTrack, 
     isPlaying, 
     showToast,
-    loadUserPlaylists 
+    loadUserPlaylists,
+    triggerProfileView
   } = useContext(AppContext);
 
   const [playlist, setPlaylist] = useState(null);
@@ -247,7 +248,16 @@ const PlaylistDetailsView = () => {
                         <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)' }}>
                           {track.title}
                         </div>
-                        <div className="table-artist">{track.artistName}</div>
+                        <div 
+                          className="table-artist" 
+                          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId);
+                          }}
+                        >
+                          {track.artistName}
+                        </div>
                       </div>
                     </div>
                   </td>

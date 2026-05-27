@@ -130,6 +130,7 @@ router.post('/verify-email', async (req, res) => {
     user.verificationCode = null;
     user.verificationCodeExpires = null;
     await user.save();
+    await user.populate('likedTracks');
 
     res.json({
       _id: user._id,
@@ -137,6 +138,7 @@ router.post('/verify-email', async (req, res) => {
       email: user.email,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      likedTracks: user.likedTracks,
       token: generateToken(user._id),
       message: 'Account successfully verified!',
     });
@@ -217,13 +219,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const populatedUser = await User.findById(user._id).populate('likedTracks');
+
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      token: generateToken(user._id),
+      _id: populatedUser._id,
+      name: populatedUser.name,
+      email: populatedUser.email,
+      isVerified: populatedUser.isVerified,
+      isPremium: populatedUser.isPremium,
+      likedTracks: populatedUser.likedTracks,
+      token: generateToken(populatedUser._id),
     });
   } catch (error) {
     console.error(error);
@@ -324,7 +329,7 @@ router.post('/reset-password', async (req, res) => {
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id).select('-password').populate('likedTracks');
     res.json(user);
   } catch (error) {
     console.error(error);
@@ -407,7 +412,7 @@ router.put(
       await user.save();
 
       // Refetch without password
-      const updatedUser = await User.findById(user._id).select('-password');
+      const updatedUser = await User.findById(user._id).select('-password').populate('likedTracks');
       res.json({
         message: 'Profile updated successfully!',
         user: updatedUser,

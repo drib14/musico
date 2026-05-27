@@ -66,6 +66,54 @@ router.get('/my-playlists', protect, async (req, res) => {
 // @access  Public/Private (depending on public status)
 router.get('/:id', async (req, res) => {
   try {
+    if (req.params.id && req.params.id.startsWith('jamendo-album-')) {
+      const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+      const numericId = req.params.id.replace('jamendo-album-', '');
+
+      try {
+        const jamRes = await fetch(
+          `https://api.jamendo.com/v3.0/albums/tracks/?client_id=${clientId}&format=json&id=${numericId}`
+        );
+        if (!jamRes.ok) throw new Error('Failed to retrieve album from Jamendo');
+
+        const data = await jamRes.json();
+        if (!data.results || data.results.length === 0) {
+          return res.status(404).json({ message: 'Album not found on Jamendo' });
+        }
+
+        const album = data.results[0];
+        const mappedPlaylist = {
+          _id: `jamendo-album-${album.id}`,
+          name: album.name,
+          description: `Album by ${album.artist_name}. Released on Jamendo.`,
+          coverUrl: album.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          creator: {
+            _id: album.artist_id,
+            name: album.artist_name
+          },
+          tracks: (album.tracks || []).map(t => ({
+            _id: `jamendo-${t.id}`,
+            title: t.name,
+            artist: album.artist_id,
+            artistName: album.artist_name,
+            audioUrl: t.audio,
+            coverUrl: album.image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+            duration: t.duration || 180,
+            genre: 'Licensed Music',
+            plays: 24500,
+            isJamendo: true,
+            jamendoArtistId: album.artist_id,
+            jamendoTrackId: t.id
+          }))
+        };
+
+        return res.json(mappedPlaylist);
+      } catch (err) {
+        console.error('Error fetching Jamendo album details:', err);
+        return res.status(500).json({ message: 'Error retrieving Jamendo album' });
+      }
+    }
+
     const playlist = await Playlist.findById(req.params.id)
       .populate('creator', 'name')
       .populate({
@@ -159,17 +207,53 @@ router.post('/:id/tracks', protect, async (req, res) => {
       return res.status(401).json({ message: 'Not authorized to edit this playlist' });
     }
 
-    const track = await Track.findById(trackId);
+    let track;
+    if (trackId.startsWith('jamendo-')) {
+      const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+      const numericId = trackId.replace('jamendo-', '');
+
+      // Check if already mirrored
+      track = await Track.findOne({ audioUrl: { $regex: numericId } });
+      if (!track) {
+        // Fetch track metadata from Jamendo
+        const jamRes = await fetch(
+          `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&id=${numericId}`
+        );
+        if (jamRes.ok) {
+          const data = await jamRes.json();
+          if (data.results && data.results.length > 0) {
+            const t = data.results[0];
+            const systemArtistId = '60d5ecb8b5de9f0015b3c5a0';
+            track = await Track.create({
+              title: t.name,
+              artist: systemArtistId,
+              artistName: t.artist_name,
+              audioUrl: t.audio,
+              coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+              duration: t.duration || 180,
+              genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+              plays: t.stats?.playcount_total || 24500,
+              isJamendo: true,
+              jamendoArtistId: t.artist_id,
+              jamendoTrackId: t.id
+            });
+          }
+        }
+      }
+    } else {
+      track = await Track.findById(trackId);
+    }
+
     if (!track) {
       return res.status(404).json({ message: 'Track not found' });
     }
 
     // Avoid duplicates
-    if (playlist.tracks.includes(trackId)) {
+    if (playlist.tracks.includes(track._id)) {
       return res.status(400).json({ message: 'Track already exists in this playlist' });
     }
 
-    playlist.tracks.push(trackId);
+    playlist.tracks.push(track._id);
 
     // Update cover image to match the first added track cover if playlist is using default
     if (playlist.coverUrl.includes('unsplash.com') && track.coverUrl) {
