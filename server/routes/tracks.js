@@ -39,7 +39,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB max file size
+    fileSize: 30 * 1024 * 1024, // 30MB max file size
   },
 });
 
@@ -336,6 +336,45 @@ router.get('/liked', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error retrieving liked tracks' });
+  }
+});
+
+// @desc    Get stats for uploaded tracks (total plays, geolocated cities)
+// @route   GET /api/tracks/artist-stats
+// @access  Private
+router.get('/artist-stats', protect, async (req, res) => {
+  try {
+    // 1. Get all tracks uploaded by the artist
+    const tracks = await Track.find({ artist: req.user._id });
+    const trackIds = tracks.map(t => t._id);
+
+    // 2. Sum up total plays
+    const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+
+    // 3. Aggregate geolocated listener cities
+    const topCities = await PlayLog.aggregate([
+      { $match: { track: { $in: trackIds }, city: { $ne: 'Unknown' } } },
+      { $group: { _id: { city: '$city', country: '$country' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      {
+        $project: {
+          _id: 0,
+          city: '$_id.city',
+          country: '$_id.country',
+          count: 1
+        }
+      }
+    ]);
+
+    res.json({
+      totalPlays,
+      topCities,
+      tracksCount: tracks.length
+    });
+  } catch (error) {
+    console.error('Artist analytics retrieval failure:', error);
+    res.status(500).json({ message: 'Server error retrieving artist metrics' });
   }
 });
 

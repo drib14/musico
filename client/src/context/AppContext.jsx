@@ -37,6 +37,18 @@ export const AppProvider = ({ children }) => {
   // --- Geolocation State ---
   const [userLocation, setUserLocation] = useState({ city: 'Unknown', country: 'Unknown' });
 
+  // --- Ad Interruptions State ---
+  const [playCounter, setPlayCounter] = useState(0);
+  const [adActive, setAdActive] = useState(false);
+  const [adCountdown, setAdCountdown] = useState(5);
+  const [interruptedTrack, setInterruptedTrack] = useState(null);
+  const [interruptedQueue, setInterruptedQueue] = useState([]);
+  const [interruptedIndex, setInterruptedIndex] = useState(-1);
+
+  // --- Playlist Details State ---
+  const [activePlaylistId, setActivePlaylistId] = useState(null);
+  const [userPlaylists, setUserPlaylists] = useState([]);
+
   // Audio HTML5 Object Ref
   const audioRef = useRef(null);
 
@@ -124,6 +136,74 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  // --- Load User Playlists globally on demand ---
+  const loadUserPlaylists = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/playlists/my-playlists`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserPlaylists(data);
+      }
+    } catch (err) {
+      console.error('Error loading user playlists in context:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      loadUserPlaylists();
+    } else {
+      setUserPlaylists([]);
+    }
+  }, [token]);
+
+  // --- Ad countdown timer effect ---
+  useEffect(() => {
+    let timer;
+    if (adActive) {
+      if (adCountdown > 0) {
+        timer = setTimeout(() => {
+          setAdCountdown(prev => prev - 1);
+        }, 1000);
+      } else {
+        // Ad complete! Resume standard track playback
+        setAdActive(false);
+        if (interruptedTrack) {
+          setCurrentTrack(interruptedTrack);
+          setQueue(interruptedQueue);
+          setQueueIndex(interruptedIndex);
+          setIsPlaying(true);
+          
+          // Log play analytics for standard track
+          fetch(`${API_URL}/tracks/${interruptedTrack._id}/play`, { 
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            },
+            body: JSON.stringify({ 
+              city: userLocation.city, 
+              country: userLocation.country 
+            })
+          }).catch(err => console.error(err));
+
+          setHistory(prev => {
+            const filtered = prev.filter(t => t._id !== interruptedTrack._id);
+            return [interruptedTrack, ...filtered].slice(0, 10);
+          });
+          
+          setInterruptedTrack(null);
+          setInterruptedQueue([]);
+          setInterruptedIndex(-1);
+        }
+      }
+    }
+    return () => clearTimeout(timer);
+  }, [adActive, adCountdown]);
+
   // Sync track URL source
   useEffect(() => {
     if (audioRef.current && currentTrack) {
@@ -202,7 +282,34 @@ export const AppProvider = ({ children }) => {
   const playTrack = (track, trackList = []) => {
     if (!track) return;
     
-    // Increment plays analytics count on backend with geocoded user location
+    // Check for Ad Interruption (Free Users Only)
+    if (!user || !user.isPremium) {
+      const nextCount = playCounter + 1;
+      if (nextCount >= 3) {
+        // Trigger Ad Interruption
+        setPlayCounter(0);
+        setAdActive(true);
+        setAdCountdown(5);
+        setInterruptedTrack(track);
+        setInterruptedQueue(trackList);
+        const index = trackList.findIndex(t => t._id === track._id);
+        setInterruptedIndex(index !== -1 ? index : 0);
+        
+        // Mute or set play source to an ad jingle/audio
+        if (audioRef.current) {
+          audioRef.current.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3'; // distinct ad jingle
+          audioRef.current.load();
+          audioRef.current.play().catch(err => console.log('Ad autoplay exception:', err));
+        }
+        setIsPlaying(true);
+        showToast('Ad Interruption playing. Upgrade to Premium to stream ad-free!');
+        return;
+      } else {
+        setPlayCounter(nextCount);
+      }
+    }
+
+    // Normal play path
     fetch(`${API_URL}/tracks/${track._id}/play`, { 
       method: 'PUT',
       headers: {
@@ -350,6 +457,18 @@ export const AppProvider = ({ children }) => {
         logoutUser,
         updatePremiumStatus,
         userLocation,
+        
+        playCounter,
+        setPlayCounter,
+        adActive,
+        setAdActive,
+        adCountdown,
+        setAdCountdown,
+        activePlaylistId,
+        setActivePlaylistId,
+        userPlaylists,
+        setUserPlaylists,
+        loadUserPlaylists,
         
         currentTrack,
         isPlaying,

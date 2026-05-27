@@ -1,19 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Crown, Globe, MapPin, Disc, Star } from 'lucide-react';
+import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3 } from 'lucide-react';
 
 const HomeView = () => {
-  const { API_URL, playTrack, history, user, setActiveView, triggerProfileView, userLocation } = useContext(AppContext);
+  const { API_URL, playTrack, history, user, token, userPlaylists, loadUserPlaylists, setActiveView, triggerProfileView, userLocation, showToast } = useContext(AppContext);
   
-  // Trending charts states
+  // Trending local direct uploads charts states
   const [trendingTracks, setTrendingTracks] = useState([]);
   const [period, setPeriod] = useState('week'); // 'week', 'month', 'year'
   const [scope, setScope] = useState('global'); // 'global', 'local'
   const [chartsLoading, setChartsLoading] = useState(false);
-
-  // Spotify Mainstream Global Top Charts state
-  const [spotifyTracks, setSpotifyTracks] = useState([]);
-  const [spotifyLoading, setSpotifyLoading] = useState(true);
 
   // All local pools states
   const [tracks, setTracks] = useState([]);
@@ -44,24 +40,6 @@ const HomeView = () => {
     }
   };
 
-  // Load Spotify Mainstream Global Top Charts
-  useEffect(() => {
-    const fetchSpotifyCharts = async () => {
-      setSpotifyLoading(true);
-      try {
-        const res = await fetch(`${API_URL}/spotify/charts?limit=6`);
-        if (!res.ok) throw new Error('Failed to load Spotify global charts');
-        const data = await res.json();
-        setSpotifyTracks(data);
-      } catch (error) {
-        console.error('Error loading Spotify global charts:', error);
-      } finally {
-        setSpotifyLoading(false);
-      }
-    };
-    fetchSpotifyCharts();
-  }, []);
-
   // Load overall local tracks list
   useEffect(() => {
     const fetchTracks = async () => {
@@ -88,7 +66,7 @@ const HomeView = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
       
       {/* 1. HERO BANNER */}
       <div className="hero-banner">
@@ -112,58 +90,8 @@ const HomeView = () => {
         </div>
       </div>
 
-      {/* 2. SPOTIFY GLOBAL TOP CHARTS */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <Star className="w-6 h-6" style={{ color: '#1DB954' }} />
-          <h2 style={{ fontSize: '24px' }}>Mainstream Global Top Hits</h2>
-          <span className="billing-badge" style={{ backgroundColor: 'rgba(29, 185, 84, 0.15)', color: '#1DB954', border: '1px solid rgba(29, 185, 84, 0.2)' }}>
-            Spotify Catalog
-          </span>
-        </div>
 
-        {spotifyLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-            <div className="spinner"></div>
-          </div>
-        ) : spotifyTracks.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <p>Could not fetch mainstream Spotify charts. Connect backend to internet.</p>
-          </div>
-        ) : (
-          <div className="grid-container">
-            {spotifyTracks.map((track) => (
-              <div 
-                key={track._id} 
-                className="song-card"
-                onClick={() => {
-                  if (track.audioUrl) {
-                    playTrack(track, spotifyTracks);
-                  } else {
-                    showToast('Spotify preview audio unavailable for this track', 'error');
-                  }
-                }}
-              >
-                <div className="song-card-cover-wrapper">
-                  <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                  <div className="song-card-play-hover">
-                    <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                  </div>
-                </div>
-                <div className="song-card-title">{track.title}</div>
-                <div className="song-card-artist" style={{ textDecoration: 'none', color: 'var(--text-secondary)', cursor: 'default' }}>
-                  {track.artistName}
-                </div>
-                <div className="song-card-genre" style={{ backgroundColor: 'rgba(29, 185, 84, 0.12)', color: '#1DB954' }}>
-                  Spotify Stream
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 3. DYNAMIC TOP CHARTS TIME PERIOD / SCOPE SWITCHARDS */}
+      {/* 5. DYNAMIC TOP CHARTS TIME PERIOD / SCOPE SWITCHARDS */}
       <section style={{ 
         backgroundColor: 'var(--bg-secondary)', 
         border: '1px solid var(--border-color)', 
@@ -249,6 +177,7 @@ const HomeView = () => {
                 <th>Track Title</th>
                 <th>Genre</th>
                 <th style={{ textAlign: 'right' }}>Streams</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>Add</th>
               </tr>
             </thead>
             <tbody>
@@ -279,7 +208,54 @@ const HomeView = () => {
                   </td>
                   <td className="table-genre">{track.genre}</td>
                   <td style={{ textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>
-                    {track.periodPlays || track.plays || 0}
+                    {track.plays || 0}
+                  </td>
+                  <td style={{ width: '120px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    {token && userPlaylists && userPlaylists.length > 0 && (
+                      <select 
+                        defaultValue=""
+                        onChange={async (e) => {
+                          const playlistId = e.target.value;
+                          if (!playlistId) return;
+                          try {
+                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                              },
+                              body: JSON.stringify({ trackId: track._id })
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                              showToast('Added to playlist successfully!');
+                              loadUserPlaylists();
+                            } else {
+                              showToast(data.message || 'Error adding to playlist', 'error');
+                            }
+                          } catch (err) {
+                            showToast('Failed to add track', 'error');
+                          }
+                          e.target.value = ""; // Reset select
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          maxWidth: '110px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="" disabled>+ Add to...</option>
+                        {userPlaylists.map(pl => (
+                          <option key={pl._id} value={pl._id}>{pl.name}</option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -288,7 +264,7 @@ const HomeView = () => {
         )}
       </section>
 
-      {/* 4. RECENT LISTEN HISTORY (LOCAL) */}
+      {/* 6. RECENT LISTEN HISTORY (LOCAL) */}
       {history.length > 0 && (
         <section>
           <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Recently Played</h2>
@@ -319,13 +295,13 @@ const HomeView = () => {
                   style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!track.isSpotify) triggerProfileView(track.artist);
+                    triggerProfileView(track.artist);
                   }}
                 >
                   {track.artistName}
                 </div>
-                <div className="song-card-genre" style={track.isSpotify ? { backgroundColor: 'rgba(29, 185, 84, 0.12)', color: '#1DB954' } : undefined}>
-                  {track.isSpotify ? 'Spotify Stream' : track.genre}
+                <div className="song-card-genre">
+                  {track.genre}
                 </div>
               </div>
             ))}
@@ -333,7 +309,7 @@ const HomeView = () => {
         </section>
       )}
 
-      {/* 5. CORE MUSIC POOL LISTINGS */}
+      {/* 7. CORE MUSIC POOL LISTINGS */}
       <section>
         <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Trending Uploads</h2>
         
@@ -390,7 +366,7 @@ const HomeView = () => {
         )}
       </section>
 
-      {/* 6. QUICK SEARCH GENRE CATEGORIES */}
+      {/* 8. QUICK SEARCH GENRE CATEGORIES */}
       <section>
         <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Browse Genres</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>

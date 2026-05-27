@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 const { protect } = require('../middleware/authMiddleware');
 
 // @desc    Create Paymongo Checkout Session
@@ -83,6 +84,18 @@ router.post('/upgrade', protect, async (req, res) => {
     user.isPremium = true;
     await user.save();
 
+    // Generate random reference code if not provided
+    const reference = req.body.reference || 'PAYM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+    // Record billing transaction receipt
+    await Transaction.create({
+      user: user._id,
+      amount: 250,
+      currency: 'PHP',
+      status: 'completed',
+      reference
+    });
+
     res.json({
       message: 'Congratulations! You are now a Musico Premium member.',
       isPremium: user.isPremium,
@@ -90,6 +103,19 @@ router.post('/upgrade', protect, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error upgrading user' });
+  }
+});
+
+// @desc    Get user billing transaction history
+// @route   GET /api/billing/history
+// @access  Private
+router.get('/history', protect, async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json(transactions);
+  } catch (error) {
+    console.error('History retrieval error:', error);
+    res.status(500).json({ message: 'Server error retrieving transaction logs' });
   }
 });
 

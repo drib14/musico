@@ -86,8 +86,8 @@ const UploadView = () => {
       showToast('Please upload a valid audio track file (MP3/WAV/etc.)', 'error');
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      showToast('Audio file size exceeds 15MB limit', 'error');
+    if (file.size > 30 * 1024 * 1024) {
+      showToast('Audio file size exceeds 30MB limit', 'error');
       return;
     }
     setAudioFile(file);
@@ -297,7 +297,7 @@ const UploadView = () => {
                 <>
                   <UploadCloud className="dropzone-icon" />
                   <div className="dropzone-title">Drag & Drop track file here</div>
-                  <div className="dropzone-subtitle">or click to browse local files (max 15MB)</div>
+                  <div className="dropzone-subtitle">or click to browse local files (max 30MB)</div>
                 </>
               )}
             </div>

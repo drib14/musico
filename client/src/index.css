@@ -1300,3 +1300,80 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 8px;
   }
 }
+
+/* Extra Large Screens (xl, min-width: 1440px) */
+@media (min-width: 1440px) {
+  .grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 32px;
+  }
+  .main-content {
+    padding: 40px 60px;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* Extra Small Screens / Mobiles (ex, max-width: 480px) */
+@media (max-width: 480px) {
+  .grid-container {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 14px !important;
+  }
+  
+  .hero-banner {
+    padding: 24px !important;
+    border-radius: 12px !important;
+    gap: 8px !important;
+  }
+  
+  .hero-title {
+    font-size: 24px !important;
+  }
+  
+  .hero-desc {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Compact list views: hide genre & duration to fit within mobile portrait viewport */
+  .track-table th:nth-child(3), 
+  .track-table td:nth-child(3),
+  .track-table th:nth-child(4), 
+  .track-table td:nth-child(4) {
+    display: none !important;
+  }
+  
+  /* Simplified Music Player for Mobile thumb action controls */
+  .music-player {
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto !important;
+    grid-template-areas: "left center" !important;
+    padding: 0 16px !important;
+    height: 72px !important;
+  }
+  
+  .player-right {
+    display: none !important; /* Hide speaker controls and waveforms on xs screens */
+  }
+  
+  .player-center {
+    grid-area: center;
+    width: auto !important;
+    margin-top: 0 !important;
+  }
+  
+  .player-scrubber {
+    display: none !important; /* Hide scrubbar to prevent visual overlapping on narrow screens */
+  }
+  
+  .player-controls {
+    gap: 16px !important;
+  }
+  
+  .control-btn:not(.control-btn-play) {
+    opacity: 0.6;
+  }
+}
+

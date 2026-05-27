@@ -12,6 +12,7 @@ import UploadView from './views/UploadView';
 import BillingView from './views/BillingView';
 import SettingsView from './views/SettingsView';
 import ProfileView from './views/ProfileView';
+import PlaylistDetailsView from './views/PlaylistDetailsView';
 
 const MainAppContent = () => {
   const { activeView, toast } = useContext(AppContext);
@@ -42,6 +43,8 @@ const MainAppContent = () => {
         return <SettingsView />;
       case 'profile':
         return <ProfileView />;
+      case 'playlist-details':
+        return <PlaylistDetailsView />;
       default:
         return <HomeView />;
     }
