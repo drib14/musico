@@ -462,6 +462,15 @@ router.get('/users/:id', async (req, res) => {
     const userObj = user.toObject();
     userObj.monthlyListeners = monthlyListeners || 0;
     userObj.totalPlays = totalPlays || 0;
+    userObj.website = userObj.website || `https://www.musico.com/artist/${userObj._id}`;
+    userObj.facebook = userObj.facebook || `https://facebook.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.concerts = [
+      { date: 'June 18, 2026', city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
+      { date: 'July 05, 2026', city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
+      { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
+    ];
 
     // Fetch public playlists created by this user
     const playlists = await Playlist.find({ creator: user._id, isPublic: true }).sort({ createdAt: -1 });

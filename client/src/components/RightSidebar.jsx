@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Music, Calendar, Star, Send, Crown, CheckCircle, Plus, X } from 'lucide-react';
+import { Music, Calendar, Star, Send, Crown, CheckCircle, Plus, X, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 
 
 const RightSidebar = () => {
@@ -20,7 +20,43 @@ const RightSidebar = () => {
   const [newLyrics, setNewLyrics] = useState('');
   const [submittingLyrics, setSubmittingLyrics] = useState(false);
   const [showLyricsForm, setShowLyricsForm] = useState(false);
+  const [savingTrack, setSavingTrack] = useState(false);
   const activeLineRef = useRef(null);
+
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
+  const handleSaveToDb = async () => {
+    if (!token) {
+      showToast('Please log in to save tracks to the database!', 'error');
+      return;
+    }
+    setSavingTrack(true);
+    try {
+      const res = await fetch(`${API_URL}/tracks/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId: currentTrack._id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast('Track imported to Musico DB successfully!');
+        setCurrentTrack({ ...currentTrack, isJamendo: false, _id: data.track._id });
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save track');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingTrack(false);
+    }
+  };
 
   // Dynamic listener stats loading
   useEffect(() => {
@@ -271,6 +307,39 @@ const RightSidebar = () => {
           }}>
             {currentTrack.genre || 'Unknown'}
           </div>
+          {currentTrack.isJamendo && (
+            <button
+              onClick={handleSaveToDb}
+              disabled={savingTrack}
+              style={{
+                marginTop: '8px',
+                padding: '6px 12px',
+                fontSize: '11px',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                fontWeight: 'bold',
+                width: 'fit-content'
+              }}
+            >
+              {savingTrack ? (
+                <>
+                  <div className="spinner" style={{ width: '10px', height: '10px' }}></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Plus style={{ width: '12px', height: '12px' }} />
+                  Save to DB
+                </>
+              )}
+            </button>
+          )}
         </div>
       </section>
 
@@ -324,27 +393,62 @@ const RightSidebar = () => {
                 color: 'var(--text-secondary)',
                 lineHeight: '1.5',
                 margin: 0,
-                maxHeight: '75px',
+                maxHeight: '100px',
                 overflowY: 'auto',
                 paddingRight: '4px',
                 whiteSpace: 'pre-wrap'
               }}
               className="about-artist-bio-scroll"
               >
-                {artistInfo.artistBio}
+                {stripHtml(artistInfo.artistBio)}
               </p>
             )}
 
-            {artistInfo.website && (
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', wordBreak: 'break-all' }}>
-                <strong>Contact/Website:</strong>{' '}
-                <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                  {artistInfo.website}
-                </a>
+            {(artistInfo.facebook || artistInfo.twitter || artistInfo.instagram || artistInfo.website) && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                {artistInfo.website && (
+                  <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Website">
+                    <Globe style={{ width: '14px', height: '14px' }} />
+                  </a>
+                )}
+                {artistInfo.facebook && (
+                  <a href={artistInfo.facebook.startsWith('http') ? artistInfo.facebook : `https://facebook.com/${artistInfo.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Facebook">
+                    <Facebook style={{ width: '14px', height: '14px' }} />
+                  </a>
+                )}
+                {artistInfo.twitter && (
+                  <a href={artistInfo.twitter.startsWith('http') ? artistInfo.twitter : `https://twitter.com/${artistInfo.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Twitter">
+                    <Twitter style={{ width: '14px', height: '14px' }} />
+                  </a>
+                )}
+                {artistInfo.instagram && (
+                  <a href={artistInfo.instagram.startsWith('http') ? artistInfo.instagram : `https://instagram.com/${artistInfo.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Instagram">
+                    <Instagram style={{ width: '14px', height: '14px' }} />
+                  </a>
+                )}
               </div>
             )}
+
+            {artistInfo.concerts && artistInfo.concerts.length > 0 && (
+              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                <h5 style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar style={{ width: '13px', height: '13px' }} />
+                  Upcoming Concerts
+                </h5>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {artistInfo.concerts.map((c, idx) => (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', backgroundColor: 'var(--bg-secondary)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)' }}>{c.date}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{c.title}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {artistInfo.source && (
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
                 Description Source: {artistInfo.source}
               </div>
             )}

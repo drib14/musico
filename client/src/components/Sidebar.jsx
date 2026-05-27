@@ -32,7 +32,6 @@ const Sidebar = ({ onOpenAuth }) => {
     { id: 'library', label: 'Your Library', icon: Library },
     { id: 'upload', label: 'Upload Track', icon: UploadCloud },
     ...(user ? [{ id: 'settings', label: 'Settings', icon: Settings }] : []),
-    { id: 'billing', label: 'Upgrade Premium', icon: Crown, highlight: true },
   ];
 
   const handleNavClick = (viewId) => {

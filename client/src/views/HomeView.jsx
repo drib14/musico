@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
 
 const HomeView = () => {
   const { 
@@ -34,6 +35,38 @@ const HomeView = () => {
   // All local pools states
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
+
+  const handleSaveToDb = async (e, trackId) => {
+    e.stopPropagation();
+    if (!token) {
+      showToast('Please log in to save tracks to the database!', 'error');
+      return;
+    }
+    setSavingId(trackId);
+    try {
+      const res = await fetch(`${API_URL}/tracks/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId })
+      });
+      if (res.ok) {
+        showToast('Track imported to Musico DB successfully!');
+        // Update both lists
+        setTracks(prev => prev.map(t => t._id === trackId ? { ...t, isJamendo: false } : t));
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save track');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   // Load trending local charts
   useEffect(() => {
@@ -163,13 +196,7 @@ const HomeView = () => {
                 }}
               >
                 <div className="song-card-cover-wrapper">
-                  {pl.coverUrl ? (
-                    <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                      <Music className="w-12 h-12 text-accent" />
-                    </div>
-                  )}
+                  <PlaylistCover playlist={pl} className="song-card-cover" />
                 </div>
                 <div className="song-card-title">{pl.name}</div>
                 <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
@@ -455,10 +482,30 @@ const HomeView = () => {
                 >
                   {track.artistName}
                 </div>
-                <div className="song-card-genre">
-                  {track.genre}
-                </div>
-              </div>
+                 <div className="song-card-genre">
+                   {track.genre}
+                 </div>
+                 {track.isJamendo && (
+                   <button
+                     onClick={(e) => handleSaveToDb(e, track._id)}
+                     disabled={savingId === track._id}
+                     style={{
+                       width: '100%',
+                       marginTop: '6px',
+                       padding: '4px 8px',
+                       fontSize: '11px',
+                       borderRadius: '8px',
+                       cursor: 'pointer',
+                       backgroundColor: 'var(--bg-tertiary)',
+                       border: '1px solid var(--border-color)',
+                       color: 'var(--text-primary)',
+                       fontWeight: 'bold'
+                     }}
+                   >
+                     {savingId === track._id ? 'Saving...' : 'Save to DB'}
+                   </button>
+                 )}
+               </div>
             ))}
           </div>
         </section>
@@ -514,8 +561,28 @@ const HomeView = () => {
                 >
                   {track.artistName}
                 </div>
-                <div className="song-card-genre">{track.genre}</div>
-              </div>
+                 <div className="song-card-genre">{track.genre}</div>
+                 {track.isJamendo && (
+                   <button
+                     onClick={(e) => handleSaveToDb(e, track._id)}
+                     disabled={savingId === track._id}
+                     style={{
+                       width: '100%',
+                       marginTop: '6px',
+                       padding: '4px 8px',
+                       fontSize: '11px',
+                       borderRadius: '8px',
+                       cursor: 'pointer',
+                       backgroundColor: 'var(--bg-tertiary)',
+                       border: '1px solid var(--border-color)',
+                       color: 'var(--text-primary)',
+                       fontWeight: 'bold'
+                     }}
+                   >
+                     {savingId === track._id ? 'Saving...' : 'Save to DB'}
+                   </button>
+                 )}
+               </div>
             ))}
           </div>
         )}

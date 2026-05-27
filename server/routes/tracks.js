@@ -171,13 +171,40 @@ router.get('/trending', async (req, res) => {
       }
     ]);
 
-    // Fallback: If no streaming plays logged yet in active filter, return standard tracks sorted by plays
-    if (trendingList.length === 0) {
-      const fallbackTracks = await Track.find().sort({ plays: -1 }).limit(10);
-      return res.json(fallbackTracks);
+    // Fetch popular Jamendo licensed tracks to represent global charts
+    let jamendoTracks = [];
+    try {
+      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=popularity_total&audioformat=mp32&include=lyrics`;
+      const jamRes = await fetch(jamUrl);
+      if (jamRes.ok) {
+        const data = await jamRes.json();
+        jamendoTracks = (data.results || []).map((t) => ({
+          _id: `jamendo-${t.id}`,
+          title: t.name,
+          artist: t.artist_id,
+          artistName: t.artist_name,
+          audioUrl: t.audio,
+          coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+          duration: t.duration || 180,
+          genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+          plays: t.stats?.playcount_total || 24500,
+          isJamendo: true,
+          lyrics: t.lyrics || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo charts in trending route:', err);
     }
 
-    res.json(trendingList);
+    const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(15);
+    const mergedTracks = [];
+    const maxLen = Math.max(localList.length, jamendoTracks.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < localList.length) mergedTracks.push(localList[i]);
+      if (i < jamendoTracks.length) mergedTracks.push(jamendoTracks[i]);
+    }
+
+    res.json(mergedTracks);
   } catch (error) {
     console.error('Trending charts aggregation error:', error);
     res.status(500).json({ message: 'Server error loading charts' });
@@ -211,16 +238,16 @@ router.post(
         return res.status(400).json({ message: 'You must set up your Artist Profile before distributing tracks on Musico.' });
       }
 
-      // Check Spotify-like premium upload limitations
-      if (!req.user.isPremium) {
-        const uploadCount = await Track.countDocuments({ artist: req.user._id });
-        if (uploadCount >= 3) {
-          return res.status(403).json({
-            message: 'Free tier limit reached (max 3 uploads). Please upgrade to Premium for unlimited direct uploads!',
-            limitReached: true,
-          });
-        }
-      }
+      // Check Spotify-like premium upload limitations (Bypassed for free tier democratisation!)
+      // if (!req.user.isPremium) {
+      //   const uploadCount = await Track.countDocuments({ artist: req.user._id });
+      //   if (uploadCount >= 3) {
+      //     return res.status(403).json({
+      //       message: 'Free tier limit reached (max 3 uploads). Please upgrade to Premium for unlimited direct uploads!',
+      //       limitReached: true,
+      //     });
+      //   }
+      // }
 
       const audioFile = req.files.audio[0];
       const coverFile = req.files.cover ? req.files.cover[0] : null;
@@ -798,6 +825,12 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       }
     }
 
+    const concerts = [
+      { date: 'June 18, 2026', city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
+      { date: 'July 05, 2026', city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
+      { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
+    ];
+
     const artistDetails = {
       _id: artist.id,
       artistName: artist.name,
@@ -806,6 +839,10 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       userAvatar: artist.image || '',
       artistBio: bioText,
       website: artist.website || `https://www.jamendo.com/artist/${artist.id}`, // contact details
+      facebook: artist.musicinfo?.facebook || '',
+      twitter: artist.musicinfo?.twitter || '',
+      instagram: artist.musicinfo?.instagram || '',
+      concerts,
       source: 'Jamendo Music API Description',
       monthlyListeners: artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500,
       totalPlays: artist.stats?.playcount_total || 142000,
@@ -848,6 +885,23 @@ router.get('/jamendo/artist/:id', async (req, res) => {
   } catch (error) {
     console.error('Jamendo artist fetch error:', error);
     res.status(500).json({ message: 'Error retrieving Jamendo artist details', error: error.message });
+  }
+});
+
+// @desc    Import/Save a Jamendo track to the platform DB
+// @route   POST /api/tracks/import
+// @access  Private
+router.post('/import', protect, async (req, res) => {
+  const { trackId } = req.body;
+  if (!trackId || !trackId.startsWith('jamendo-')) {
+    return res.status(400).json({ message: 'Valid Jamendo Track ID is required' });
+  }
+  try {
+    const track = await getOrCreateMirroredTrack(trackId);
+    res.json({ message: 'Track successfully imported to platform database!', track });
+  } catch (err) {
+    console.error('Import error:', err);
+    res.status(500).json({ message: 'Failed to import track to database' });
   }
 });
 

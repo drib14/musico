@@ -6,7 +6,11 @@ export const AppProvider = ({ children }) => {
   // --- Auth State ---
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('musico_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      const u = JSON.parse(saved);
+      return { ...u, isPremium: true };
+    }
+    return null;
   });
   const [token, setToken] = useState(() => {
     return localStorage.getItem('musico_token') || '';
@@ -242,9 +246,10 @@ export const AppProvider = ({ children }) => {
 
   // --- Auth Controller Helpers ---
   const loginUser = (userData, userToken) => {
-    setUser(userData);
+    const premiumUser = { ...userData, isPremium: true };
+    setUser(premiumUser);
     setToken(userToken);
-    localStorage.setItem('musico_user', JSON.stringify(userData));
+    localStorage.setItem('musico_user', JSON.stringify(premiumUser));
     localStorage.setItem('musico_token', userToken);
     showToast(`Welcome back, ${userData.name}!`);
   };
@@ -271,7 +276,7 @@ export const AppProvider = ({ children }) => {
 
   const updatePremiumStatus = (isPremium) => {
     if (user) {
-      const updated = { ...user, isPremium };
+      const updated = { ...user, isPremium: true };
       setUser(updated);
       localStorage.setItem('musico_user', JSON.stringify(updated));
     }
@@ -291,8 +296,8 @@ export const AppProvider = ({ children }) => {
   const playTrack = (track, trackList = []) => {
     if (!track) return;
     
-    // Check for Ad Interruption (Free Users Only)
-    if (!user || !user.isPremium) {
+    // Check for Ad Interruption (Bypassed - platform is 100% free)
+    if (false) {
       const nextCount = playCounter + 1;
       if (nextCount >= 3) {
         // Trigger Ad Interruption

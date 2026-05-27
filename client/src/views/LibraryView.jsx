@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Play, Music, Heart, UploadCloud, FolderHeart, Plus, Folder, Trash2, Edit2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import ArtistProfileWizard from '../components/ArtistProfileWizard';
+import PlaylistCover from '../components/PlaylistCover';
 
 const LibraryView = () => {
   const { API_URL, token, user, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
@@ -19,6 +20,7 @@ const LibraryView = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDesc, setNewPlaylistDesc] = useState('');
+  const [newPlaylistCover, setNewPlaylistCover] = useState('');
 
   // Track Edit States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -99,7 +101,7 @@ const LibraryView = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name: newPlaylistName, description: newPlaylistDesc })
+        body: JSON.stringify({ name: newPlaylistName, description: newPlaylistDesc, coverUrl: newPlaylistCover })
       });
 
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -107,6 +109,7 @@ const LibraryView = () => {
       showToast('Playlist created successfully!');
       setNewPlaylistName('');
       setNewPlaylistDesc('');
+      setNewPlaylistCover('');
       setShowCreateForm(false);
       loadLibraryData();
     } catch (error) {
@@ -275,6 +278,16 @@ const LibraryView = () => {
                 placeholder="Description (Optional)"
                 value={newPlaylistDesc}
                 onChange={(e) => setNewPlaylistDesc(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="text"
+                className="form-input"
+                style={{ paddingLeft: '12px' }}
+                placeholder="Cover Image URL (Optional)"
+                value={newPlaylistCover}
+                onChange={(e) => setNewPlaylistCover(e.target.value)}
               />
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -501,13 +514,7 @@ const LibraryView = () => {
                     }}
                   >
                     <div className="song-card-cover-wrapper">
-                      {pl.coverUrl ? (
-                        <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                      ) : (
-                        <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                          <Folder className="w-12 h-12 text-accent" />
-                        </div>
-                      )}
+                      <PlaylistCover playlist={pl} className="song-card-cover" />
                     </div>
                     <div className="song-card-title">{pl.name}</div>
                     <div className="song-card-artist" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

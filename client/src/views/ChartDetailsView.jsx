@@ -19,6 +19,37 @@ const ChartDetailsView = () => {
 
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
+
+  const handleSaveToDb = async (e, trackId) => {
+    e.stopPropagation();
+    if (!token) {
+      showToast('Please log in to save tracks to the database!', 'error');
+      return;
+    }
+    setSavingId(trackId);
+    try {
+      const res = await fetch(`${API_URL}/tracks/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId })
+      });
+      if (res.ok) {
+        showToast('Track imported to Musico DB successfully!');
+        setTracks(prev => prev.map(t => t._id === trackId ? { ...t, isJamendo: false } : t));
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save track');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   useEffect(() => {
     if (activeChart) {
@@ -260,8 +291,26 @@ const ChartDetailsView = () => {
                         </div>
                       )}
                       <div>
-                        <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)' }}>
-                          {track.title}
+                        <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{track.title}</span>
+                          {track.isJamendo && (
+                            <button
+                              onClick={(e) => handleSaveToDb(e, track._id)}
+                              disabled={savingId === track._id}
+                              style={{
+                                padding: '2px 8px',
+                                fontSize: '10px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-tertiary)',
+                                color: 'var(--accent)',
+                                cursor: 'pointer',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {savingId === track._id ? 'Saving...' : 'Save to DB'}
+                            </button>
+                          )}
                         </div>
                         <div className="table-artist" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span>{track.artistName}</span>

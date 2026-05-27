@@ -8,7 +8,7 @@ const { protect } = require('../middleware/authMiddleware');
 // @route   POST /api/playlists
 // @access  Private
 router.post('/', protect, async (req, res) => {
-  const { name, description, isPublic } = req.body;
+  const { name, description, isPublic, coverUrl } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: 'Playlist name is required' });
@@ -20,7 +20,7 @@ router.post('/', protect, async (req, res) => {
       description: description || '',
       creator: req.user._id,
       isPublic: isPublic !== undefined ? isPublic : true,
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop', // default cover
+      coverUrl: coverUrl || '',
       tracks: [],
     });
 
@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
     // 1. Fetch local public playlists
     const localPlaylists = await Playlist.find({ isPublic: true })
       .populate('creator', 'name')
+      .populate({ path: 'tracks', select: 'coverUrl' })
       .sort({ createdAt: -1 });
 
     // 2. Fetch popular Jamendo albums to represent premium licensed collections
@@ -83,6 +84,7 @@ router.get('/my-playlists', protect, async (req, res) => {
   try {
     const playlists = await Playlist.find({ creator: req.user._id })
       .populate('creator', 'name')
+      .populate({ path: 'tracks', select: 'coverUrl' })
       .sort({ createdAt: -1 });
     res.json(playlists);
   } catch (error) {
@@ -179,10 +181,11 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(401).json({ message: 'Not authorized to edit this playlist' });
     }
 
-    const { name, description, isPublic } = req.body;
+    const { name, description, isPublic, coverUrl } = req.body;
     playlist.name = name || playlist.name;
     playlist.description = description !== undefined ? description : playlist.description;
     playlist.isPublic = isPublic !== undefined ? isPublic : playlist.isPublic;
+    playlist.coverUrl = coverUrl !== undefined ? coverUrl : playlist.coverUrl;
 
     await playlist.save();
     res.json(playlist);
@@ -286,10 +289,10 @@ router.post('/:id/tracks', protect, async (req, res) => {
 
     playlist.tracks.push(track._id);
 
-    // Update cover image to match the first added track cover if playlist is using default
-    if (playlist.coverUrl.includes('unsplash.com') && track.coverUrl) {
-      playlist.coverUrl = track.coverUrl;
-    }
+    // Update cover image dynamically on frontend instead of hardcoding in DB
+    // if (playlist.coverUrl.includes('unsplash.com') && track.coverUrl) {
+    //   playlist.coverUrl = track.coverUrl;
+    // }
 
     await playlist.save();
     res.status(200).json(playlist);

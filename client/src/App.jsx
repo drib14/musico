@@ -53,8 +53,6 @@ const MainAppContent = () => {
         return <LibraryView />;
       case 'upload':
         return <UploadView />;
-      case 'billing':
-        return <BillingView />;
       case 'settings':
         return <SettingsView />;
       case 'profile':
@@ -116,16 +114,6 @@ const MainAppContent = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {user ? (
               <>
-                {!user.isPremium && (
-                  <button 
-                    className="btn btn-primary"
-                    style={{ padding: '6px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: 'none' }}
-                    onClick={() => setActiveView('billing')}
-                  >
-                    <Crown className="w-3.5 h-3.5 text-white" />
-                    <span style={{ color: 'white' }}>Go Premium</span>
-                  </button>
-                )}
                 <button 
                   className="btn-icon" 
                   style={{ width: '32px', height: '32px', border: 'none', background: 'var(--bg-tertiary)' }}

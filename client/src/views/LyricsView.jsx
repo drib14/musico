@@ -27,7 +27,7 @@ const LyricsView = () => {
 
   if (!currentTrack) return null;
 
-  const isPremium = user?.isPremium || false;
+  const isPremium = true; // All users have premium features for free!
   const hasLyrics = currentTrack.lyrics && currentTrack.lyrics.trim().length > 0;
   
   // Immersive timed parser & auto-interpolator
@@ -195,32 +195,7 @@ const LyricsView = () => {
               );
             })}
             
-            {!isPremium && (
-              <>
-                {/* Visual Blurred Fading Effect */}
-                <div className="lyrics-blur-fade">
-                  <p className="lyrics-text-line blurred-line">Lyrics are locked...</p>
-                  <p className="lyrics-text-line blurred-line" style={{ filter: 'blur(8px)' }}>Hidden content...</p>
-                </div>
-
-                {/* Premium Gate Card */}
-                <div className="lyrics-premium-gate-card">
-                  <div className="gate-icon-wrapper">
-                    <Crown className="w-8 h-8 text-premium-color" />
-                  </div>
-                  <h3 className="gate-title">Enjoying the Lyrics?</h3>
-                  <p className="gate-desc">
-                    Upgrade to <span style={{ color: 'var(--premium-color)', fontWeight: '600' }}>Musico Premium</span> to sing along with full timed lyrics, unlock unlimited high-quality audio uploads, and enjoy complete ad-free streaming.
-                  </p>
-                  <button 
-                    className="btn btn-primary gate-cta-btn"
-                    onClick={handleUpgradeClick}
-                  >
-                    Upgrade to Premium
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Gated blocks removed */}
           </div>
         ) : (
           // Fallback Placeholder if no lyrics are uploaded

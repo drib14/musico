@@ -1,9 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Music, Play, Crown, Calendar, Sparkles, CheckCircle } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
 
 const ProfileView = () => {
-  const { API_URL, activeProfileId, playTrack, showToast } = useContext(AppContext);
+  const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -346,18 +347,17 @@ const ProfileView = () => {
               <div
                 key={pl._id}
                 className="song-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
               >
                 <div className="song-card-cover-wrapper">
-                  {pl.coverUrl ? (
-                    <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                      <Music className="w-12 h-12 text-accent" />
-                    </div>
-                  )}
+                  <PlaylistCover playlist={pl} className="song-card-cover" />
                 </div>
                 <div className="song-card-title">{pl.name}</div>
-                <div className="song-card-artist">{pl.tracks.length} songs</div>
+                <div className="song-card-artist">{pl.tracks?.length || 0} songs</div>
               </div>
             ))}
           </div>

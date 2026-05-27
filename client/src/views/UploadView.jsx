@@ -44,11 +44,7 @@ const UploadView = () => {
       if (res.ok) {
         const data = await res.json();
         setUploadsCount(data.length);
-        if (!user?.isPremium && data.length >= 3) {
-          setLimitReached(true);
-        } else {
-          setLimitReached(false);
-        }
+        setLimitReached(false); // Platform is 100% free!
       }
     } catch (err) {
       console.error(err);
@@ -161,9 +157,6 @@ const UploadView = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 403 && data.limitReached) {
-          setLimitReached(true);
-        }
         throw new Error(data.message || 'Direct upload failed');
       }
 

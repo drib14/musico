@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Search, Music, Play, Star, Users, Disc3, Disc, CheckCircle } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
 
 const SearchView = () => {
   const { 
@@ -26,6 +27,40 @@ const SearchView = () => {
   });
   
   const [loading, setLoading] = useState(false);
+  const [savingId, setSavingId] = useState(null);
+
+  const handleSaveToDb = async (e, trackId) => {
+    e.stopPropagation();
+    if (!token) {
+      showToast('Please log in to save tracks to the database!', 'error');
+      return;
+    }
+    setSavingId(trackId);
+    try {
+      const res = await fetch(`${API_URL}/tracks/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId })
+      });
+      if (res.ok) {
+        showToast('Track imported to Musico DB successfully!');
+        setSearchResults(prev => ({
+          ...prev,
+          tracks: prev.tracks.map(t => t._id === trackId ? { ...t, isJamendo: false } : t)
+        }));
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save track');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
@@ -143,6 +178,27 @@ const SearchView = () => {
                         {track.artistName}
                       </div>
                       <div className="song-card-genre" style={{ marginBottom: '4px' }}>{track.genre}</div>
+                      {track.isJamendo && (
+                        <button
+                          onClick={(e) => handleSaveToDb(e, track._id)}
+                          disabled={savingId === track._id}
+                          style={{
+                            width: '100%',
+                            marginTop: '4px',
+                            marginBottom: '4px',
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            backgroundColor: 'var(--bg-tertiary)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-primary)',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          {savingId === track._id ? 'Saving...' : 'Save to DB'}
+                        </button>
+                      )}
 
                       {/* Inline Dropdown menu to add to custom playlists */}
                       {token && userPlaylists && userPlaylists.length > 0 && (
@@ -332,13 +388,7 @@ const SearchView = () => {
                     }}
                   >
                     <div className="song-card-cover-wrapper">
-                      {pl.coverUrl ? (
-                        <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                      ) : (
-                        <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                          <Music className="w-12 h-12 text-accent" />
-                        </div>
-                      )}
+                      <PlaylistCover playlist={pl} className="song-card-cover" />
                     </div>
                     <div className="song-card-title">{pl.name}</div>
                     <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>

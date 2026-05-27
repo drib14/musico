@@ -11,7 +11,9 @@ import {
   VolumeX, 
   Heart,
   Music,
-  Mic
+  Mic,
+  Plus,
+  ListPlus
 } from 'lucide-react';
 
 const MusicPlayer = () => {
@@ -36,12 +38,54 @@ const MusicPlayer = () => {
     adCountdown,
     setActiveView,
     showLyrics,
-    setShowLyrics
+    setShowLyrics,
+    token,
+    userPlaylists,
+    loadUserPlaylists,
+    showToast,
+    API_URL
   } = useContext(AppContext);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowPlaylistDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleAddToPlaylist = async (playlistId, playlistName) => {
+    if (!token) return showToast('Please log in first', 'error');
+    try {
+      const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId: currentTrack._id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to add song to playlist');
+      }
+      showToast(`Added "${currentTrack.title}" to "${playlistName}"!`);
+      setShowPlaylistDropdown(false);
+      loadUserPlaylists();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
   
   const progressInterval = useRef(null);
 
@@ -241,6 +285,79 @@ const MusicPlayer = () => {
             />
           </button>
         )}
+
+        {/* Add to Playlist Action (Spotify UX Plus Trigger) */}
+        {user && (
+          <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button 
+              className="control-btn"
+              style={{ marginLeft: '10px' }}
+              onClick={() => setShowPlaylistDropdown(!showPlaylistDropdown)}
+              title="Add to Playlist"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {showPlaylistDropdown && (
+              <div style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: '10px',
+                marginBottom: '10px',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+                zIndex: '200',
+                minWidth: '180px',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                boxShadow: 'var(--glass-shadow)'
+              }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', borderBottom: '1px solid var(--border-color)', fontWeight: 'bold' }}>
+                  Add to playlist
+                </div>
+                {userPlaylists.length === 0 ? (
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '8px', textAlign: 'center' }}>
+                    No playlists created
+                  </div>
+                ) : (
+                  userPlaylists.map(pl => (
+                    <button
+                      key={pl._id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        width: '100%',
+                        padding: '8px',
+                        border: 'none',
+                        background: 'none',
+                        color: 'var(--text-primary)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        textAlign: 'left',
+                        transition: 'background var(--transition-fast)'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'none'}
+                      onClick={() => handleAddToPlaylist(pl._id, pl.name)}
+                    >
+                      <ListPlus className="w-3.5 h-3.5" style={{ marginRight: '8px', color: 'var(--accent)' }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {pl.name}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 2. PLAYER CENTER: MEDIA CONTROLS & TIMELINE */}
@@ -311,6 +428,16 @@ const MusicPlayer = () => {
       {/* 3. PLAYER RIGHT: VOLUME & VISUALIZER */}
       <div className="player-right">
         
+        {/* Desktop Timed Lyrics Toggle Action */}
+        <button 
+          className={`control-btn ${showLyrics ? 'active' : ''}`}
+          style={{ marginRight: '16px' }}
+          onClick={() => setShowLyrics(!showLyrics)}
+          title="Lyrics"
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+
         {/* Animated dynamic waveform equalizer */}
         <div className="player-visualizer">
           {[0.2, 0.5, 0.8, 0.4, 0.7, 0.3].map((delay, idx) => (
