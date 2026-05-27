@@ -49,6 +49,32 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    userAvatar: {
+      type: String,
+      default: '',
+    },
+    artistName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    artistAvatar: {
+      type: String,
+      default: '',
+    },
+    artistBanner: {
+      type: String,
+      default: '',
+    },
+    artistBio: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    isArtistVerified: {
+      type: Boolean,
+      default: false,
+    },
     likedTracks: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -4,6 +4,45 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/authMiddleware');
 const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/mailer');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure Multer memory storage
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max image size
+  },
+});
+
+// Helper stream uploader for Cloudinary
+const uploadStreamToCloudinary = (fileBuffer, resourceType, folderName) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: resourceType,
+        folder: folderName,
+      },
+      (error, result) => {
+        if (error) {
+          console.error(`Cloudinary Upload Error [${resourceType}]:`, error);
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
 
 // Helper to generate 6-digit code
 const generate6DigitCode = () => {
@@ -296,41 +335,90 @@ router.get('/me', protect, async (req, res) => {
 // @desc    Update user profile settings
 // @route   PUT /api/auth/profile
 // @access  Private
-router.put('/profile', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('+password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const { name, email, password } = req.body;
-
-    // Check email availability
-    if (email && email !== user.email) {
-      const emailExists = await User.findOne({ email });
-      if (emailExists) {
-        return res.status(400).json({ message: 'Email address already in use by another account' });
+router.put(
+  '/profile',
+  protect,
+  upload.fields([
+    { name: 'userAvatar', maxCount: 1 },
+    { name: 'artistAvatar', maxCount: 1 },
+    { name: 'artistBanner', maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.user._id).select('+password');
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
       }
-      user.email = email;
+
+      const { name, email, password, artistName, artistBio, isArtistVerified } = req.body;
+
+      // Check email availability
+      if (email && email !== user.email) {
+        const emailExists = await User.findOne({ email });
+        if (emailExists) {
+          return res.status(400).json({ message: 'Email address already in use by another account' });
+        }
+        user.email = email;
+      }
+
+      if (name) user.name = name;
+      if (password) user.password = password; // pre-save will automatically hash it!
+
+      // Update Artist Fields
+      if (artistName !== undefined) user.artistName = artistName;
+      if (artistBio !== undefined) user.artistBio = artistBio;
+      if (isArtistVerified !== undefined) {
+        user.isArtistVerified = isArtistVerified === 'true' || isArtistVerified === true;
+      }
+
+      // Handle Image uploads to Cloudinary
+      if (req.files) {
+        if (req.files.userAvatar) {
+          console.log('Uploading user avatar to Cloudinary...');
+          const result = await uploadStreamToCloudinary(
+            req.files.userAvatar[0].buffer,
+            'image',
+            'musico/avatars'
+          );
+          user.userAvatar = result.secure_url;
+        }
+
+        if (req.files.artistAvatar) {
+          console.log('Uploading artist avatar to Cloudinary...');
+          const result = await uploadStreamToCloudinary(
+            req.files.artistAvatar[0].buffer,
+            'image',
+            'musico/artists'
+          );
+          user.artistAvatar = result.secure_url;
+        }
+
+        if (req.files.artistBanner) {
+          console.log('Uploading artist banner to Cloudinary...');
+          const result = await uploadStreamToCloudinary(
+            req.files.artistBanner[0].buffer,
+            'image',
+            'musico/banners'
+          );
+          user.artistBanner = result.secure_url;
+        }
+      }
+
+      await user.save();
+
+      // Refetch without password
+      const updatedUser = await User.findById(user._id).select('-password');
+      res.json({
+        message: 'Profile updated successfully!',
+        user: updatedUser,
+        token: generateToken(updatedUser._id) // issue fresh token in case email changed
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(500).json({ message: 'Server error during profile update' });
     }
-
-    if (name) user.name = name;
-    if (password) user.password = password; // pre-save will automatically hash it!
-
-    await user.save();
-
-    // Refetch without password
-    const updatedUser = await User.findById(user._id).select('-password');
-    res.json({
-      message: 'Profile updated successfully!',
-      user: updatedUser,
-      token: generateToken(updatedUser._id) // issue fresh token in case email changed
-    });
-  } catch (error) {
-    console.error('Profile update error:', error);
-    res.status(500).json({ message: 'Server error during profile update' });
   }
-});
+);
 
 // @desc    Get public user/artist profile details
 // @route   GET /api/auth/users/:id

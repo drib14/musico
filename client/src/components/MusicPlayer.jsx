@@ -48,7 +48,7 @@ const MusicPlayer = () => {
   // Sync liked state with user's likedTracks array
   useEffect(() => {
     if (user && currentTrack) {
-      setIsLiked(user.likedTracks.includes(currentTrack._id));
+      setIsLiked(user.likedTracks?.includes(currentTrack._id) || false);
     } else {
       setIsLiked(false);
     }
