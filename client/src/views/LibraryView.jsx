@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Heart, UploadCloud, FolderHeart, Plus, Folder, Trash2 } from 'lucide-react';
+import { Play, Music, Heart, UploadCloud, FolderHeart, Plus, Folder, Trash2, Edit2 } from 'lucide-react';
+import Modal from '../components/Modal';
 
 const LibraryView = () => {
   const { API_URL, token, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
@@ -17,6 +18,19 @@ const LibraryView = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDesc, setNewPlaylistDesc] = useState('');
+
+  // Track Edit States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTrack, setEditingTrack] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editGenre, setEditGenre] = useState('');
+  const [editLyrics, setEditLyrics] = useState('');
+
+  // Track/Playlist Delete Confirmation States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null); // { id: string, type: 'track' | 'playlist', name: string }
+
+  const genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'R&B', 'Country'];
 
   useEffect(() => {
     if (token) {
@@ -99,18 +113,73 @@ const LibraryView = () => {
     }
   };
 
-  // Delete Playlist Handler
-  const handleDeletePlaylist = async (playlistId, e) => {
-    e.stopPropagation(); // Avoid triggering open actions
-    if (!window.confirm('Are you sure you want to delete this playlist?')) return;
+  // Delete Request Handler (Opens Modal)
+  const requestDelete = (id, type, name, e) => {
+    e.stopPropagation();
+    setItemToDelete({ id, type, name });
+    setIsDeleteModalOpen(true);
+  };
+
+  // Delete Action Execution
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
 
     try {
-      const res = await fetch(`${API_URL}/playlists/${playlistId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+      if (itemToDelete.type === 'playlist') {
+        const res = await fetch(`${API_URL}/playlists/${itemToDelete.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to remove playlist');
+        showToast('Playlist deleted');
+      } else if (itemToDelete.type === 'track') {
+        const res = await fetch(`${API_URL}/tracks/${itemToDelete.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to remove track');
+        showToast('Track deleted');
+      }
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+      loadLibraryData();
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+  };
+
+  // Edit Track Handlers
+  const openEditModal = (track, e) => {
+    e.stopPropagation();
+    setEditingTrack(track);
+    setEditTitle(track.title);
+    setEditGenre(track.genre || 'Pop');
+    setEditLyrics(track.lyrics || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTrack = async (e) => {
+    e.preventDefault();
+    if (!editingTrack) return;
+
+    try {
+      const res = await fetch(`${API_URL}/tracks/${editingTrack._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          genre: editGenre,
+          lyrics: editLyrics
+        })
       });
-      if (!res.ok) throw new Error('Failed to remove playlist');
-      showToast('Playlist deleted');
+
+      if (!res.ok) throw new Error('Failed to update track');
+      showToast('Track updated successfully');
+      setIsEditModalOpen(false);
+      setEditingTrack(null);
       loadLibraryData();
     } catch (error) {
       showToast(error.message, 'error');
@@ -369,6 +438,24 @@ const LibraryView = () => {
                         </td>
                         <td className="table-genre">{track.genre}</td>
                         <td className="table-plays">{track.plays} streams</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              className="btn-icon"
+                              onClick={(e) => openEditModal(track, e)}
+                              title="Edit Track"
+                            >
+                              <Edit2 className="w-4 h-4 text-text-secondary" />
+                            </button>
+                            <button
+                              className="btn-icon"
+                              onClick={(e) => requestDelete(track._id, 'track', track.title, e)}
+                              title="Delete Track"
+                            >
+                              <Trash2 className="w-4 h-4 text-danger" />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -417,7 +504,7 @@ const LibraryView = () => {
                       <button 
                         className="btn-icon" 
                         style={{ border: 'none', background: 'transparent', padding: '4px' }}
-                        onClick={(e) => handleDeletePlaylist(pl._id, e)}
+                        onClick={(e) => requestDelete(pl._id, 'playlist', pl.name, e)}
                         title="Delete Playlist"
                       >
                         <Trash2 className="w-4 h-4" style={{ color: 'var(--danger)' }} />
@@ -430,6 +517,68 @@ const LibraryView = () => {
           )}
         </>
       )}
+
+      {/* Modals */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Track"
+      >
+        <form onSubmit={handleUpdateTrack} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">Track Title</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Genre</label>
+            <select
+              className="form-input"
+              value={editGenre}
+              onChange={(e) => setEditGenre(e.target.value)}
+            >
+              {genres.map(g => (
+                <option key={g} value={g} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Lyrics</label>
+            <textarea
+              className="form-input"
+              rows="4"
+              style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
+              value={editLyrics}
+              onChange={(e) => setEditLyrics(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title={`Delete ${itemToDelete?.type === 'track' ? 'Track' : 'Playlist'}`}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Are you sure you want to delete <strong>{itemToDelete?.name}</strong>? This action cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsDeleteModalOpen(false)}>Cancel</button>
+            <button type="button" className="btn btn-primary" style={{ backgroundColor: 'var(--danger)', border: 'none', boxShadow: 'none' }} onClick={confirmDelete}>Delete</button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );
