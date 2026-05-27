@@ -383,18 +383,7 @@ const RightSidebar = () => {
                         key={idx}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.time)}
-                        style={{
-                          fontSize: '18px',
-                          fontWeight: '800',
-                          lineHeight: '1.4',
-                          color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          opacity: isActive ? 1 : 0.4,
-                          transform: isActive ? 'scale(1.03)' : 'scale(1)',
-                          transformOrigin: 'left center',
-                          cursor: 'pointer',
-                          margin: 0,
-                          transition: 'all 0.25s ease'
-                        }}
+                        className={`sidebar-lyric-line ${isActive ? 'active' : ''}`}
                       >
                         {line.text.length === 0 ? '\u00A0' : line.text}
                       </p>

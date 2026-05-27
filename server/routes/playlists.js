@@ -35,11 +35,41 @@ router.post('/', protect, async (req, res) => {
 // @route   GET /api/playlists
 // @access  Public
 router.get('/', async (req, res) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
   try {
-    const playlists = await Playlist.find({ isPublic: true })
+    // 1. Fetch local public playlists
+    const localPlaylists = await Playlist.find({ isPublic: true })
       .populate('creator', 'name')
       .sort({ createdAt: -1 });
-    res.json(playlists);
+
+    // 2. Fetch popular Jamendo albums to represent premium licensed collections
+    let jamendoAlbums = [];
+    try {
+      const jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=10&order=popularity_total`;
+      const jamAlbumRes = await fetch(jamAlbumUrl);
+      if (jamAlbumRes.ok) {
+        const data = await jamAlbumRes.json();
+        jamendoAlbums = (data.results || []).map((al) => ({
+          _id: `jamendo-album-${al.id}`,
+          name: al.name,
+          description: `Licensed Album by ${al.artist_name}. Stream complete tracks on Musico.`,
+          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          creator: {
+            _id: al.artist_id,
+            name: al.artist_name
+          },
+          tracks: new Array(10), // mock track length mapping
+          isJamendoAlbum: true,
+          artistName: al.artist_name,
+          artistId: al.artist_id
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo albums for homepage:', err);
+    }
+
+    const mergedPlaylists = [...localPlaylists, ...jamendoAlbums];
+    res.json(mergedPlaylists);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error retrieving playlists' });

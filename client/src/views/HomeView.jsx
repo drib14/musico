@@ -182,7 +182,7 @@ const HomeView = () => {
             {topArtists.map((artist) => (
               <div
                 key={artist._id}
-                onClick={() => triggerProfileView(artist._id)}
+                onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
                   border: '1px solid var(--border-color)',
@@ -439,7 +439,7 @@ const HomeView = () => {
                   style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    triggerProfileView(track.artist);
+                    triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId || track.artist);
                   }}
                 >
                   {track.artistName}
@@ -498,7 +498,7 @@ const HomeView = () => {
                   style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    triggerProfileView(track.artist);
+                    triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId || track.artist);
                   }}
                 >
                   {track.artistName}

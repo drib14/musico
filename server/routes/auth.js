@@ -476,6 +476,7 @@ router.get('/users/:id', async (req, res) => {
 // @route   GET /api/auth/artists/top
 // @access  Public
 router.get('/artists/top', async (req, res) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
   try {
     const Track = require('../models/Track');
 
@@ -483,7 +484,7 @@ router.get('/artists/top', async (req, res) => {
     const artists = await User.find({ artistName: { $ne: '' } }).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
 
     // Aggregate streams dynamically for each artist
-    const artistsWithStats = await Promise.all(artists.map(async (art) => {
+    const localWithStats = await Promise.all(artists.map(async (art) => {
       const tracks = await Track.find({ artist: art._id });
       const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
       const artObj = art.toObject();
@@ -492,10 +493,35 @@ router.get('/artists/top', async (req, res) => {
       return artObj;
     }));
 
-    // Sort by total plays descending
-    artistsWithStats.sort((a, b) => b.totalPlays - a.totalPlays);
+    // Fetch popular Jamendo artists
+    let jamendoArtists = [];
+    try {
+      const jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=10&order=popularity_total`;
+      const jamArtistRes = await fetch(jamArtistUrl);
+      if (jamArtistRes.ok) {
+        const data = await jamArtistRes.json();
+        jamendoArtists = (data.results || []).map((a) => ({
+          _id: a.id,
+          artistName: a.name,
+          name: a.name,
+          artistAvatar: a.image || '',
+          userAvatar: a.image || '',
+          isArtistVerified: true,
+          isJamendo: true,
+          totalPlays: a.stats?.playcount_total || 120000,
+          tracksCount: 15
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo top artists:', err);
+    }
 
-    res.json(artistsWithStats.slice(0, 10)); // return top 10
+    const mergedArtists = [...localWithStats, ...jamendoArtists];
+
+    // Sort by total plays descending
+    mergedArtists.sort((a, b) => b.totalPlays - a.totalPlays);
+
+    res.json(mergedArtists.slice(0, 12)); // return top 12
   } catch (error) {
     console.error('Top artists fetch error:', error);
     res.status(500).json({ message: 'Server error retrieving top artists' });

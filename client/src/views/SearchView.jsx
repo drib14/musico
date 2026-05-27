@@ -26,7 +26,7 @@ const SearchView = () => {
   
   const [loading, setLoading] = useState(false);
 
-  const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'R&B'];
+  const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
   // Trigger parallel local and Spotify searches on input query changes
   useEffect(() => {
