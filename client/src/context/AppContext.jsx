@@ -282,6 +282,15 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    if (updatedUserData) {
+      const premiumUser = { ...updatedUserData, isPremium: true };
+      setUser(premiumUser);
+      localStorage.setItem('musico_user', JSON.stringify(premiumUser));
+    }
+  };
+
+
   // Profile View Transition Trigger Helper
   const triggerProfileView = (profileId, isJamendo = false, jamendoArtistId = null) => {
     if (isJamendo && jamendoArtistId) {
@@ -469,6 +478,7 @@ export const AppProvider = ({ children }) => {
         showToast,
         loginUser,
         logoutUser,
+        updateUser,
         updatePremiumStatus,
         userLocation,
         

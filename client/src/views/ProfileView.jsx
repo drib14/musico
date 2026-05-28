@@ -4,9 +4,17 @@ import { Music, Play, Crown, Calendar, Sparkles, CheckCircle, Globe, Facebook, T
 import PlaylistCover from '../components/PlaylistCover';
 
 const ProfileView = () => {
-  const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
+  const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView, user: currentUser, token, updateUser } = useContext(AppContext);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [editedArtistName, setEditedArtistName] = useState('');
+  const [editedArtistBio, setEditedArtistBio] = useState('');
+  const [editedWebsite, setEditedWebsite] = useState('');
+  const [editedFacebook, setEditedFacebook] = useState('');
+  const [editedTwitter, setEditedTwitter] = useState('');
+  const [editedInstagram, setEditedInstagram] = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -18,6 +26,67 @@ const ProfileView = () => {
       fetchProfileDetails();
     }
   }, [activeProfileId]);
+
+  useEffect(() => {
+    if (profileData && profileData.user) {
+      setEditedArtistName(profileData.user.artistName || profileData.user.name || '');
+      setEditedArtistBio(profileData.user.artistBio || '');
+      setEditedWebsite(profileData.user.website || '');
+      setEditedFacebook(profileData.user.facebook || '');
+      setEditedTwitter(profileData.user.twitter || '');
+      setEditedInstagram(profileData.user.instagram || '');
+    }
+  }, [profileData]);
+
+  const saveProfileField = async (fieldName, value) => {
+    if (!token) return;
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ [fieldName]: value })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        updateUser(data.user);
+        setProfileData(prev => prev ? {
+          ...prev,
+          user: {
+            ...prev.user,
+            [fieldName]: value
+          }
+        } : prev);
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2500);
+      } else {
+        throw new Error('Failed to save profile');
+      }
+    } catch (err) {
+      console.error(err);
+      setSaveStatus('error');
+      showToast('Error saving profile changes', 'error');
+    }
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    if (fieldName === 'artistName') setEditedArtistName(value);
+    if (fieldName === 'artistBio') setEditedArtistBio(value);
+    if (fieldName === 'website') setEditedWebsite(value);
+    if (fieldName === 'facebook') setEditedFacebook(value);
+    if (fieldName === 'twitter') setEditedTwitter(value);
+    if (fieldName === 'instagram') setEditedInstagram(value);
+  };
+
+  const handleFieldBlur = (fieldName, value) => {
+    const originalValue = profileData.user[fieldName] || '';
+    if (value.trim() !== originalValue.trim()) {
+      saveProfileField(fieldName, value.trim());
+    }
+  };
 
   const fetchProfileDetails = async () => {
     setLoading(true);
@@ -56,6 +125,7 @@ const ProfileView = () => {
   }
 
   const { user, tracks, playlists } = profileData;
+  const isOwnProfile = currentUser && activeProfileId === currentUser._id;
   const joinDate = new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 
   const hasBanner = user.artistBanner && user.artistBanner.trim().length > 0;
@@ -82,6 +152,40 @@ const ProfileView = () => {
           minHeight: '220px'
         }}
       >
+        {isOwnProfile && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            backgroundColor: 'rgba(7, 10, 19, 0.6)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            zIndex: 10
+          }}>
+            {saveStatus === 'idle' && (
+              <span style={{ color: 'var(--text-secondary)' }}>✏️ Own Profile (inline-editable)</span>
+            )}
+            {saveStatus === 'saving' && (
+              <span style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="spinner" style={{ width: '10px', height: '10px', margin: 0 }}></div>
+                Saving...
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span style={{ color: 'var(--success)' }}>✓ Profile Auto-saved</span>
+            )}
+            {saveStatus === 'error' && (
+              <span style={{ color: 'var(--danger)' }}>✗ Error auto-saving</span>
+            )}
+          </div>
+        )}
         {user.artistAvatar || user.userAvatar ? (
           <img 
             src={user.artistAvatar || user.userAvatar} 
@@ -149,37 +253,62 @@ const ProfileView = () => {
             )}
           </div>
 
-          <h1 style={{ 
-            fontSize: '42px', 
-            fontFamily: 'Outfit', 
-            fontWeight: '800', 
-            lineHeight: '1.1',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            color: '#fff'
-          }}>
-            {user.artistName || user.name}
-            {user.isArtistVerified && (
-              <span 
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff',
-                  fontSize: '12px',
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
-                }}
-                title="Verified Artist check badge"
-              >
-                ✓
-              </span>
-            )}
-          </h1>
+          {isOwnProfile ? (
+            <input
+              type="text"
+              value={editedArtistName}
+              onChange={(e) => handleFieldChange('artistName', e.target.value)}
+              onBlur={() => handleFieldBlur('artistName', editedArtistName)}
+              placeholder="Enter Artist Name"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                color: '#fff',
+                fontSize: '36px',
+                fontWeight: '800',
+                fontFamily: 'Outfit',
+                outline: 'none',
+                width: '100%',
+                maxWidth: '450px',
+                marginTop: '4px',
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+              }}
+            />
+          ) : (
+            <h1 style={{ 
+              fontSize: '42px', 
+              fontFamily: 'Outfit', 
+              fontWeight: '800', 
+              lineHeight: '1.1',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#fff'
+            }}>
+              {user.artistName || user.name}
+              {user.isArtistVerified && (
+                <span 
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                    color: '#ffffff',
+                    fontSize: '12px',
+                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
+                  }}
+                  title="Verified Artist check badge"
+                >
+                  ✓
+                </span>
+              )}
+            </h1>
+          )}
           
           <div style={{ display: 'flex', gap: '20px', fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -200,7 +329,7 @@ const ProfileView = () => {
       </div>
 
       {/* 1.5 SPOTIFY ABOUT / BIOGRAPHY SECTION */}
-      {user.artistBio && (
+      {(user.artistBio || isOwnProfile) && (
         <section 
           style={{
             backgroundColor: 'var(--bg-secondary)',
@@ -251,15 +380,39 @@ const ProfileView = () => {
               About {user.artistName || user.name}
             </h3>
             
-            <p style={{ 
-              color: 'var(--text-secondary)', 
-              fontSize: '14px', 
-              lineHeight: '1.7', 
-              margin: 0,
-              whiteSpace: 'pre-wrap'
-            }}>
-              {stripHtml(user.artistBio)}
-            </p>
+            {isOwnProfile ? (
+              <textarea
+                value={editedArtistBio}
+                onChange={(e) => handleFieldChange('artistBio', e.target.value)}
+                onBlur={() => handleFieldBlur('artistBio', editedArtistBio)}
+                placeholder="Tell your fans about yourself! Add your biography, inspirations, and history..."
+                rows="6"
+                style={{
+                  width: '100%',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '14px',
+                  fontSize: '14px',
+                  lineHeight: '1.7',
+                  resize: 'vertical',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              />
+            ) : (
+              <p style={{ 
+                color: 'var(--text-secondary)', 
+                fontSize: '14px', 
+                lineHeight: '1.7', 
+                margin: 0,
+                whiteSpace: 'pre-wrap'
+              }}>
+                {stripHtml(user.artistBio)}
+              </p>
+            )}
 
             {/* Dynamic Clickable Social Icons shortcut */}
             {(user.facebook || user.twitter || user.instagram || user.website) && (
@@ -284,6 +437,56 @@ const ProfileView = () => {
                     <Instagram style={{ width: '16px', height: '16px' }} />
                   </a>
                 )}
+              </div>
+            )}
+
+            {isOwnProfile && (
+              <div style={{ 
+                marginTop: '20px', 
+                borderTop: '1px solid var(--border-color)', 
+                paddingTop: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <h4 style={{ 
+                  fontSize: '13px', 
+                  fontWeight: '800', 
+                  color: 'var(--accent)', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Edit Social & Contact Links
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                  {[
+                    { label: 'Website Link', field: 'website', value: editedWebsite, placeholder: 'https://mywebsite.com' },
+                    { label: 'Facebook Username / URL', field: 'facebook', value: editedFacebook, placeholder: 'facebook.com/username' },
+                    { label: 'Twitter / X Username / URL', field: 'twitter', value: editedTwitter, placeholder: 'twitter.com/username' },
+                    { label: 'Instagram Username / URL', field: 'instagram', value: editedInstagram, placeholder: 'instagram.com/username' }
+                  ].map((s) => (
+                    <div key={s.field} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{s.label}</label>
+                      <input
+                        type="text"
+                        value={s.value}
+                        onChange={(e) => handleFieldChange(s.field, e.target.value)}
+                        onBlur={() => handleFieldBlur(s.field, s.value)}
+                        placeholder={s.placeholder}
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12.5px',
+                          outline: 'none',
+                          transition: 'border-color var(--transition-fast)'
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             
@@ -414,7 +617,7 @@ const ProfileView = () => {
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{c.city}</p>
                 </div>
                 <a 
-                  href={`https://www.ticketmaster.com/search?q=${encodeURIComponent(user.artistName || user.name)}`}
+                  href={c.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(user.artistName || user.name)}`}
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="btn btn-primary"

@@ -2356,7 +2356,7 @@ h1, h2, h3, h4, h5, h6 {
 .genre-grid-container,
 .concert-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
 }
 
@@ -2415,7 +2415,7 @@ h1, h2, h3, h4, h5, h6 {
   .grid-container.carousel-desktop .song-card,
   .artist-grid-container.carousel-desktop .artist-card,
   .genre-grid-container.carousel-desktop .genre-card {
-    flex: 0 0 210px !important;
+    flex: 0 0 200px !important;
     scroll-snap-align: start;
   }
 }

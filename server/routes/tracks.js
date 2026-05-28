@@ -853,31 +853,49 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       }
     }
 
-    const generateUpcomingDates = () => {
-      const dates = [];
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      
-      const concert1 = new Date();
-      concert1.setDate(concert1.getDate() + 15);
-      dates.push(concert1.toLocaleDateString('en-US', options));
-      
-      const concert2 = new Date();
-      concert2.setDate(concert2.getDate() + 35);
-      dates.push(concert2.toLocaleDateString('en-US', options));
-      
-      const concert3 = new Date();
-      concert3.setDate(concert3.getDate() + 55);
-      dates.push(concert3.toLocaleDateString('en-US', options));
-      
-      return dates;
+    const fetchTicketmasterConcerts = async (artistName) => {
+      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY || '7LGhPfAELOYcjncZRjvvt1hcddOld0hw';
+      if (!apiKey || !artistName) return [];
+      try {
+        const response = await fetch(
+          `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&keyword=${encodeURIComponent(artistName)}&classificationName=music&size=5`
+        );
+        if (!response.ok) {
+          console.error(`Ticketmaster API error: ${response.status}`);
+          return [];
+        }
+        const data = await response.json();
+        if (!data._embedded || !data._embedded.events) return [];
+        return data._embedded.events.map(event => {
+          const dateStr = event.dates?.start?.localDate || 'TBD';
+          let formattedDate = dateStr;
+          if (dateStr !== 'TBD') {
+            try {
+              const d = new Date(dateStr);
+              formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch (e) {}
+          }
+          const venueObj = event._embedded?.venues?.[0];
+          const venueName = venueObj?.name || 'TBD Venue';
+          const city = venueObj?.city?.name || '';
+          const country = venueObj?.country?.name || venueObj?.country?.countryCode || '';
+          const cityCountry = city && country ? `${city}, ${country}` : (city || country || 'TBD Location');
+          return {
+            date: formattedDate,
+            title: event.name || 'Concert',
+            venue: venueName,
+            city: cityCountry,
+            url: event.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(artistName)}`
+          };
+        });
+      } catch (err) {
+        console.error('Error fetching Ticketmaster events:', err);
+        return [];
+      }
     };
-    
-    const upcomingDates = generateUpcomingDates();
-    const concerts = [
-      { date: upcomingDates[0], city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
-      { date: upcomingDates[1], city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
-      { date: upcomingDates[2], city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
-    ];
+
+    const concerts = await fetchTicketmasterConcerts(artist.name);
+
 
     const monthlyListeners = artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500;
     const totalPlays = artist.stats?.playcount_total || 142000;

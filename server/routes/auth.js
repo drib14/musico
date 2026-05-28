@@ -355,7 +355,7 @@ router.put(
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const { name, email, password, artistName, artistBio, isArtistVerified } = req.body;
+      const { name, email, password, artistName, artistBio, isArtistVerified, website, facebook, twitter, instagram } = req.body;
 
       // Check email availability
       if (email && email !== user.email) {
@@ -375,6 +375,11 @@ router.put(
       if (isArtistVerified !== undefined) {
         user.isArtistVerified = isArtistVerified === 'true' || isArtistVerified === true;
       }
+      if (website !== undefined) user.website = website;
+      if (facebook !== undefined) user.facebook = facebook;
+      if (twitter !== undefined) user.twitter = twitter;
+      if (instagram !== undefined) user.instagram = instagram;
+
 
       // Handle Image uploads to Cloudinary
       if (req.files) {
@@ -466,11 +471,49 @@ router.get('/users/:id', async (req, res) => {
     userObj.facebook = userObj.facebook || `https://facebook.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
-    userObj.concerts = [
-      { date: 'June 18, 2026', city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
-      { date: 'July 05, 2026', city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
-      { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
-    ];
+    const fetchTicketmasterConcerts = async (artistName) => {
+      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY || '7LGhPfAELOYcjncZRjvvt1hcddOld0hw';
+      if (!apiKey || !artistName) return [];
+      try {
+        const response = await fetch(
+          `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&keyword=${encodeURIComponent(artistName)}&classificationName=music&size=5`
+        );
+        if (!response.ok) {
+          console.error(`Ticketmaster API error: ${response.status}`);
+          return [];
+        }
+        const data = await response.json();
+        if (!data._embedded || !data._embedded.events) return [];
+        return data._embedded.events.map(event => {
+          const dateStr = event.dates?.start?.localDate || 'TBD';
+          let formattedDate = dateStr;
+          if (dateStr !== 'TBD') {
+            try {
+              const d = new Date(dateStr);
+              formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch (e) {}
+          }
+          const venueObj = event._embedded?.venues?.[0];
+          const venueName = venueObj?.name || 'TBD Venue';
+          const city = venueObj?.city?.name || '';
+          const country = venueObj?.country?.name || venueObj?.country?.countryCode || '';
+          const cityCountry = city && country ? `${city}, ${country}` : (city || country || 'TBD Location');
+          return {
+            date: formattedDate,
+            title: event.name || 'Concert',
+            venue: venueName,
+            city: cityCountry,
+            url: event.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(artistName)}`
+          };
+        });
+      } catch (err) {
+        console.error('Error fetching Ticketmaster events:', err);
+        return [];
+      }
+    };
+
+    userObj.concerts = await fetchTicketmasterConcerts(userObj.artistName || userObj.name);
+
 
     // Fetch public playlists created by this user
     const playlists = await Playlist.find({ creator: user._id, isPublic: true }).sort({ createdAt: -1 });
