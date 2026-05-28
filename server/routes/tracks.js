@@ -327,6 +327,8 @@ router.post(
 router.get('/', async (req, res) => {
   const { search, genre } = req.query;
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  const limit = parseInt(req.query.limit) || 16;
+  const offset = parseInt(req.query.offset) || 0;
 
   try {
     let query = {};
@@ -342,13 +344,16 @@ router.get('/', async (req, res) => {
       query.genre = { $regex: `^${genre}$`, $options: 'i' };
     }
 
-    // 1. Fetch local database direct uploads
-    const localTracks = await Track.find(query).sort({ createdAt: -1 });
+    // 1. Fetch local database direct uploads with pagination
+    const localTracks = await Track.find(query)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit);
 
-    // 2. Fetch public Jamendo licensed tracks matching search/genre
+    // 2. Fetch public Jamendo licensed tracks matching search/genre with pagination
     let jamendoTracks = [];
     try {
-      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&audioformat=mp32&order=popularity_total&include=lyrics+musicinfo`;
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&audioformat=mp32&order=popularity_total&include=lyrics+musicinfo`;
       if (search) {
         jamUrl += `&namesearch=${encodeURIComponent(search)}`;
       }
@@ -779,56 +784,45 @@ router.get('/jamendo', async (req, res) => {
 // @access  Public
 router.get('/jamendo/genres', async (req, res) => {
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  const colors = ['#3B82F6', '#EF4444', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#06B6D4', '#84CC16', '#A855F7', '#64748B'];
+  const covers = [
+    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop'
+  ];
+
   try {
     const jamRes = await fetch(
       `https://api.jamendo.com/v3.0/tags/?client_id=${clientId}&format=json&type=genre&limit=30`
     );
-    if (!jamRes.ok) throw new Error('Failed to retrieve tags from Jamendo');
-    const data = await jamRes.json();
-    
-    let genres = (data.results || []).map(g => g.name);
-    if (genres.length === 0) {
-      genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
+    if (jamRes.ok) {
+      const data = await jamRes.json();
+      const genres = (data.results || []).map(g => g.name);
+      if (genres.length > 0) {
+        const mapped = genres.map((g, idx) => {
+          const capName = g.charAt(0).toUpperCase() + g.slice(1);
+          return {
+            name: capName,
+            color: colors[idx % colors.length],
+            cover: covers[idx % covers.length]
+          };
+        });
+        return res.json(mapped);
+      }
     }
-    
-    const colors = ['#3B82F6', '#EF4444', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#06B6D4', '#84CC16', '#A855F7', '#64748B'];
-    const fallbackCovers = [
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop'
-    ];
-
-    const mapped = genres.map((g, idx) => {
-      const capName = g.charAt(0).toUpperCase() + g.slice(1);
-      return {
-        name: capName,
-        color: colors[idx % colors.length],
-        cover: fallbackCovers[idx % fallbackCovers.length]
-      };
-    });
-    
-    res.json(mapped);
   } catch (err) {
-    console.error('Error in jamendo genres fetch:', err);
-    const defaultList = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'].map((g, idx) => {
-      const colors = ['#3B82F6', '#EF4444', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1', '#14B8A6'];
-      const covers = [
-        'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop'
-      ];
-      return {
-        name: g,
-        color: colors[idx % colors.length],
-        cover: covers[idx % covers.length]
-      };
-    });
-    res.json(defaultList);
+    console.warn('Jamendo tags fetch failed, utilizing default fallback tags.');
   }
+
+  // Fallback defaults
+  const defaultList = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'].map((g, idx) => ({
+    name: g,
+    color: colors[idx % colors.length],
+    cover: covers[idx % covers.length]
+  }));
+  res.json(defaultList);
 });
 
 // @desc    Get Jamendo artist profile website contact, details, and biography description

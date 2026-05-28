@@ -564,8 +564,7 @@ const RightSidebar = () => {
                           lineHeight: '1.4',
                           cursor: 'pointer',
                           margin: 0,
-                          transition: 'all 0.2s ease',
-                          color: isActive ? '#ffffff' : (isPast ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.45)')
+                          transition: 'all 0.2s ease'
                         }}
                       >
                         {isInstrumental ? (
@@ -580,27 +579,6 @@ const RightSidebar = () => {
                     );
                   })}
                 </div>
-                {parsedLines.length > 3 && (
-                  <button
-                    onClick={() => navigate('/pages/lyrics')}
-                    className="btn btn-secondary"
-                    style={{
-                      marginTop: '12px',
-                      padding: '8px 12px',
-                      fontSize: '12px',
-                      borderRadius: '18px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      width: '100%',
-                      cursor: 'pointer',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Show Full Lyrics (expand)
-                  </button>
-                )}
               </div>
             ) : (
               // Uploader Lyrics Addition Block

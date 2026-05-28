@@ -720,20 +720,32 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Spotify-style Lyrics State Coloring overrides */
 .lyrics-text-line.past {
-  color: rgba(0, 0, 0, 0.45);
-  opacity: 1;
+  color: rgba(255, 255, 255, 0.25) !important;
+  opacity: 0.6 !important;
   filter: none;
 }
 .lyrics-text-line.future {
-  color: rgba(255, 255, 255, 0.35);
-  opacity: 1;
+  color: rgba(255, 255, 255, 0.45) !important;
+  opacity: 0.8 !important;
   filter: none;
 }
+.lyrics-text-line.active {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: scale(1.02);
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.35);
+}
 .sidebar-lyric-line.past {
-  opacity: 0.65;
+  color: rgba(255, 255, 255, 0.25) !important;
+  opacity: 0.6 !important;
 }
 .sidebar-lyric-line.future {
-  opacity: 0.22;
+  color: rgba(255, 255, 255, 0.45) !important;
+  opacity: 0.8 !important;
+}
+.sidebar-lyric-line.active {
+  color: #ffffff !important;
+  opacity: 1 !important;
 }
 
 

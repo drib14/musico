@@ -7,25 +7,51 @@ const AllPlaylists = () => {
   const { API_URL, setActivePlaylistId, setActiveView } = useContext(AppContext);
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 12;
 
-  useEffect(() => {
-    const fetchPlaylists = async () => {
-      try {
-        const res = await fetch(`${API_URL}/playlists`);
-        if (res.ok) {
-          const data = await res.json();
+  const fetchPlaylists = async (currentOffset, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const res = await fetch(`${API_URL}/playlists?limit=${LIMIT}&offset=${currentOffset}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setPlaylists((prev) => [...prev, ...data]);
+        } else {
           setPlaylists(data);
         }
-      } catch (err) {
-        console.error('Error fetching all playlists:', err);
-      } finally {
-        setLoading(false);
+        if (data.length < 6) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
       }
-    };
-    fetchPlaylists();
+    } catch (err) {
+      console.error('Error fetching all playlists:', err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlaylists(0, false);
   }, [API_URL]);
 
-  if (loading) {
+  const handleLoadMore = () => {
+    const nextOffset = offset + LIMIT;
+    setOffset(nextOffset);
+    fetchPlaylists(nextOffset, true);
+  };
+
+  if (loading && offset === 0) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
         <div className="spinner"></div>
@@ -70,43 +96,75 @@ const AllPlaylists = () => {
           <h3>No Playlists Found</h3>
         </div>
       ) : (
-        <div className="grid-container" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: '24px'
-        }}>
-          {playlists.map((pl) => (
-            <div
-              key={pl._id}
-              className="song-card"
-              onClick={() => {
-                setActivePlaylistId(pl._id);
-                setActiveView('playlist-details');
-              }}
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '16px',
-                cursor: 'pointer',
-                transition: 'all 0.25s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}
-            >
-              <div className="song-card-cover-wrapper" style={{ width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden' }}>
-                <PlaylistCover playlist={pl} className="song-card-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div>
-                <div className="song-card-title" style={{ fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pl.name}</div>
-                <div className="song-card-artist" style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  By {pl.creator?.name || 'Musico'} • {pl.tracks?.length || 0} tracks
+        <>
+          <div className="grid-container" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+            gap: '24px'
+          }}>
+            {playlists.map((pl) => (
+              <div
+                key={pl._id}
+                className="song-card"
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div className="song-card-cover-wrapper" style={{ width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden' }}>
+                  <PlaylistCover playlist={pl} className="song-card-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div>
+                  <div className="song-card-title" style={{ fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{pl.name}</div>
+                  <div className="song-card-artist" style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    By {pl.creator?.name || 'Musico'} • {pl.tracks?.length || 0} tracks
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {hasMore && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '36px' }}>
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="btn btn-secondary"
+                style={{
+                  padding: '12px 32px',
+                  borderRadius: '24px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  boxShadow: 'var(--glass-shadow)',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="spinner" style={{ width: '16px', height: '16px' }}></div>
+                    Loading...
+                  </>
+                ) : (
+                  'Load More'
+                )}
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

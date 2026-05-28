@@ -500,6 +500,9 @@ router.get('/users/:id', async (req, res) => {
 // @access  Public
 router.get('/artists/top', async (req, res) => {
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  const limit = parseInt(req.query.limit) || 12;
+  const offset = parseInt(req.query.offset) || 0;
+
   try {
     const Track = require('../models/Track');
 
@@ -523,7 +526,8 @@ router.get('/artists/top', async (req, res) => {
     // Fetch popular Jamendo artists
     let jamendoArtists = [];
     try {
-      const jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=10&order=popularity_total`;
+      const jamLimit = limit + offset;
+      const jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${jamLimit}&order=popularity_total`;
       const jamArtistRes = await fetch(jamArtistUrl);
       if (jamArtistRes.ok) {
         const data = await jamArtistRes.json();
@@ -548,7 +552,7 @@ router.get('/artists/top', async (req, res) => {
     // Sort by total plays descending
     mergedArtists.sort((a, b) => b.totalPlays - a.totalPlays);
 
-    res.json(mergedArtists.slice(0, 12)); // return top 12
+    res.json(mergedArtists.slice(offset, offset + limit)); // return paginated slice
   } catch (error) {
     console.error('Top artists fetch error:', error);
     res.status(500).json({ message: 'Server error retrieving top artists' });

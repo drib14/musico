@@ -36,17 +36,22 @@ router.post('/', protect, async (req, res) => {
 // @access  Public
 router.get('/', async (req, res) => {
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  const limit = parseInt(req.query.limit) || 16;
+  const offset = parseInt(req.query.offset) || 0;
+
   try {
-    // 1. Fetch local public playlists
+    // 1. Fetch local public playlists with pagination
     const localPlaylists = await Playlist.find({ isPublic: true })
       .populate('creator', 'name')
       .populate({ path: 'tracks', select: 'coverUrl' })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit);
 
-    // 2. Fetch popular Jamendo albums to represent premium licensed collections
+    // 2. Fetch popular Jamendo albums with pagination
     let jamendoAlbums = [];
     try {
-      const jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=10&order=popularity_total`;
+      const jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
       const jamAlbumRes = await fetch(jamAlbumUrl);
       if (jamAlbumRes.ok) {
         const data = await jamAlbumRes.json();
