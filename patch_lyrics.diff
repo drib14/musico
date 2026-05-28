@@ -1,0 +1,22 @@
+--- client/src/pages/Lyrics.jsx
++++ client/src/pages/Lyrics.jsx
+@@ -116,7 +116,7 @@
+   // Find active line index based on playback time (exact vocal synchronization matching Spotify)
+   let activeIndex = -1;
+   for (let i = 0; i < parsedLines.length; i++) {
+-    if (parsedLines[i].time !== null && currentTime >= parsedLines[i].time) {
++    if (parsedLines[i].time !== null && currentTime + 0.5 >= parsedLines[i].time) {
+       activeIndex = i;
+     }
+   }
+--- client/src/components/RightSidebar.jsx
++++ client/src/components/RightSidebar.jsx
+@@ -197,9 +197,8 @@
+   let activeIndex = -1;
+   for (let i = 0; i < parsedLines.length; i++) {
+     if (parsedLines[i].time !== null) {
+-      // Remove any + 0.2 advance offset to ensure exact vocal synchronization
+-      if (currentTime >= parsedLines[i].time) activeIndex = i;
++      if (currentTime + 0.5 >= parsedLines[i].time) activeIndex = i;
+     }
+   }

@@ -13,18 +13,20 @@ const Lyrics = () => {
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
+    let animationFrameId;
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime || 0);
+      animationFrameId = requestAnimationFrame(handleTimeUpdate);
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
+    handleTimeUpdate();
     
     // Initial sync
     setCurrentTime(audio.currentTime || 0);
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      cancelAnimationFrame(animationFrameId);
     };
   }, [audioRef, currentTrack]);
 
@@ -116,7 +118,7 @@ const Lyrics = () => {
   // Find active line index based on playback time (exact vocal synchronization matching Spotify)
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].time !== null && currentTime >= parsedLines[i].time) {
+    if (parsedLines[i].time !== null && currentTime + 0.5 >= parsedLines[i].time) {
       activeIndex = i;
     }
   }

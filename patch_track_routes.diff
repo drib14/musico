@@ -1,0 +1,41 @@
+--- server/routes/tracks.js
++++ server/routes/tracks.js
+@@ -241,7 +241,7 @@
+   ]),
+   async (req, res) => {
+     try {
+-      const { title, genre, lyrics, contributors } = req.body;
++      const { title, genre, lyrics, contributors, musicinfo } = req.body;
+
+       if (!title) {
+         return res.status(400).json({ message: 'Track title is required' });
+@@ -296,15 +296,25 @@
+           console.error("Failed to parse contributors JSON", e);
+         }
+       }
++
++      // Parse musicinfo
++      let parsedMusicinfo = { vocalinstrumental: '', gender: '', speed: '', tags: { genres: [], instruments: [] } };
++      if (musicinfo) {
++        try {
++          parsedMusicinfo = JSON.parse(musicinfo);
++        } catch (e) {
++          console.error("Failed to parse musicinfo JSON", e);
++        }
++      }
+
+       // Create Track in database
+       const track = await Track.create({
+         title,
+         artist: req.user._id,
+         artistName: req.user.artistName,
+         audioUrl: audioResult.secure_url,
+         coverUrl,
+         duration: audioResult.duration || 0,
+         genre: genre || 'Unknown',
+         lyrics: lyrics || '',
+         contributors: parsedContributors,
++        musicinfo: parsedMusicinfo,
+       });
+
+       res.status(201).json({

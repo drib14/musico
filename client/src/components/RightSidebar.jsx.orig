@@ -4,14 +4,14 @@ import { AppContext } from '../context/AppContext';
 import { Music, Calendar, Star, Send, Crown, CheckCircle, Plus, X, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 
 const RightSidebar = () => {
-  const { 
-    API_URL, 
-    currentTrack, 
+  const {
+    API_URL,
+    currentTrack,
     setCurrentTrack,
-    isPlaying, 
-    audioRef, 
-    user, 
-    token, 
+    isPlaying,
+    audioRef,
+    user,
+    token,
     showToast,
     triggerProfileView,
     setActiveView,
@@ -73,14 +73,14 @@ const RightSidebar = () => {
 
   const fetchArtistDetails = async () => {
     try {
-      const artistId = currentTrack.isJamendo 
+      const artistId = currentTrack.isJamendo
         ? (currentTrack.jamendoArtistId || currentTrack.artist)
         : currentTrack.artist;
 
       const url = currentTrack.isJamendo
         ? `${API_URL}/tracks/jamendo/artist/${artistId}`
         : `${API_URL}/auth/users/${artistId}`;
-        
+
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -95,20 +95,18 @@ const RightSidebar = () => {
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
-    let animationFrameId;
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime || 0);
-      animationFrameId = requestAnimationFrame(handleTimeUpdate);
     };
 
-    handleTimeUpdate();
-    
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
     // Initial sync
     setCurrentTime(audio.currentTime || 0);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [audioRef, currentTrack]);
 
@@ -136,7 +134,7 @@ const RightSidebar = () => {
         const secs = parseInt(match[2], 10);
         const msStr = match[3] || '0';
         const msVal = parseInt(msStr, 10);
-        
+
         const timeInSecs = mins * 60 + secs + (msVal / Math.pow(10, msStr.length));
         const text = line.replace(timeRegex, '').trim();
         parsed.push({ time: timeInSecs, text });
@@ -151,7 +149,7 @@ const RightSidebar = () => {
       const totalLines = parsed.length;
 
       const distributed = parsed.map((p, idx) => {
-        const time = totalLines > 1 
+        const time = totalLines > 1
           ? 1.0 + (idx / (totalLines - 1)) * (trackDuration - 3.0)
           : 0;
         return { time, text: p.text };
@@ -201,7 +199,8 @@ const RightSidebar = () => {
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
     if (parsedLines[i].time !== null) {
-      if (currentTime + 0.5 >= parsedLines[i].time) activeIndex = i;
+      // Remove any + 0.2 advance offset to ensure exact vocal synchronization
+      if (currentTime >= parsedLines[i].time) activeIndex = i;
     }
   }
 
@@ -241,7 +240,7 @@ const RightSidebar = () => {
       });
 
       if (!res.ok) throw new Error('Failed to update lyrics');
-      
+
       showToast('Lyrics updated successfully!');
       setCurrentTrack({ ...currentTrack, lyrics: newLyrics.trim() });
       setNewLyrics('');
@@ -273,15 +272,15 @@ const RightSidebar = () => {
       zIndex: '10',
       transition: 'background-color var(--transition-normal)'
     }}>
-      
+
       {/* 1. SONG DETAILS CARD */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <h3 style={{ fontSize: '15px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', margin: 0 }}>
           Now Playing
         </h3>
-        
+
         {/* Cover Art clickable redirect to Song Details view */}
-        <div 
+        <div
           onClick={() => setActiveView('song-details')}
           style={{
             width: '100%',
@@ -304,16 +303,16 @@ const RightSidebar = () => {
 
         <div>
           {/* Song title clickable redirect to Song Details view */}
-          <h2 
+          <h2
             onClick={() => setActiveView('song-details')}
             style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', margin: 0, fontFamily: 'Outfit', cursor: 'pointer', textDecoration: 'underline' }}
           >
             {currentTrack.title}
           </h2>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
             {/* Artist name clickable redirect to Artist Profile view */}
-            <span 
+            <span
               onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
               style={{ fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}
             >
@@ -362,9 +361,9 @@ const RightSidebar = () => {
 
       {/* 2. DYNAMIC ARTIST DETAILS */}
       {artistInfo && (
-        <section style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
+        <section style={{
+          display: 'flex',
+          flexDirection: 'column',
           gap: '12px',
           backgroundColor: 'var(--bg-tertiary)',
           border: '1px solid var(--border-color)',
@@ -377,50 +376,50 @@ const RightSidebar = () => {
           <h3 style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '800', margin: '0 0 4px 0' }}>
             About The Artist
           </h3>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {artistInfo.artistAvatar || artistInfo.userAvatar ? (
               <img
                 src={artistInfo.artistAvatar || artistInfo.userAvatar}
                 alt={artistInfo.artistName || artistInfo.name}
-                style={{ 
-                  width: '54px', 
-                  height: '54px', 
-                  borderRadius: '50%', 
+                style={{
+                  width: '54px',
+                  height: '54px',
+                  borderRadius: '50%',
                   objectFit: 'cover',
                   border: '2px solid var(--accent)',
                   boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
                 }}
               />
             ) : (
-              <div style={{ 
-                width: '54px', 
-                height: '54px', 
-                borderRadius: '50%', 
-                backgroundColor: 'var(--accent-gradient)', 
-                color: '#fff', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                fontWeight: 'bold', 
+              <div style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-gradient)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
                 fontSize: '20px',
                 boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
               }}>
                 {(artistInfo.artistName || artistInfo.name).charAt(0).toUpperCase()}
               </div>
             )}
-            
+
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span 
+                <span
                   onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
-                  style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '800', 
-                    color: 'var(--text-primary)', 
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer',
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis', 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}
                 >
@@ -450,9 +449,9 @@ const RightSidebar = () => {
           </div>
 
           {artistInfo.artistBio && (
-            <p style={{ 
-              fontSize: '12px', 
-              color: 'var(--text-secondary)', 
+            <p style={{
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
               lineHeight: '1.5',
               margin: '8px 0 4px 0',
               display: '-webkit-box',
@@ -495,14 +494,14 @@ const RightSidebar = () => {
           {/* 3. TIMED LYRICS SECTION */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minHeight: 0 }}>
             {/* Clickable Header redirect to Fullscreen LyricsView */}
-            <h3 
+            <h3
               onClick={() => setActiveView('lyrics')}
-              style={{ 
-                fontSize: '15px', 
-                color: 'var(--text-secondary)', 
-                textTransform: 'uppercase', 
-                letterSpacing: '1px', 
-                fontWeight: 'bold', 
+              style={{
+                fontSize: '15px',
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                fontWeight: 'bold',
                 margin: 0,
                 cursor: 'pointer',
                 display: 'flex',
@@ -512,9 +511,9 @@ const RightSidebar = () => {
             >
               Lyrics <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--accent)', fontWeight: 'bold' }}>(expand fullscreen)</span>
             </h3>
-            
+
             {hasLyrics ? (
-              <div 
+              <div
                 style={{
                   backgroundColor: '#121212',
                   borderRadius: '12px',
@@ -534,7 +533,7 @@ const RightSidebar = () => {
                     const isActive = idx === activeIndex;
                     const isPast = idx < activeIndex;
                     const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
-                    
+
                     return (
                       <p
                         key={idx}
@@ -616,8 +615,8 @@ const RightSidebar = () => {
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
                           Add Song Lyrics
                         </div>
-                        <button 
-                          onClick={() => setShowLyricsForm(false)} 
+                        <button
+                          onClick={() => setShowLyricsForm(false)}
                           style={{
                             background: 'none',
                             border: 'none',

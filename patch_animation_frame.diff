@@ -1,0 +1,24 @@
+--- client/src/pages/Lyrics.jsx
++++ client/src/pages/Lyrics.jsx
+@@ -12,16 +12,16 @@
+   useEffect(() => {
+     const audio = audioRef?.current;
+     if (!audio) return;
++    let animationFrameId;
+
+     const handleTimeUpdate = () => {
+       setCurrentTime(audio.currentTime || 0);
++      animationFrameId = requestAnimationFrame(handleTimeUpdate);
+     };
+
+-    audio.addEventListener('timeupdate', handleTimeUpdate);
++    handleTimeUpdate();
+
+     // Initial sync
+     setCurrentTime(audio.currentTime || 0);
+
+     return () => {
+-      audio.removeEventListener('timeupdate', handleTimeUpdate);
++      cancelAnimationFrame(animationFrameId);
+     };
+   }, [audioRef, currentTrack]);

@@ -59,15 +59,6 @@ const trackSchema = new mongoose.Schema(
       lyricist: { type: String, default: '' },
       producer: { type: String, default: '' },
     },
-    musicinfo: {
-      vocalinstrumental: { type: String, default: '' },
-      gender: { type: String, default: '' },
-      speed: { type: String, default: '' },
-      tags: {
-        genres: [{ type: String }],
-        instruments: [{ type: String }],
-      }
-    }
   },
   {
     timestamps: true,

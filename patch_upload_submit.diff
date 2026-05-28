@@ -1,0 +1,10 @@
+--- client/src/pages/Upload.jsx
++++ client/src/pages/Upload.jsx
+@@ -237,6 +237,7 @@
+     formData.append('lyrics', lyrics);
+     formData.append('audio', audioFile);
+     formData.append('contributors', JSON.stringify(contributors));
++    formData.append('musicinfo', JSON.stringify(musicinfo));
+     if (coverFile) formData.append('cover', coverFile);
+
+     try {

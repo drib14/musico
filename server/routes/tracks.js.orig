@@ -209,7 +209,7 @@ router.get('/trending', async (req, res) => {
 
     // Fetch up to 1000 tracks to make sure we gather all local top tracks based on stream counts
     const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(1000);
-    
+
     const mappedLocalList = localList.map(t => {
       const trackObj = t.toObject ? t.toObject() : t;
       return {
@@ -241,7 +241,7 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { title, genre, lyrics, contributors, musicinfo } = req.body;
+      const { title, genre, lyrics, contributors } = req.body;
 
       if (!title) {
         return res.status(400).json({ message: 'Track title is required' });
@@ -297,16 +297,6 @@ router.post(
           parsedContributors = JSON.parse(contributors);
         } catch (e) {
           console.error("Failed to parse contributors JSON", e);
-        }
-      }
-
-      // Parse musicinfo
-      let parsedMusicinfo = { vocalinstrumental: '', gender: '', speed: '', tags: { genres: [], instruments: [] } };
-      if (musicinfo) {
-        try {
-          parsedMusicinfo = JSON.parse(musicinfo);
-        } catch (e) {
-          console.error("Failed to parse musicinfo JSON", e);
         }
       }
 
@@ -373,7 +363,7 @@ router.get('/', async (req, res) => {
       if (genre && genre !== 'All') {
         jamUrl += `&tags=${encodeURIComponent(genre)}`;
       }
-      
+
       const jamRes = await fetch(jamUrl);
       if (jamRes.ok) {
         const data = await jamRes.json();
@@ -446,7 +436,7 @@ router.get('/search', async (req, res) => {
       if (genre && genre !== 'All') {
         jamUrl += `&tags=${encodeURIComponent(genre)}`;
       }
-      
+
       const jamRes = await fetch(jamUrl);
       if (jamRes.ok) {
         const data = await jamRes.json();
@@ -477,7 +467,7 @@ router.get('/search', async (req, res) => {
       .select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires')
       .skip(offset)
       .limit(limit);
-    
+
     let jamendoArtists = [];
     try {
       let jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
@@ -630,7 +620,7 @@ router.put('/:id/play', async (req, res) => {
     if (!track) {
       return res.status(404).json({ message: 'Track not found' });
     }
-    
+
     track.plays += 1;
     await track.save();
 
@@ -847,7 +837,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
   try {
     // 1. Try to find mirrored/cached artist in our database
     let dbUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
-    
+
     // Fetch from Jamendo to make sure details are loaded/refreshed
     const jamendoRes = await fetch(
       `https://api.jamendo.com/v3.0/artists/musicinfo/?client_id=${clientId}&id=${artistId}`
@@ -876,7 +866,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     }
 
     const artist = data.results[0];
-    
+
     let bioText = 'This licensed independent creator publishes tracks directly on Jamendo.';
     if (artist.musicinfo?.description) {
       if (typeof artist.musicinfo.description === 'string') {

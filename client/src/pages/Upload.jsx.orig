@@ -1,12 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import ArtistProfileWizard from '../components/ArtistProfileWizard';
-import { 
-  UploadCloud, 
-  Music, 
-  Image as ImageIcon, 
-  Check, 
-  Crown, 
+import {
+  UploadCloud,
+  Music,
+  Image as ImageIcon,
+  Check,
+  Crown,
   AlertTriangle,
   Plus,
   Trash2
@@ -14,7 +14,7 @@ import {
 
 const Upload = () => {
   const { API_URL, token, user, showToast, setActiveView } = useContext(AppContext);
-  
+
   // Tab control
   const [activeUploadTab, setActiveUploadTab] = useState('single'); // 'single' or 'album'
 
@@ -44,7 +44,7 @@ const Upload = () => {
 
   const [audioUrl, setAudioUrl] = useState('');
   const singleAudioRef = React.useRef(null);
-  
+
   useEffect(() => {
     if (audioFile) {
       const url = URL.createObjectURL(audioFile);
@@ -269,7 +269,7 @@ const Upload = () => {
           instruments: []
         }
       });
-      
+
       // Update upload limits check and go to Libraryuploads list
       await checkUploadLimit();
       setActiveView('library');
@@ -282,10 +282,10 @@ const Upload = () => {
 
   // Dynamic Album list rows management
   const handleAddNewTrackRow = () => {
-    setNewAlbumTracks([...newAlbumTracks, { 
-      title: '', 
-      audioFile: null, 
-      lyrics: '', 
+    setNewAlbumTracks([...newAlbumTracks, {
+      title: '',
+      audioFile: null,
+      lyrics: '',
       coverFile: null,
       contributors: {
         mainVocalist: '',
@@ -439,7 +439,7 @@ const Upload = () => {
       }
 
       showToast(`Album "${albumName}" published successfully!`);
-      
+
       // Clear Album forms
       setAlbumName('');
       setAlbumDescription('');
@@ -478,7 +478,7 @@ const Upload = () => {
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      
+
       <div>
         <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Direct Song Distribution</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
@@ -500,10 +500,10 @@ const Upload = () => {
           animation: 'fadeIn 0.3s ease'
         }}>
           {user?.artistAvatar ? (
-            <img 
-              src={user.artistAvatar} 
-              alt={user.artistName} 
-              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+            <img
+              src={user.artistAvatar}
+              alt={user.artistName}
+              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : (
             <div style={{
@@ -525,7 +525,7 @@ const Upload = () => {
             Publishing under official artist identity: <strong style={{ color: 'var(--text-primary)' }}>{user?.artistName}</strong>
           </span>
           {user?.isArtistVerified && (
-            <span 
+            <span
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -547,8 +547,8 @@ const Upload = () => {
       </div>
 
       {/* Spotify-styled Tabs */}
-      <div style={{ 
-        display: 'flex', 
+      <div style={{
+        display: 'flex',
         borderBottom: '1px solid var(--border-color)',
         gap: '4px',
         margin: '0 0 -8px 0'
@@ -598,10 +598,10 @@ const Upload = () => {
       {activeUploadTab === 'single' ? (
         // ==================== TAB 1: SINGLE SONG UPLOAD ====================
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
-          
+
           {/* Row 1: File dropzones */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-            
+
             {/* Audio Drag Area */}
             <div className="form-group">
               <label className="form-label">Audio Track File (.mp3, .wav, .m4a)</label>
@@ -674,7 +674,7 @@ const Upload = () => {
 
           {/* Row 2: Title and Genre */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-            
+
             <div className="form-group">
               <label className="form-label">Track Title</label>
               <div className="form-input-wrapper">
@@ -829,9 +829,9 @@ const Upload = () => {
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sync your lyrics as you listen</span>
                 </div>
-                
+
                 <audio ref={singleAudioRef} src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
-                
+
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
@@ -843,7 +843,7 @@ const Upload = () => {
                       const mins = Math.floor(time / 60).toString().padStart(2, '0');
                       const secs = Math.floor(time % 60).toString().padStart(2, '0');
                       const stamp = `[${mins}:${secs}] `;
-                      
+
                       const textarea = document.getElementById('single-lyrics-textarea');
                       if (textarea) {
                         const start = textarea.selectionStart;
@@ -873,7 +873,7 @@ const Upload = () => {
                   >
                     ⏱️ Stamp Current Time
                   </button>
-                  
+
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -912,16 +912,16 @@ const Upload = () => {
 
           {/* Action Publish Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-secondary"
               onClick={() => setActiveView('library')}
             >
               Cancel
             </button>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn btn-primary"
               style={{ minWidth: '160px' }}
               disabled={loading}
@@ -939,7 +939,7 @@ const Upload = () => {
       ) : (
         // ==================== TAB 2: ALBUM UPLOAD COMPILER ====================
         <form onSubmit={handleAlbumSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease' }}>
-          
+
           {/* Real-time Compilation Status Indicator */}
           {albumUploadProgress && (
             <div style={{
@@ -961,7 +961,7 @@ const Upload = () => {
 
           {/* Album Details Header Block */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
                 <label className="form-label">Album Title</label>
@@ -1064,7 +1064,7 @@ const Upload = () => {
                 {myExistingTracks.map((t) => {
                   const isChecked = selectedExistingTrackIds.includes(t._id);
                   return (
-                    <label 
+                    <label
                       key={t._id}
                       style={{
                         display: 'flex',
@@ -1123,7 +1123,7 @@ const Upload = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {newAlbumTracks.map((track, idx) => (
-                <div 
+                <div
                   key={idx}
                   style={{
                     backgroundColor: 'var(--bg-secondary)',
@@ -1250,32 +1250,6 @@ const Upload = () => {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '12px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Music Info (Optional)</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px', marginTop: '4px' }}>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Vocal/Inst.</label>
-                        <select className="form-input" value={track.musicinfo?.vocalinstrumental || ''} onChange={(e) => handleUpdateTrackRow(idx, 'musicinfo', { ...track.musicinfo, vocalinstrumental: e.target.value })} style={{ height: '32px', fontSize: '12px' }}>
-                          <option value="">Unknown</option>
-                          <option value="vocal">Vocal</option>
-                          <option value="instrumental">Instrumental</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Gender (Vocals)</label>
-                        <select className="form-input" value={track.musicinfo?.gender || ''} onChange={(e) => handleUpdateTrackRow(idx, 'musicinfo', { ...track.musicinfo, gender: e.target.value })} style={{ height: '32px', fontSize: '12px' }}>
-                          <option value="">Unknown</option>
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Speed (BPM)</label>
-                        <input type="number" className="form-input" placeholder="BPM" value={track.musicinfo?.speed || ''} onChange={(e) => handleUpdateTrackRow(idx, 'musicinfo', { ...track.musicinfo, speed: e.target.value })} style={{ height: '32px', fontSize: '12px' }} />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Lyrics row */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1330,14 +1304,14 @@ const Upload = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent)' }}>⏱️ Timed Lyrics Assistant (Track #{idx + 1})</span>
                         </div>
-                        
-                        <audio 
+
+                        <audio
                           id={`album-preview-audio-${idx}`}
-                          src={URL.createObjectURL(track.audioFile)} 
-                          controls 
-                          style={{ width: '100%', height: '36px' }} 
+                          src={URL.createObjectURL(track.audioFile)}
+                          controls
+                          style={{ width: '100%', height: '36px' }}
                         />
-                        
+
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
                             type="button"
@@ -1349,7 +1323,7 @@ const Upload = () => {
                               const mins = Math.floor(time / 60).toString().padStart(2, '0');
                               const secs = Math.floor(time % 60).toString().padStart(2, '0');
                               const stamp = `[${mins}:${secs}] `;
-                              
+
                               const textarea = document.getElementById(`album-track-lyrics-textarea-${idx}`);
                               if (textarea) {
                                 const start = textarea.selectionStart;
@@ -1370,7 +1344,7 @@ const Upload = () => {
                           >
                             ⏱️ Stamp Current Time
                           </button>
-                          
+
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
@@ -1425,16 +1399,16 @@ const Upload = () => {
 
           {/* Album submission action bar */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '12px' }}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-secondary"
               onClick={() => setActiveView('library')}
             >
               Cancel
             </button>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn btn-primary"
               style={{ minWidth: '180px' }}
               disabled={loading}
@@ -1456,4 +1430,3 @@ const Upload = () => {
 };
 
 export default Upload;
-
