@@ -4,7 +4,7 @@ import { AppContext } from '../context/AppContext';
 import { X, Crown, Music, AlertCircle } from 'lucide-react';
 
 const Lyrics = () => {
-  const { currentTrack, user, setShowLyrics, setActiveView, audioRef } = useContext(AppContext);
+  const { currentTrack, user, setShowLyrics, setActiveView, audioRef, isPlaying } = useContext(AppContext);
   const [currentTime, setCurrentTime] = useState(0);
   const activeLineRef = useRef(null);
   const navigate = useNavigate();
@@ -20,7 +20,11 @@ const Lyrics = () => {
       animationFrameId = requestAnimationFrame(handleTimeUpdate);
     };
 
-    handleTimeUpdate();
+    if (isPlaying) {
+      handleTimeUpdate();
+    } else {
+      setCurrentTime(audio.currentTime || 0);
+    }
     
     // Initial sync
     setCurrentTime(audio.currentTime || 0);
@@ -118,7 +122,7 @@ const Lyrics = () => {
   // Find active line index based on playback time (exact vocal synchronization matching Spotify)
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].time !== null && currentTime + 0.5 >= parsedLines[i].time) {
+    if (parsedLines[i].time !== null && currentTime + 0.1 >= parsedLines[i].time) {
       activeIndex = i;
     }
   }
@@ -143,7 +147,11 @@ const Lyrics = () => {
   };
 
   // Restrict lines if Free tier user (Bypassed since premium is free!)
-  const visibleLines = isPremium ? parsedLines : parsedLines.slice(0, 3);
+  // Get a larger slice around the active line to show at least 5 highlighted ones before/after
+  let startIdx = 0;
+  let endIdx = parsedLines.length;
+
+  const visibleLines = parsedLines.slice(startIdx, endIdx);
 
   return (
     <div className="lyrics-view-overlay">
@@ -202,13 +210,14 @@ const Lyrics = () => {
           <div className="lyrics-lines-wrapper">
             {visibleLines.map((line, idx) => {
               const isActive = idx === activeIndex;
-              const isPast = idx < activeIndex;
+              const isHighlighted = idx <= activeIndex && idx > activeIndex - 6;
+              const isPast = idx <= activeIndex - 6;
               const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
               return (
                 <p 
                   key={idx} 
                   ref={isActive ? activeLineRef : null}
-                  className={`lyrics-text-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
+                  className={`lyrics-text-line ${isHighlighted ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
                   onClick={() => handleLineClick(line.time)}
                   style={isInstrumental ? {
                     color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',

@@ -102,7 +102,11 @@ const RightSidebar = () => {
       animationFrameId = requestAnimationFrame(handleTimeUpdate);
     };
 
-    handleTimeUpdate();
+    if (isPlaying) {
+      handleTimeUpdate();
+    } else {
+      setCurrentTime(audio.currentTime || 0);
+    }
     
     // Initial sync
     setCurrentTime(audio.currentTime || 0);
@@ -110,7 +114,7 @@ const RightSidebar = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [audioRef, currentTrack]);
+  }, [audioRef, currentTrack, isPlaying]);
 
   if (!currentTrack) return null;
 
@@ -201,7 +205,7 @@ const RightSidebar = () => {
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
     if (parsedLines[i].time !== null) {
-      if (currentTime + 0.5 >= parsedLines[i].time) activeIndex = i;
+      if (currentTime + 0.1 >= parsedLines[i].time) activeIndex = i;
     }
   }
 
@@ -523,8 +527,7 @@ const RightSidebar = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '16px',
-                  maxHeight: '800px',
-                  height: '85vh',
+                  height: '600px',
                   overflowY: 'auto',
                   scrollBehavior: 'smooth'
                 }}
@@ -532,7 +535,8 @@ const RightSidebar = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '30px', paddingTop: '10px' }}>
                   {parsedLines.map((line, idx) => {
                     const isActive = idx === activeIndex;
-                    const isPast = idx < activeIndex;
+                    const isHighlighted = idx <= activeIndex && idx > activeIndex - 6;
+                    const isPast = idx <= activeIndex - 6;
                     const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
                     
                     return (
@@ -540,7 +544,7 @@ const RightSidebar = () => {
                         key={idx}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')}`}
+                        className={`sidebar-lyric-line ${isHighlighted ? 'active' : (isPast ? 'past' : 'future')}`}
                         style={{
                           fontSize: isActive ? '32px' : '24px',
                           fontWeight: '800',

@@ -59,13 +59,6 @@ const MainAppContent = () => {
     }
   }, [location.pathname]);
 
-  // Sync browser URL path with activeView context state changes (two-way binding)
-  useEffect(() => {
-    const expectedPath = `/pages/${activeView}`;
-    if (location.pathname !== expectedPath && location.pathname !== '/') {
-      navigate(expectedPath);
-    }
-  }, [activeView, navigate, location.pathname]);
 
   // Render matched view inside dynamic wrapper
   const renderView = () => {

@@ -144,6 +144,7 @@ const Search = () => {
   };
 
   const showBrowseCategories = search.trim() === '' && genre === 'All';
+  const hasAnyResults = searchResults.tracks.length > 0 || searchResults.artists.length > 0 || searchResults.albums.length > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
