@@ -14,6 +14,8 @@ const ProfileView = () => {
   const [editedFacebook, setEditedFacebook] = useState('');
   const [editedTwitter, setEditedTwitter] = useState('');
   const [editedInstagram, setEditedInstagram] = useState('');
+  const [editedArtistAvatar, setEditedArtistAvatar] = useState('');
+  const [editedArtistBanner, setEditedArtistBanner] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -39,6 +41,8 @@ const ProfileView = () => {
       setEditedFacebook(profileData.user.facebook || '');
       setEditedTwitter(profileData.user.twitter || '');
       setEditedInstagram(profileData.user.instagram || '');
+      setEditedArtistAvatar(profileData.user.artistAvatar || profileData.user.userAvatar || '');
+      setEditedArtistBanner(profileData.user.artistBanner || '');
     }
   }, [profileData]);
 
@@ -83,6 +87,8 @@ const ProfileView = () => {
     if (fieldName === 'facebook') setEditedFacebook(value);
     if (fieldName === 'twitter') setEditedTwitter(value);
     if (fieldName === 'instagram') setEditedInstagram(value);
+    if (fieldName === 'artistAvatar') setEditedArtistAvatar(value);
+    if (fieldName === 'artistBanner') setEditedArtistBanner(value);
   };
 
   const handleFieldBlur = (fieldName, value) => {
@@ -486,14 +492,16 @@ const ProfileView = () => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Edit Social & Contact Links
+                  Edit Creator Visuals, Socials & Contact Details
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
                   {[
                     { label: 'Website Link', field: 'website', value: editedWebsite, placeholder: 'https://mywebsite.com' },
                     { label: 'Facebook Username / URL', field: 'facebook', value: editedFacebook, placeholder: 'facebook.com/username' },
                     { label: 'Twitter / X Username / URL', field: 'twitter', value: editedTwitter, placeholder: 'twitter.com/username' },
-                    { label: 'Instagram Username / URL', field: 'instagram', value: editedInstagram, placeholder: 'instagram.com/username' }
+                    { label: 'Instagram Username / URL', field: 'instagram', value: editedInstagram, placeholder: 'instagram.com/username' },
+                    { label: 'Artist Avatar Image URL', field: 'artistAvatar', value: editedArtistAvatar, placeholder: 'https://images.unsplash.com/... (square)' },
+                    { label: 'Artist Banner Image URL', field: 'artistBanner', value: editedArtistBanner, placeholder: 'https://images.unsplash.com/... (landscape)' }
                   ].map((s) => (
                     <div key={s.field} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{s.label}</label>

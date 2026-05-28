@@ -214,7 +214,10 @@ const MusicPlayer = () => {
               Resuming in {adCountdown}s...
             </span>
             <button 
-              onClick={() => setActiveView('billing')} 
+              onClick={() => {
+                setActiveView('billing');
+                setShowLyrics(false);
+              }} 
               style={{
                 background: 'var(--accent)',
                 color: '#070a13',
@@ -242,6 +245,7 @@ const MusicPlayer = () => {
             alt={currentTrack.title} 
             onClick={() => {
               setActiveView('song-details');
+              setShowLyrics(false);
             }}
             style={{ 
               cursor: 'pointer',
@@ -255,6 +259,7 @@ const MusicPlayer = () => {
             style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', cursor: 'pointer' }}
             onClick={() => {
               setActiveView('song-details');
+              setShowLyrics(false);
             }}
             title="Click to view song details"
           >
@@ -264,7 +269,10 @@ const MusicPlayer = () => {
         <div className="player-track-info">
           <div 
             className="player-title" 
-            onClick={() => setActiveView('song-details')}
+            onClick={() => {
+              setActiveView('song-details');
+              setShowLyrics(false);
+            }}
             style={{ cursor: 'pointer', textDecoration: 'none' }}
             onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
             onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
@@ -274,7 +282,10 @@ const MusicPlayer = () => {
           </div>
           <div 
             className="player-artist"
-            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.jamendoArtistId || currentTrack.artist)}
+            onClick={() => {
+              triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.jamendoArtistId || currentTrack.artist);
+              setShowLyrics(false);
+            }}
             style={{ cursor: 'pointer', textDecoration: 'none', color: 'var(--text-secondary)' }}
             onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
             onMouseLeave={(e) => e.target.style.textDecoration = 'none'}

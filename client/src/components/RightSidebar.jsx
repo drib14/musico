@@ -196,12 +196,13 @@ const RightSidebar = () => {
 
   const parsedLines = parseLyrics();
 
-  // Find active line index based on playback time
+  // Find active line index based on playback time (adding a 0.35s timing latency offset to sync highlighting perfectly with vocals)
   let activeIndex = -1;
+  const timeOffset = currentTime + 0.35;
   for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].text.length > 0 && currentTime >= parsedLines[i].time) {
+    if (parsedLines[i].text.length > 0 && timeOffset >= parsedLines[i].time) {
       activeIndex = i;
-    } else if (parsedLines[i].text.length > 0 && currentTime < parsedLines[i].time) {
+    } else if (parsedLines[i].text.length > 0 && timeOffset < parsedLines[i].time) {
       break;
     }
   }
@@ -353,39 +354,7 @@ const RightSidebar = () => {
           }}>
             {currentTrack.genre || 'Unknown'}
           </div>
-          {currentTrack.isJamendo && (
-            <button
-              onClick={handleSaveToDb}
-              disabled={savingTrack}
-              style={{
-                marginTop: '8px',
-                padding: '6px 12px',
-                fontSize: '11px',
-                borderRadius: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                backgroundColor: 'var(--bg-tertiary)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)',
-                fontWeight: 'bold',
-                width: 'fit-content'
-              }}
-            >
-              {savingTrack ? (
-                <>
-                  <div className="spinner" style={{ width: '10px', height: '10px' }}></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Plus style={{ width: '12px', height: '12px' }} />
-                  Save to DB
-                </>
-              )}
-            </button>
-          )}
+
         </div>
       </section>
 
@@ -394,11 +363,26 @@ const RightSidebar = () => {
       {/* 2. DYNAMIC ARTIST DETAILS */}
       {artistInfo && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h3 style={{ fontSize: '15px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', margin: 0 }}>
-            About the Artist
+          <h3 
+            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+            style={{ 
+              fontSize: '15px', 
+              color: 'var(--text-secondary)', 
+              textTransform: 'uppercase', 
+              letterSpacing: '1px', 
+              fontWeight: 'bold', 
+              margin: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            About the Artist <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--accent)', fontWeight: 'bold' }}>(view profile)</span>
           </h3>
           
           <div style={{
+            position: 'relative',
             backgroundColor: 'var(--bg-tertiary)',
             border: '1px solid var(--border-color)',
             borderRadius: '14px',
@@ -406,11 +390,29 @@ const RightSidebar = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
-            boxShadow: 'var(--glass-shadow)'
+            boxShadow: 'var(--glass-shadow)',
+            overflow: 'hidden'
           }}>
+            {/* Immersive blurred artist avatar in card background */}
+            {(artistInfo.artistAvatar || artistInfo.userAvatar) && (
+              <div 
+                style={{
+                  backgroundImage: `url(${artistInfo.artistAvatar || artistInfo.userAvatar})`,
+                  position: 'absolute',
+                  inset: 0,
+                  filter: 'blur(30px) brightness(0.2)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  zIndex: 0,
+                  opacity: 0.35,
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
             {/* Clickable redirect to Artist Profile */}
             <div 
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', position: 'relative', zIndex: 1 }}
               onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
             >
               {artistInfo.artistAvatar || artistInfo.userAvatar ? (
@@ -443,7 +445,9 @@ const RightSidebar = () => {
                 color: 'var(--text-secondary)',
                 lineHeight: '1.5',
                 margin: 0,
-                whiteSpace: 'pre-wrap'
+                whiteSpace: 'pre-wrap',
+                position: 'relative',
+                zIndex: 1
               }}
               >
                 {stripHtml(artistInfo.artistBio)}
@@ -451,7 +455,7 @@ const RightSidebar = () => {
             )}
 
             {(artistInfo.facebook || artistInfo.twitter || artistInfo.instagram || artistInfo.website) && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center', position: 'relative', zIndex: 1 }}>
                 {artistInfo.website && (
                   <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Website">
                     <Globe style={{ width: '14px', height: '14px' }} />
@@ -476,7 +480,7 @@ const RightSidebar = () => {
             )}
 
             {artistInfo.concerts && artistInfo.concerts.length > 0 && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px', position: 'relative', zIndex: 1 }}>
                 <h5 style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Calendar style={{ width: '13px', height: '13px' }} />
                   Upcoming Concerts
@@ -509,6 +513,28 @@ const RightSidebar = () => {
                 </div>
               </div>
             )}
+
+            <button
+              onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+              className="btn btn-secondary"
+              style={{
+                marginTop: '6px',
+                padding: '8px 12px',
+                fontSize: '12px',
+                borderRadius: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                zIndex: 1,
+                position: 'relative'
+              }}
+            >
+              View Full Profile
+            </button>
           </div>
         </section>
       )}

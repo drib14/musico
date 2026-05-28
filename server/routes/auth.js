@@ -379,6 +379,9 @@ router.put(
       if (facebook !== undefined) user.facebook = facebook;
       if (twitter !== undefined) user.twitter = twitter;
       if (instagram !== undefined) user.instagram = instagram;
+      if (req.body.artistAvatar !== undefined) user.artistAvatar = req.body.artistAvatar;
+      if (req.body.artistBanner !== undefined) user.artistBanner = req.body.artistBanner;
+      if (req.body.userAvatar !== undefined) user.userAvatar = req.body.userAvatar;
       if (req.body.concerts !== undefined) {
         user.concerts = typeof req.body.concerts === 'string' ? JSON.parse(req.body.concerts) : req.body.concerts;
       }

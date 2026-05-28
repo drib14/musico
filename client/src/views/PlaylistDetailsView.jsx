@@ -324,24 +324,6 @@ const PlaylistDetailsView = () => {
                       <div>
                         <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{track.title}</span>
-                          {track.isJamendo && (
-                            <button
-                              onClick={(e) => handleSaveToDb(e, track._id)}
-                              disabled={savingId === track._id}
-                              style={{
-                                padding: '2px 8px',
-                                fontSize: '10px',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border-color)',
-                                backgroundColor: 'var(--bg-tertiary)',
-                                color: 'var(--accent)',
-                                cursor: 'pointer',
-                                fontWeight: 'bold'
-                              }}
-                            >
-                              {savingId === track._id ? 'Saving...' : 'Save to DB'}
-                            </button>
-                          )}
                         </div>
                         <div 
                           className="table-artist" 

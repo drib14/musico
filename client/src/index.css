@@ -666,6 +666,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   height: 320px;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .song-card:hover {
@@ -690,6 +691,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--glass-shadow);
   height: 200px;
   justify-content: center;
+  min-width: 0;
 }
 
 .concert-card {
@@ -706,6 +708,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 220px;
   justify-content: space-between;
   transition: all var(--transition-normal);
+  min-width: 0;
 }
 
 .concert-card:hover {
@@ -817,6 +820,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
 }
 
 .event-card:hover {
