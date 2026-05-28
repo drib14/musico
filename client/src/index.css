@@ -2520,3 +2520,128 @@ h1, h2, h3, h4, h5, h6 {
   50% { opacity: 1; text-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
   100% { opacity: 0.7; }
 }
+
+/* TIMED LYRICS SPOTIFY UX STYLING RULES */
+.lyrics-text-line {
+  color: rgba(255, 255, 255, 0.35) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.lyrics-text-line.past {
+  color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.lyrics-text-line.active {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: scale(1.02);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.45) !important;
+}
+
+.lyrics-text-line:hover {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: translateX(4px) scale(1.01) !important;
+}
+
+/* Sidebar Lyrics Sync Styles */
+.sidebar-lyric-line {
+  color: rgba(255, 255, 255, 0.35) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.sidebar-lyric-line.past {
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.sidebar-lyric-line.active {
+  color: var(--accent) !important;
+  opacity: 1 !important;
+  transform: scale(1.02);
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Mobile Bottom Navigation Bar Styles */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background-color: rgba(7, 10, 19, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    z-index: 1999;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-bottom-nav-item:hover,
+  .mobile-bottom-nav-item.active {
+    color: var(--accent);
+  }
+
+  /* Structural Viewport Layout Adjustments for smaller viewports */
+  .sidebar {
+    display: none !important;
+  }
+
+  .app-container {
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "main" !important;
+    padding: 8px 8px calc(var(--player-height) + 80px) 8px !important;
+  }
+
+  .app-container.has-player {
+    grid-template-rows: 1fr !important;
+    grid-template-areas: "main" !important;
+  }
+
+  /* Spotify Floating Mini-player UX */
+  .music-player {
+    position: fixed !important;
+    bottom: 72px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: calc(100% - 16px) !important;
+    border-radius: 12px !important;
+    z-index: 1998 !important;
+    background-color: rgba(13, 19, 38, 0.92) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas: "left center" !important;
+    height: 64px !important;
+    padding: 8px 16px !important;
+  }
+
+  .main-content {
+    padding: 20px 16px calc(var(--player-height) + 30px) 16px !important;
+    border-radius: 0 !important;
+  }
+}

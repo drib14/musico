@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
@@ -559,14 +560,39 @@ router.get('/artists/top', async (req, res) => {
 // @access  Private
 router.post('/users/:id/follow', protect, async (req, res) => {
   try {
-    const targetUserId = req.params.id;
+    let targetUserId = req.params.id;
     const currentUserId = req.user._id;
+    let targetUser;
+
+    // Check if targetUserId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+      // Treat targetUserId as a Jamendo Artist ID!
+      targetUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: targetUserId });
+      if (!targetUser) {
+        // Automatically mirror/seed the Jamendo artist inside MongoDB!
+        targetUser = new User({
+          name: `Jamendo Artist ${targetUserId}`,
+          email: `jamendo-artist-${targetUserId}@musico.com`,
+          password: `jamendo-artist-dummy-pass-123456`,
+          artistName: `Jamendo Artist ${targetUserId}`,
+          isJamendoArtist: true,
+          jamendoArtistId: targetUserId,
+          isArtistVerified: true,
+          isPremium: true,
+          followers: [],
+          following: []
+        });
+        await targetUser.save();
+      }
+      targetUserId = targetUser._id.toString();
+    } else {
+      targetUser = await User.findById(targetUserId);
+    }
 
     if (targetUserId === currentUserId.toString()) {
       return res.status(400).json({ message: "You cannot follow yourself" });
     }
 
-    const targetUser = await User.findById(targetUserId);
     const currentUser = await User.findById(currentUserId);
 
     if (!targetUser) {

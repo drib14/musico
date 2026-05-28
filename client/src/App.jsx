@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import RightSidebar from './components/RightSidebar';
 import MusicPlayer from './components/MusicPlayer';
 import AuthModal from './components/AuthModal';
-import { User, Settings, Crown, LogOut } from 'lucide-react';
+import { User, Settings, Crown, LogOut, Home as HomeIcon, Search as SearchIcon, Library as LibraryIcon, UploadCloud as UploadIcon } from 'lucide-react';
 
 // Pages
 import Home from './pages/Home';
@@ -175,6 +175,37 @@ const MainAppContent = () => {
 
       {/* Bottom persistent playback controller */}
       <MusicPlayer />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="mobile-bottom-nav">
+        {[
+          { id: 'home', label: 'Home', icon: HomeIcon },
+          { id: 'search', label: 'Search', icon: SearchIcon },
+          { id: 'library', label: 'Library', icon: LibraryIcon },
+          { id: 'upload', label: 'Upload', icon: UploadIcon }
+        ].map((item) => {
+          const Icon = item.icon;
+          const isSelected = activeView === item.id;
+          return (
+            <div
+              key={item.id}
+              className={`mobile-bottom-nav-item ${isSelected ? 'active' : ''}`}
+              onClick={() => {
+                if ((item.id === 'upload' || item.id === 'library') && !user) {
+                  openAuthModal('login');
+                  return;
+                }
+                setShowLyrics(false);
+                setActiveView(item.id);
+                navigate(`/pages/${item.id}`);
+              }}
+            >
+              <Icon className="w-5 h-5" />
+              <span>{item.label}</span>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Login / Register Modal Portal overlay */}
       <AuthModal 

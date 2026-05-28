@@ -206,8 +206,22 @@ router.get('/trending', async (req, res) => {
     }
 
     const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(15);
-    const mergedTracks = [...localList, ...jamendoTracks];
-    mergedTracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+    
+    // Interleave direct uploads and public Jamendo tracks to give them equal prominence in featured charts
+    const mergedTracks = [];
+    const maxLen = Math.max(localList.length, jamendoTracks.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < localList.length) {
+        const trackObj = localList[i].toObject ? localList[i].toObject() : localList[i];
+        mergedTracks.push({
+          ...trackObj,
+          isJamendo: false
+        });
+      }
+      if (i < jamendoTracks.length) {
+        mergedTracks.push(jamendoTracks[i]);
+      }
+    }
 
     res.json(mergedTracks);
   } catch (error) {

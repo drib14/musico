@@ -215,14 +215,11 @@ const RightSidebar = () => {
 
   const parsedLines = parseLyrics();
 
-  // Find active line index based on playback time (adding a 0.35s timing latency offset to sync highlighting perfectly with vocals)
+  // Find active line index based on playback time (exact vocal synchronization matching Spotify)
   let activeIndex = -1;
-  const timeOffset = currentTime + 0.35;
   for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].text.length > 0 && timeOffset >= parsedLines[i].time) {
+    if (parsedLines[i].time !== null && currentTime >= parsedLines[i].time) {
       activeIndex = i;
-    } else if (parsedLines[i].text.length > 0 && timeOffset < parsedLines[i].time) {
-      break;
     }
   }
 
