@@ -17,7 +17,7 @@ import ProfileView from './views/ProfileView';
 import PlaylistDetailsView from './views/PlaylistDetailsView';
 import ChartDetailsView from './views/ChartDetailsView';
 import LyricsView from './views/LyricsView';
-import SongDetailsView from './views/SongDetailsView';
+import EventsView from './views/EventsView';
 
 const MainAppContent = () => {
   const { 
@@ -51,6 +51,8 @@ const MainAppContent = () => {
         return <HomeView />;
       case 'search':
         return <SearchView />;
+      case 'events':
+        return <EventsView />;
       case 'library':
         return <LibraryView />;
       case 'upload':
