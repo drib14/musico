@@ -12,7 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-const UploadView = () => {
+const Upload = () => {
   const { API_URL, token, user, showToast, setActiveView } = useContext(AppContext);
   
   // Tab control
@@ -26,6 +26,12 @@ const UploadView = () => {
   const [lyrics, setLyrics] = useState('');
   const [dragActiveAudio, setDragActiveAudio] = useState(false);
   const [dragActiveCover, setDragActiveCover] = useState(false);
+  const [contributors, setContributors] = useState({
+    mainVocalist: '',
+    composer: '',
+    lyricist: '',
+    producer: ''
+  });
 
   // --- ALBUM UPLOAD STATE ---
   const [albumName, setAlbumName] = useState('');
@@ -200,6 +206,7 @@ const UploadView = () => {
     formData.append('genre', genre);
     formData.append('lyrics', lyrics);
     formData.append('audio', audioFile);
+    formData.append('contributors', JSON.stringify(contributors));
     if (coverFile) formData.append('cover', coverFile);
 
     try {
@@ -224,6 +231,12 @@ const UploadView = () => {
       setTitle('');
       setGenre('Pop');
       setLyrics('');
+      setContributors({
+        mainVocalist: '',
+        composer: '',
+        lyricist: '',
+        producer: ''
+      });
       
       // Update upload limits check and go to Libraryuploads list
       await checkUploadLimit();
@@ -237,7 +250,18 @@ const UploadView = () => {
 
   // Dynamic Album list rows management
   const handleAddNewTrackRow = () => {
-    setNewAlbumTracks([...newAlbumTracks, { title: '', audioFile: null, lyrics: '', coverFile: null }]);
+    setNewAlbumTracks([...newAlbumTracks, { 
+      title: '', 
+      audioFile: null, 
+      lyrics: '', 
+      coverFile: null,
+      contributors: {
+        mainVocalist: '',
+        composer: '',
+        lyricist: '',
+        producer: ''
+      }
+    }]);
   };
 
   const handleRemoveTrackRow = (idx) => {
@@ -312,6 +336,12 @@ const UploadView = () => {
         trackData.append('genre', albumGenre);
         trackData.append('lyrics', track.lyrics.trim());
         trackData.append('audio', track.audioFile);
+        trackData.append('contributors', JSON.stringify(track.contributors || {
+          mainVocalist: '',
+          composer: '',
+          lyricist: '',
+          producer: ''
+        }));
         if (track.coverFile) {
           trackData.append('cover', track.coverFile); // specific track cover
         } else {
@@ -1158,4 +1188,5 @@ const UploadView = () => {
   );
 };
 
-export default UploadView;
+export default Upload;
+

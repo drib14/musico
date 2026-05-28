@@ -4,7 +4,7 @@ import { Play, Music, Trash2, ArrowLeft, FolderHeart, Edit2 } from 'lucide-react
 import PlaylistCover from '../components/PlaylistCover';
 import Modal from '../components/Modal';
 
-const PlaylistDetailsView = () => {
+const PlaylistDetails = () => {
   const { 
     API_URL, 
     token, 
@@ -403,4 +403,5 @@ const PlaylistDetailsView = () => {
   );
 };
 
-export default PlaylistDetailsView;
+export default PlaylistDetails;
+

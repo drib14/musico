@@ -1,4 +1,5 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AppProvider, AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
 import RightSidebar from './components/RightSidebar';
@@ -6,18 +7,18 @@ import MusicPlayer from './components/MusicPlayer';
 import AuthModal from './components/AuthModal';
 import { User, Settings, Crown, LogOut } from 'lucide-react';
 
-// Views
-import HomeView from './views/HomeView';
-import SearchView from './views/SearchView';
-import LibraryView from './views/LibraryView';
-import UploadView from './views/UploadView';
-import BillingView from './views/BillingView';
-import SettingsView from './views/SettingsView';
-import ProfileView from './views/ProfileView';
-import PlaylistDetailsView from './views/PlaylistDetailsView';
-import ChartDetailsView from './views/ChartDetailsView';
-import LyricsView from './views/LyricsView';
-import SongDetailsView from './views/SongDetailsView';
+// Pages
+import Home from './pages/Home';
+import Search from './pages/Search';
+import Library from './pages/Library';
+import Upload from './pages/Upload';
+import Billing from './pages/Billing';
+import SettingsView from './pages/Settings';
+import Profile from './pages/Profile';
+import PlaylistDetails from './pages/PlaylistDetails';
+import ChartDetails from './pages/ChartDetails';
+import Lyrics from './pages/Lyrics';
+import SongDetails from './pages/SongDetails';
 
 const MainAppContent = () => {
   const { 
@@ -31,6 +32,9 @@ const MainAppContent = () => {
     logoutUser
   } = useContext(AppContext);
   
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Auth modal management state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authInitialMode, setAuthInitialMode] = useState('login');
@@ -40,34 +44,48 @@ const MainAppContent = () => {
     setIsAuthOpen(true);
   };
 
+  // Sync activeView context state with browser URL path changes (two-way binding)
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/pages/')) {
+      const viewId = path.substring(7); // Extract the view name (e.g. 'home')
+      if (activeView !== viewId) {
+        setActiveView(viewId);
+      }
+    } else if (path === '/') {
+      setActiveView('home');
+    }
+  }, [location.pathname]);
+
+  // Sync browser URL path with activeView context state changes (two-way binding)
+  useEffect(() => {
+    const expectedPath = `/pages/${activeView}`;
+    if (location.pathname !== expectedPath && location.pathname !== '/' && !location.pathname.startsWith('/pages/lyrics')) {
+      navigate(expectedPath);
+    }
+  }, [activeView, navigate, location.pathname]);
+
   // Render matched view inside dynamic wrapper
   const renderView = () => {
     if (showLyrics && currentTrack) {
-      return <LyricsView />;
+      return <Lyrics />;
     }
     
-    switch (activeView) {
-      case 'home':
-        return <HomeView />;
-      case 'search':
-        return <SearchView />;
-      case 'library':
-        return <LibraryView />;
-      case 'upload':
-        return <UploadView />;
-      case 'settings':
-        return <SettingsView />;
-      case 'profile':
-        return <ProfileView />;
-      case 'playlist-details':
-        return <PlaylistDetailsView />;
-      case 'chart-details':
-        return <ChartDetailsView />;
-      case 'song-details':
-        return <SongDetailsView />;
-      default:
-        return <HomeView />;
-    }
+    return (
+      <Routes>
+        <Route path="/" element={<Navigate to="/pages/home" replace />} />
+        <Route path="/pages/home" element={<Home />} />
+        <Route path="/pages/search" element={<Search />} />
+        <Route path="/pages/library" element={<Library />} />
+        <Route path="/pages/upload" element={<Upload />} />
+        <Route path="/pages/settings" element={<SettingsView />} />
+        <Route path="/pages/profile" element={<Profile />} />
+        <Route path="/pages/playlist-details" element={<PlaylistDetails />} />
+        <Route path="/pages/chart-details" element={<ChartDetails />} />
+        <Route path="/pages/song-details" element={<SongDetails />} />
+        <Route path="*" element={<Navigate to="/pages/home" replace />} />
+      </Routes>
+    );
   };
 
   return (
@@ -180,9 +198,11 @@ const MainAppContent = () => {
 // Top-level provider wrapper
 function App() {
   return (
-    <AppProvider>
-      <MainAppContent />
-    </AppProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <MainAppContent />
+      </AppProvider>
+    </BrowserRouter>
   );
 }
 

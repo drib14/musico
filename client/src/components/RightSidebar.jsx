@@ -381,36 +381,128 @@ const RightSidebar = () => {
 
       {/* 2. DYNAMIC ARTIST DETAILS */}
       {artistInfo && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <button
-            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
-            className="btn btn-secondary"
-            style={{
-              padding: '12px 16px',
-              fontSize: '14px',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              width: '100%',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              border: '1px solid var(--border-color)'
-            }}
-          >
+        <section style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px',
+          backgroundColor: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '14px',
+          padding: '16px',
+          boxShadow: 'var(--glass-shadow)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <h3 style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: '800', margin: '0 0 4px 0' }}>
+            About The Artist
+          </h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {artistInfo.artistAvatar || artistInfo.userAvatar ? (
               <img
                 src={artistInfo.artistAvatar || artistInfo.userAvatar}
                 alt={artistInfo.artistName || artistInfo.name}
-                style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                style={{ 
+                  width: '54px', 
+                  height: '54px', 
+                  borderRadius: '50%', 
+                  objectFit: 'cover',
+                  border: '2px solid var(--accent)',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                }}
               />
             ) : (
-              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontWeight: 'bold', fontSize: '10px' }}>
+              <div style={{ 
+                width: '54px', 
+                height: '54px', 
+                borderRadius: '50%', 
+                backgroundColor: 'var(--accent-gradient)', 
+                color: '#fff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontWeight: 'bold', 
+                fontSize: '20px',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+              }}>
                 {(artistInfo.artistName || artistInfo.name).charAt(0).toUpperCase()}
               </div>
             )}
-            View Artist Profile
+            
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span 
+                  onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+                  style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '800', 
+                    color: 'var(--text-primary)', 
+                    cursor: 'pointer',
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {artistInfo.artistName || artistInfo.name}
+                </span>
+                {artistInfo.isArtistVerified && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '13px',
+                    height: '13px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                    color: '#fff',
+                    fontSize: '8px',
+                    fontWeight: 'bold'
+                  }} title="Verified Artist">
+                    ✓
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {artistInfo.followers ? `${artistInfo.followers.length.toLocaleString()} followers` : '0 followers'}
+              </div>
+            </div>
+          </div>
+
+          {artistInfo.artistBio && (
+            <p style={{ 
+              fontSize: '12px', 
+              color: 'var(--text-secondary)', 
+              lineHeight: '1.5',
+              margin: '8px 0 4px 0',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {stripHtml(artistInfo.artistBio)}
+            </p>
+          )}
+
+          <button
+            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+            className="btn btn-primary"
+            style={{
+              padding: '8px 14px',
+              fontSize: '12.5px',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              width: '100%',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              marginTop: '4px',
+              background: 'var(--accent-gradient)'
+            }}
+          >
+            Go to artist profile
           </button>
         </section>
       )}

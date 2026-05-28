@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { X, Crown, Music, AlertCircle } from 'lucide-react';
 
-const LyricsView = () => {
+const Lyrics = () => {
   const { currentTrack, user, setShowLyrics, setActiveView, audioRef } = useContext(AppContext);
   const [currentTime, setCurrentTime] = useState(0);
   const activeLineRef = useRef(null);
@@ -278,4 +278,5 @@ const LyricsView = () => {
   );
 };
 
-export default LyricsView;
+export default Lyrics;
+

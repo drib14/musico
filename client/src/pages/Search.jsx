@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Search, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
+import { Search as SearchIcon, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
 
-const SearchView = () => {
+const Search = () => {
   const { 
     API_URL, 
     triggerProfileView, 
@@ -107,7 +107,7 @@ const SearchView = () => {
       <div>
         <h1 style={{ fontSize: '32px', marginBottom: '16px' }}>Search</h1>
         <div className="search-box" style={{ width: '100%', maxWidth: '600px' }}>
-          <Search className="w-5 h-5 text-text-secondary" />
+          <SearchIcon className="w-5 h-5 text-text-secondary" />
           <input
             type="text"
             placeholder="Search songs, artists, playlists, albums..."
@@ -339,4 +339,5 @@ const SearchView = () => {
   );
 };
 
-export default SearchView;
+export default Search;
+

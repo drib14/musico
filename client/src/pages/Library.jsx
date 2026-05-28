@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import ArtistProfileWizard from '../components/ArtistProfileWizard';
 import PlaylistCover from '../components/PlaylistCover';
 
-const LibraryView = () => {
+const Library = () => {
   const { API_URL, token, user, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('liked'); // 'liked', 'uploads', 'playlists'
   
@@ -604,4 +604,5 @@ const LibraryView = () => {
   );
 };
 
-export default LibraryView;
+export default Library;
+

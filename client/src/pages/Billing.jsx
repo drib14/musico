@@ -3,7 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Check, Crown, CreditCard, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-const BillingView = () => {
+const Billing = () => {
   const { API_URL, token, user, updatePremiumStatus, showToast } = useContext(AppContext);
   const [loading, setLoading] = useState(false);
   const [sessionStatus, setSessionStatus] = useState(null); // 'success', 'cancel'
@@ -215,4 +215,5 @@ const BillingView = () => {
   );
 };
 
-export default BillingView;
+export default Billing;
+

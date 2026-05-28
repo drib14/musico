@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { 
   Home, 
@@ -26,6 +27,7 @@ const Sidebar = ({ onOpenAuth }) => {
     setShowLyrics
   } = useContext(AppContext);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const navigate = useNavigate();
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -42,6 +44,7 @@ const Sidebar = ({ onOpenAuth }) => {
     }
     setShowLyrics(false);
     setActiveView(viewId);
+    navigate(`/pages/${viewId}`);
   };
 
   const getThemeIcon = () => {

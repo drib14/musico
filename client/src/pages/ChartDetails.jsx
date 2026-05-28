@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Play, Music, ArrowLeft, Disc, Globe, MapPin, Star, Heart } from 'lucide-react';
 
-const ChartDetailsView = () => {
+const ChartDetails = () => {
   const { 
     API_URL, 
     token, 
@@ -454,4 +454,5 @@ const ChartDetailsView = () => {
   );
 };
 
-export default ChartDetailsView;
+export default ChartDetails;
+

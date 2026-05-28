@@ -4,7 +4,7 @@ import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
 
-const HomeView = () => {
+const Home = () => {
   const { 
     API_URL, 
     playTrack, 
@@ -208,113 +208,33 @@ const HomeView = () => {
         </div>
       </div>
 
-      {/* 1.1 DYNAMIC ARTIST RANKING DASHBOARD WIDGET */}
-      {isUserArtist && !rankingsLoading && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(13, 19, 38, 0.8) 0%, rgba(59, 130, 246, 0.05) 100%)',
-          border: '1.5px solid var(--premium-color)',
-          borderRadius: '16px',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          boxShadow: 'var(--glass-shadow)',
-          animation: 'slide-up 0.4s ease'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ fontSize: '28px' }}>🏆</div>
-            <div>
-              <h3 style={{ margin: 0, color: 'var(--premium-color)', fontSize: '18px', fontWeight: '800', fontFamily: 'Outfit' }}>
-                Your Artist Performance Dashboard
-              </h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                Real-time chart placements across the entire platform
-              </p>
-            </div>
+      {/* 2. Featured Playlists & Featured Albums (Spotify Style) */}
+      {topPlaylists.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
+          </h2>
+          <div className="grid-container carousel-desktop">
+            {topPlaylists.map((pl) => (
+              <div
+                key={pl._id}
+                className="song-card"
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
+              >
+                <div className="song-card-cover-wrapper">
+                  <PlaylistCover playlist={pl} className="song-card-cover" />
+                </div>
+                <div className="song-card-title">{pl.name}</div>
+                <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
+                  By {pl.creator?.name || 'Musico'} • {pl.tracks?.length || 0} tracks
+                </div>
+              </div>
+            ))}
           </div>
-
-          {(artistGlobalRankings.length > 0 || artistLocalRankings.length > 0) ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px', marginTop: '4px' }}>
-              {Array.from(new Set([
-                ...artistGlobalRankings.map(r => r.track._id),
-                ...artistLocalRankings.map(r => r.track._id)
-              ])).map(trackId => {
-                const globalRankItem = artistGlobalRankings.find(r => r.track._id === trackId);
-                const localRankItem = artistLocalRankings.find(r => r.track._id === trackId);
-                const track = (globalRankItem || localRankItem).track;
-
-                return (
-                  <div key={trackId} style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    padding: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}>
-                    <img 
-                      src={track.coverUrl || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=150&auto=format&fit=crop'} 
-                      alt={track.title} 
-                      style={{ width: '44px', height: '44px', borderRadius: '6px', objectFit: 'cover', border: '1px solid rgba(255, 255, 255, 0.05)' }} 
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {track.title}
-                      </h4>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                        {/* 1. Top 10 Global Hits */}
-                        {globalRankItem && globalRankItem.rank <= 10 && (
-                          <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                            Top 10 Global: #{globalRankItem.rank}
-                          </span>
-                        )}
-                        {/* 2. Top 10 Local Hits */}
-                        {localRankItem && localRankItem.rank <= 10 && (
-                          <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                            Top 10 Local: #{localRankItem.rank}
-                          </span>
-                        )}
-                        {/* 3. Top 20 Global Charts */}
-                        {globalRankItem && globalRankItem.rank <= 20 && (
-                          <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                            Top 20 Global: #{globalRankItem.rank}
-                          </span>
-                        )}
-                        {/* 4. Top 50 Global Charts */}
-                        {globalRankItem && globalRankItem.rank <= 50 && (
-                          <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', padding: '2px 8px', borderRadius: '20px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
-                            Top 50 Global: #{globalRankItem.rank}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.01)',
-              border: '1.5px dashed var(--border-color)',
-              borderRadius: '12px',
-              padding: '20px',
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <span style={{ fontSize: '24px' }}>🚀</span>
-              <h4 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
-                Get Ready to Rank!
-              </h4>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, maxWidth: '500px', lineHeight: '1.5' }}>
-                Your uploads are not ranking in Musico's weekly charts yet. Upload more tracks, drive streams, and share with your audience to enter the featured Top Hit charts!
-              </p>
-            </div>
-          )}
-        </div>
+        </section>
       )}
 
       {/* 3. POPULAR ARTISTS (Spotify Style slot circles) */}
@@ -645,4 +565,5 @@ const HomeView = () => {
   );
 };
 
-export default HomeView;
+export default Home;
+

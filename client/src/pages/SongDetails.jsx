@@ -3,7 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Play, Music, ArrowLeft, Calendar, CheckCircle, Ticket, Heart, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 import TrackCard from '../components/TrackCard';
 
-const SongDetailsView = () => {
+const SongDetails = () => {
   const { 
     API_URL, 
     currentTrack, 
@@ -509,4 +509,5 @@ const SongDetailsView = () => {
   );
 };
 
-export default SongDetailsView;
+export default SongDetails;
+

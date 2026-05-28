@@ -3,7 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Music, Play, Crown, Calendar, Sparkles, CheckCircle, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 
-const ProfileView = () => {
+const Profile = () => {
   const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView, user: currentUser, token, updateUser } = useContext(AppContext);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -949,4 +949,5 @@ const ProfileView = () => {
   );
 };
 
-export default ProfileView;
+export default Profile;
+

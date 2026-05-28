@@ -12,10 +12,10 @@ import {
   Camera, 
   FileText, 
   Check, 
-  Settings
+  Settings as SettingsIcon
 } from 'lucide-react';
 
-const SettingsView = () => {
+const Settings = () => {
   const { API_URL, token, user, loginUser, showToast, logoutUser, setActiveView } = useContext(AppContext);
   
   // Tab Management state
@@ -681,4 +681,5 @@ const SettingsView = () => {
   );
 };
 
-export default SettingsView;
+export default Settings;
+
