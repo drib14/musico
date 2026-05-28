@@ -439,12 +439,8 @@ const RightSidebar = () => {
                 color: 'var(--text-secondary)',
                 lineHeight: '1.5',
                 margin: 0,
-                maxHeight: '100px',
-                overflowY: 'auto',
-                paddingRight: '4px',
                 whiteSpace: 'pre-wrap'
               }}
-              className="about-artist-bio-scroll"
               >
                 {stripHtml(artistInfo.artistBio)}
               </p>
@@ -539,15 +535,11 @@ const RightSidebar = () => {
             {hasLyrics ? (
               <div 
                 style={{
-                  flex: 1,
-                  overflowY: 'auto',
-                  paddingRight: '6px',
                   backgroundColor: 'var(--bg-tertiary)',
                   borderRadius: '14px',
                   border: '1px solid var(--border-color)',
                   padding: '16px'
                 }}
-                className="right-sidebar-lyrics-container"
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {parsedLines.map((line, idx) => {

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, ArrowLeft, Disc, Globe, MapPin, CheckCircle, Star } from 'lucide-react';
+import { Play, Music, ArrowLeft, Disc, Globe, MapPin, Star, Heart } from 'lucide-react';
 
 const ChartDetailsView = () => {
   const { 
@@ -14,7 +14,8 @@ const ChartDetailsView = () => {
     showToast,
     userPlaylists,
     loadUserPlaylists,
-    userLocation
+    userLocation,
+    user
   } = useContext(AppContext);
 
   const [tracks, setTracks] = useState([]);
@@ -70,7 +71,6 @@ const ChartDetailsView = () => {
       if (!res.ok) throw new Error('Failed to retrieve chart tracks');
       
       const data = await res.json();
-      // Slice according to the chart limit (10, 20, 50, etc.)
       setTracks(data.slice(0, activeChart.limit));
     } catch (err) {
       console.error(err);
@@ -106,6 +106,17 @@ const ChartDetailsView = () => {
       </div>
     );
   }
+
+  const isUserArtist = user && user.artistName && user.artistName.trim().length > 0;
+  
+  // Check loaded top charts to find rankings matching user artist identifiers
+  const userRankings = tracks
+    .map((track, index) => ({ track, rank: index + 1 }))
+    .filter(item => {
+      if (item.track.artist === user?._id) return true;
+      if (item.track.artistName && user?.artistName && item.track.artistName.toLowerCase().trim() === user.artistName.toLowerCase().trim()) return true;
+      return false;
+    });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', animation: 'fadeIn 0.3s ease' }}>
@@ -230,6 +241,61 @@ const ChartDetailsView = () => {
         </button>
       </div>
 
+      {/* 4. DYNAMIC ARTIST RANK ALERT WIDGET */}
+      {isUserArtist && userRankings.length > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)',
+          border: '1.5px solid var(--premium-color)',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '20px',
+          boxShadow: 'var(--glass-shadow)',
+          animation: 'slide-up 0.4s ease'
+        }}>
+          <div style={{ fontSize: '36px' }}>🏆</div>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--premium-color)', fontSize: '16px', fontWeight: '800', fontFamily: 'Outfit' }}>
+              Your Artist Chart Ranking!
+            </h4>
+            <p style={{ margin: '6px 0 0 0', fontSize: '13.5px', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+              Congratulations, <strong>{user.artistName || user.name}</strong>! You have <strong>{userRankings.length}</strong> track{userRankings.length > 1 ? 's' : ''} currently ranking inside the <strong>{activeChart.title}</strong>:
+            </p>
+            <ul style={{ margin: '8px 0 0 16px', padding: 0, listStyleType: 'disc', color: 'var(--text-secondary)', fontSize: '13px' }}>
+              {userRankings.map((item, idx) => (
+                <li key={idx} style={{ marginTop: '4px' }}>
+                  "<strong>{item.track.title}</strong>" is currently ranked <strong style={{ color: 'var(--premium-color)' }}>#{item.rank}</strong> with <strong>{item.track.plays?.toLocaleString() || 0}</strong> plays!
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {isUserArtist && userRankings.length === 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(13, 19, 38, 0.2) 100%)',
+          border: '1px dashed var(--border-color)',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          animation: 'slide-up 0.4s ease'
+        }}>
+          <div style={{ fontSize: '30px' }}>🚀</div>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '15px', fontWeight: '800', fontFamily: 'Outfit' }}>
+              Motivate Your Fans!
+            </h4>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              Hey <strong>{user.artistName || user.name}</strong>! You don't have songs in this chart yet. Upload more tracks, share your links, and gather streams to rank in the next weekly update!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Tracks table */}
       {tracks.length === 0 ? (
         <div style={{
@@ -340,7 +406,7 @@ const ChartDetailsView = () => {
                   
                   {/* Stream count Column */}
                   <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-                    {track.plays || 0}
+                    {track.plays?.toLocaleString() || 0}
                   </td>
                   
                   {/* Playlist select dropdown */}

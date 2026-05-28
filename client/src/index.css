@@ -1335,11 +1335,18 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
   .app-container {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr var(--player-height) 60px;
+    grid-template-rows: 1fr 60px;
+    grid-template-areas:
+      "main"
+      "sidebar";
+  }
+  
+  .app-container.has-player {
+    grid-template-rows: 1fr var(--player-height) 60px !important;
     grid-template-areas:
       "main"
       "player"
-      "sidebar";
+      "sidebar" !important;
   }
   
   .sidebar {
@@ -1366,6 +1373,10 @@ h1, h2, h3, h4, h5, h6 {
   
   .main-content {
     padding: 20px;
+    height: calc(100vh - 60px);
+  }
+
+  .app-container.has-player .main-content {
     height: calc(100vh - var(--player-height) - 60px);
   }
   

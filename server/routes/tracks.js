@@ -177,7 +177,13 @@ router.get('/trending', async (req, res) => {
     // Fetch popular Jamendo licensed tracks to represent global charts
     let jamendoTracks = [];
     try {
-      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=popularity_total&audioformat=mp32&include=lyrics`;
+      let orderParam = 'popularity_total';
+      if (period === 'week') {
+        orderParam = 'popularity_week';
+      } else if (period === 'month') {
+        orderParam = 'popularity_month';
+      }
+      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=${orderParam}&audioformat=mp32&include=lyrics`;
       const jamRes = await fetch(jamUrl);
       if (jamRes.ok) {
         const data = await jamRes.json();
@@ -804,6 +810,7 @@ router.get('/jamendo/genres', async (req, res) => {
 // @access  Public
 router.get('/jamendo/artist/:id', async (req, res) => {
   const artistId = req.params.id;
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
   try {
     // 1. Try to find mirrored/cached artist in our database
     let dbUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
