@@ -202,13 +202,14 @@ const LyricsView = () => {
             {visibleLines.map((line, idx) => {
               const isActive = idx === activeIndex;
               const isPast = idx < activeIndex;
+              const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
               return (
                 <p 
                   key={idx} 
                   ref={isActive ? activeLineRef : null}
-                  className={`lyrics-text-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
+                  className={`lyrics-text-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
                   onClick={() => handleLineClick(line.time)}
-                  style={line.isInstrumental ? {
+                  style={isInstrumental ? {
                     color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',
                     fontStyle: 'italic',
                     display: 'flex',
@@ -217,7 +218,7 @@ const LyricsView = () => {
                     gap: '12px'
                   } : {}}
                 >
-                  {line.isInstrumental ? (
+                  {isInstrumental ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px' }}>
                       {isActive && <span className="spinning-music-note">🎵</span>}
                       🎵

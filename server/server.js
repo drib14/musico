@@ -60,7 +60,6 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tracks', require('./routes/tracks'));
 app.use('/api/playlists', require('./routes/playlists'));
 app.use('/api/billing', require('./routes/billing'));
-app.use('/api/events', require('./routes/events'));
 
 // Root Status Check Route
 app.get('/status', (req, res) => {

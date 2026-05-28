@@ -626,7 +626,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Card lists and grids */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
   gap: 24px;
 }
 
@@ -2415,7 +2415,7 @@ h1, h2, h3, h4, h5, h6 {
 .genre-grid-container,
 .concert-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
   gap: 24px;
 }
 

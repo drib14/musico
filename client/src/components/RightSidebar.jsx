@@ -71,9 +71,13 @@ const RightSidebar = () => {
 
   const fetchArtistDetails = async () => {
     try {
+      const artistId = currentTrack.isJamendo 
+        ? (currentTrack.jamendoArtistId || currentTrack.artist)
+        : currentTrack.artist;
+
       const url = currentTrack.isJamendo
-        ? `${API_URL}/tracks/jamendo/artist/${currentTrack.artist}`
-        : `${API_URL}/auth/users/${currentTrack.artist}`;
+        ? `${API_URL}/tracks/jamendo/artist/${artistId}`
+        : `${API_URL}/auth/users/${artistId}`;
         
       const res = await fetch(url);
       if (res.ok) {
@@ -483,21 +487,23 @@ const RightSidebar = () => {
                       <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)' }}>{c.date}</span>
                       <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{c.title}</span>
                       <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</span>
-                      <a 
-                        href={c.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(artistInfo.artistName || artistInfo.name)}`}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{
-                          marginTop: '6px',
-                          fontSize: '11px',
-                          color: 'var(--accent)',
-                          textDecoration: 'underline',
-                          fontWeight: 'bold',
-                          display: 'inline-block'
-                        }}
-                      >
-                        Get Tickets
-                      </a>
+                      {c.url && (
+                        <a 
+                          href={c.url}
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{
+                            marginTop: '6px',
+                            fontSize: '11px',
+                            color: 'var(--accent)',
+                            textDecoration: 'underline',
+                            fontWeight: 'bold',
+                            display: 'inline-block'
+                          }}
+                        >
+                          Get Tickets
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -542,28 +548,59 @@ const RightSidebar = () => {
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {parsedLines.map((line, idx) => {
-                    const isActive = idx === activeIndex;
-                    const isPast = idx < activeIndex;
-                    return (
-                      <p
-                        key={idx}
-                        ref={isActive ? activeLineRef : null}
-                        onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
-                      >
-                        {line.isInstrumental ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '18px' }}>
-                            {isActive && <span className="spinning-music-note">🎵</span>}
-                            🎵
-                          </span>
-                        ) : (
-                          line.text.length === 0 ? '\u00A0' : line.text
-                        )}
-                      </p>
-                    );
-                  })}
+                  {(() => {
+                    const displayLinesCount = 3;
+                    const startIndex = activeIndex === -1 ? 0 : Math.max(0, activeIndex);
+                    const endIndex = Math.min(parsedLines.length, startIndex + displayLinesCount);
+                    const slicedLines = parsedLines.slice(startIndex, endIndex);
+
+                    return slicedLines.map((line, slicedIdx) => {
+                      const absoluteIdx = startIndex + slicedIdx;
+                      const isActive = absoluteIdx === activeIndex;
+                      const isPast = absoluteIdx < activeIndex;
+                      const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
+                      
+                      return (
+                        <p
+                          key={absoluteIdx}
+                          ref={isActive ? activeLineRef : null}
+                          onClick={() => handleLineClick(line.time)}
+                          className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
+                        >
+                          {isInstrumental ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '18px' }}>
+                              {isActive && <span className="spinning-music-note">🎵</span>}
+                              🎵
+                            </span>
+                          ) : (
+                            line.text.length === 0 ? '\u00A0' : line.text
+                          )}
+                        </p>
+                      );
+                    });
+                  })()}
                 </div>
+                {parsedLines.length > 3 && (
+                  <button
+                    onClick={() => setShowLyrics(true)}
+                    className="btn btn-secondary"
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      borderRadius: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      width: '100%',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Show Full Lyrics (expand)
+                  </button>
+                )}
               </div>
             ) : (
               // Uploader Lyrics Addition Block

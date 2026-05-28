@@ -15,6 +15,10 @@ const ProfileView = () => {
   const [editedTwitter, setEditedTwitter] = useState('');
   const [editedInstagram, setEditedInstagram] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventVenue, setNewEventVenue] = useState('');
+  const [newEventCity, setNewEventCity] = useState('');
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -127,6 +131,32 @@ const ProfileView = () => {
   const { user, tracks, playlists } = profileData;
   const isOwnProfile = currentUser && activeProfileId === currentUser._id;
   const joinDate = new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+
+  const handleAddConcert = () => {
+    if (!newEventDate.trim() || !newEventTitle.trim() || !newEventVenue.trim() || !newEventCity.trim()) {
+      return showToast('Please fill in all event fields', 'error');
+    }
+    const newConcert = {
+      date: newEventDate.trim(),
+      title: newEventTitle.trim(),
+      venue: newEventVenue.trim(),
+      city: newEventCity.trim()
+    };
+    const updatedConcerts = [...(user.concerts || []), newConcert];
+    saveProfileField('concerts', updatedConcerts);
+    
+    // Reset state fields
+    setNewEventDate('');
+    setNewEventTitle('');
+    setNewEventVenue('');
+    setNewEventCity('');
+  };
+
+  const handleDeleteConcert = (idx) => {
+    const updatedConcerts = [...(user.concerts || [])];
+    updatedConcerts.splice(idx, 1);
+    saveProfileField('concerts', updatedConcerts);
+  };
 
   const hasBanner = user.artistBanner && user.artistBanner.trim().length > 0;
   const bannerBackground = hasBanner 
@@ -573,60 +603,202 @@ const ProfileView = () => {
         </section>
       )}
 
-      {/* 4. UPCOMING CONCERTS */}
-      {user.concerts && user.concerts.length > 0 && (
+      {/* 4. UPCOMING CONCERTS & CREATOR MANAGER */}
+      {((user.concerts && user.concerts.length > 0) || isOwnProfile) && (
         <section style={{ animation: 'fadeIn 0.3s ease' }}>
           <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Calendar className="w-6 h-6 text-accent" /> Upcoming Concerts & Events
           </h2>
-          <div className="concert-grid-container">
-            {user.concerts.map((c, idx) => (
-              <div 
-                key={idx}
-                className="concert-card"
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase',
-                    color: 'var(--accent)',
-                    backgroundColor: 'var(--accent-light)',
-                    padding: '4px 10px',
-                    borderRadius: '20px'
-                  }}>
-                    Live Show
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold' }}>{c.date}</span>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>{c.title}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{c.venue}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{c.city}</p>
-                </div>
-                <a 
-                  href={c.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(user.artistName || user.name)}`}
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn btn-primary"
-                  style={{
-                    marginTop: '8px',
-                    padding: '8px 16px',
-                    fontSize: '13px',
-                    borderRadius: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold'
-                  }}
+          {user.concerts && user.concerts.length > 0 ? (
+            <div className="concert-grid-container">
+              {user.concerts.map((c, idx) => (
+                <div 
+                  key={idx}
+                  className="concert-card"
                 >
-                  Get Tickets
-                </a>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      textTransform: 'uppercase',
+                      color: 'var(--accent)',
+                      backgroundColor: 'var(--accent-light)',
+                      padding: '4px 10px',
+                      borderRadius: '20px'
+                    }}>
+                      Live Show
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold' }}>{c.date}</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>{c.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{c.venue}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{c.city}</p>
+                  </div>
+                  
+                  {isOwnProfile ? (
+                    <button 
+                      onClick={() => handleDeleteConcert(idx)}
+                      className="btn btn-secondary"
+                      style={{
+                        marginTop: '8px',
+                        padding: '8px 16px',
+                        fontSize: '13px',
+                        borderRadius: '20px',
+                        color: 'var(--danger)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        width: '100%'
+                      }}
+                    >
+                      Delete Event
+                    </button>
+                  ) : (
+                    c.url && (
+                      <a 
+                        href={c.url}
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-primary"
+                        style={{
+                          marginTop: '8px',
+                          padding: '8px 16px',
+                          fontSize: '13px',
+                          borderRadius: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          textDecoration: 'none',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        Get Tickets
+                      </a>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontStyle: 'italic', margin: '0 0 16px 0' }}>
+              No concerts added yet. Add your first live tour or local gig below!
+            </p>
+          )}
+
+          {isOwnProfile && (
+            <div style={{
+              marginTop: '24px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '20px',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxShadow: 'var(--glass-shadow)'
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--accent)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Add Upcoming Live Event
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Event Date / Time</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. October 15, 2026 at 8:00 PM"
+                    value={newEventDate}
+                    onChange={(e) => setNewEventDate(e.target.value)}
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Event Title / Tour Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Echoes of Midnight Tour"
+                    value={newEventTitle}
+                    onChange={(e) => setNewEventTitle(e.target.value)}
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Venue</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Madison Square Garden"
+                    value={newEventVenue}
+                    onChange={(e) => setNewEventVenue(e.target.value)}
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>City / Country</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. New York, USA"
+                    value={newEventCity}
+                    onChange={(e) => setNewEventCity(e.target.value)}
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
               </div>
-            ))}
-          </div>
+
+              <button
+                onClick={handleAddConcert}
+                className="btn btn-primary"
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '10px 24px',
+                  borderRadius: '24px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  marginTop: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Add Live Event
+              </button>
+            </div>
+          )}
         </section>
       )}
 

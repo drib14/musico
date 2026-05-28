@@ -34,10 +34,13 @@ const SongDetailsView = () => {
     setLoading(true);
     try {
       // 1. Fetch artist details, tracks, and albums
-      const isJam = currentTrack.isJamendo;
-      const artistUrl = isJam
-        ? `${API_URL}/tracks/jamendo/artist/${currentTrack.artist}`
-        : `${API_URL}/auth/users/${currentTrack.artist}`;
+      const artistId = currentTrack.isJamendo 
+        ? (currentTrack.jamendoArtistId || currentTrack.artist)
+        : currentTrack.artist;
+
+      const artistUrl = currentTrack.isJamendo
+        ? `${API_URL}/tracks/jamendo/artist/${artistId}`
+        : `${API_URL}/auth/users/${artistId}`;
 
       const artRes = await fetch(artistUrl);
       if (artRes.ok) {

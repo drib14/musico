@@ -379,6 +379,9 @@ router.put(
       if (facebook !== undefined) user.facebook = facebook;
       if (twitter !== undefined) user.twitter = twitter;
       if (instagram !== undefined) user.instagram = instagram;
+      if (req.body.concerts !== undefined) {
+        user.concerts = typeof req.body.concerts === 'string' ? JSON.parse(req.body.concerts) : req.body.concerts;
+      }
 
 
       // Handle Image uploads to Cloudinary
@@ -471,48 +474,7 @@ router.get('/users/:id', async (req, res) => {
     userObj.facebook = userObj.facebook || `https://facebook.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
-    const fetchTicketmasterConcerts = async (artistName) => {
-      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY;
-      if (!apiKey || !artistName) return [];
-      try {
-        const response = await fetch(
-          `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${apiKey}&keyword=${encodeURIComponent(artistName)}&classificationName=music&size=5`
-        );
-        if (!response.ok) {
-          console.error(`Ticketmaster API error: ${response.status}`);
-          return [];
-        }
-        const data = await response.json();
-        if (!data._embedded || !data._embedded.events) return [];
-        return data._embedded.events.map(event => {
-          const dateStr = event.dates?.start?.localDate || 'TBD';
-          let formattedDate = dateStr;
-          if (dateStr !== 'TBD') {
-            try {
-              const d = new Date(dateStr);
-              formattedDate = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            } catch (e) {}
-          }
-          const venueObj = event._embedded?.venues?.[0];
-          const venueName = venueObj?.name || 'TBD Venue';
-          const city = venueObj?.city?.name || '';
-          const country = venueObj?.country?.name || venueObj?.country?.countryCode || '';
-          const cityCountry = city && country ? `${city}, ${country}` : (city || country || 'TBD Location');
-          return {
-            date: formattedDate,
-            title: event.name || 'Concert',
-            venue: venueName,
-            city: cityCountry,
-            url: event.url || `https://www.ticketmaster.com/search?q=${encodeURIComponent(artistName)}`
-          };
-        });
-      } catch (err) {
-        console.error('Error fetching Ticketmaster events:', err);
-        return [];
-      }
-    };
-
-    userObj.concerts = await fetchTicketmasterConcerts(userObj.artistName || userObj.name);
+    userObj.concerts = userObj.concerts || [];
 
 
     // Fetch public playlists created by this user
