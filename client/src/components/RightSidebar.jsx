@@ -91,38 +91,22 @@ const RightSidebar = () => {
     }
   };
 
-  // Sync playback elapsed time via requestAnimationFrame for smoother updates
+  // Sync playback elapsed time via timeupdate event listener for highly reliable precision sync
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
 
-    let animationFrameId;
-    const updateTime = () => {
+    const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime || 0);
-      animationFrameId = requestAnimationFrame(updateTime);
     };
 
-    const handlePlay = () => {
-      animationFrameId = requestAnimationFrame(updateTime);
-    };
-
-    const handlePause = () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-
-    if (!audio.paused) {
-      handlePlay();
-    } else {
-      setCurrentTime(audio.currentTime || 0);
-    }
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    
+    // Initial sync
+    setCurrentTime(audio.currentTime || 0);
 
     return () => {
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      cancelAnimationFrame(animationFrameId);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [audioRef, currentTrack]);
 

@@ -33,6 +33,19 @@ const Upload = () => {
     producer: ''
   });
 
+  const [audioUrl, setAudioUrl] = useState('');
+  const singleAudioRef = React.useRef(null);
+  
+  useEffect(() => {
+    if (audioFile) {
+      const url = URL.createObjectURL(audioFile);
+      setAudioUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setAudioUrl('');
+    }
+  }, [audioFile]);
+
   // --- ALBUM UPLOAD STATE ---
   const [albumName, setAlbumName] = useState('');
   const [albumDescription, setAlbumDescription] = useState('');
@@ -687,6 +700,7 @@ const Upload = () => {
           <div className="form-group" style={{ marginTop: '24px' }}>
             <label className="form-label">Lyrics (Optional)</label>
             <textarea
+              id="single-lyrics-textarea"
               className="form-input"
               rows="6"
               style={{
@@ -706,6 +720,103 @@ const Upload = () => {
               value={lyrics}
               onChange={(e) => setLyrics(e.target.value)}
             />
+            {audioFile && (
+              <div style={{
+                marginTop: '12px',
+                padding: '16px',
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                boxShadow: 'var(--glass-shadow)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⏱️ Timed Lyrics Sync Assistant
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sync your lyrics as you listen</span>
+                </div>
+                
+                <audio ref={singleAudioRef} src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      const audio = singleAudioRef.current;
+                      if (!audio) return;
+                      const time = audio.currentTime;
+                      const mins = Math.floor(time / 60).toString().padStart(2, '0');
+                      const secs = Math.floor(time % 60).toString().padStart(2, '0');
+                      const stamp = `[${mins}:${secs}] `;
+                      
+                      const textarea = document.getElementById('single-lyrics-textarea');
+                      if (textarea) {
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const text = textarea.value;
+                        const before = text.substring(0, start);
+                        const after = text.substring(end, text.length);
+                        setLyrics(before + stamp + after);
+                        setTimeout(() => {
+                          textarea.focus();
+                          textarea.setSelectionRange(start + stamp.length, start + stamp.length);
+                        }, 50);
+                      } else {
+                        setLyrics(prev => prev + stamp);
+                      }
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '12.5px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ⏱️ Stamp Current Time
+                  </button>
+                  
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      if (!lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
+                      const lines = lyrics.split('\n');
+                      let time = 0;
+                      const stamped = lines.map(line => {
+                        if (line.trim().length === 0) return line;
+                        const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
+                        const mins = Math.floor(time / 60).toString().padStart(2, '0');
+                        const secs = Math.floor(time % 60).toString().padStart(2, '0');
+                        const res = `[${mins}:${secs}] ${clean}`;
+                        time += 4;
+                        return res;
+                      });
+                      setLyrics(stamped.join('\n'));
+                      showToast('Auto-generated template timestamps every 4 seconds!');
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '12.5px',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🪄 Auto-Stamp Template
+                  </button>
+                </div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  💡 <strong>Tip:</strong> Play your song above. Click <strong>Stamp Current Time</strong> at the exact start of a line to insert the <code>[mm:ss]</code> timestamp. Timed lyrics let listeners scrub through your song by tapping lines!
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Publish Buttons */}
@@ -1052,6 +1163,7 @@ const Upload = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
                     <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Scrolling Lyrics (Optional)</label>
                     <textarea
+                      id={`album-track-lyrics-textarea-${idx}`}
                       className="form-input"
                       rows="2"
                       placeholder="Type or paste timed lyrics here..."
@@ -1059,6 +1171,87 @@ const Upload = () => {
                       onChange={(e) => handleUpdateTrackRow(idx, 'lyrics', e.target.value)}
                       style={{ fontSize: '12.5px', padding: '8px 12px', fontFamily: 'inherit', resize: 'vertical' }}
                     />
+                    {track.audioFile && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '12px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent)' }}>⏱️ Timed Lyrics Assistant (Track #{idx + 1})</span>
+                        </div>
+                        
+                        <audio 
+                          id={`album-preview-audio-${idx}`}
+                          src={URL.createObjectURL(track.audioFile)} 
+                          controls 
+                          style={{ width: '100%', height: '36px' }} 
+                        />
+                        
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              const audio = document.getElementById(`album-preview-audio-${idx}`);
+                              if (!audio) return;
+                              const time = audio.currentTime;
+                              const mins = Math.floor(time / 60).toString().padStart(2, '0');
+                              const secs = Math.floor(time % 60).toString().padStart(2, '0');
+                              const stamp = `[${mins}:${secs}] `;
+                              
+                              const textarea = document.getElementById(`album-track-lyrics-textarea-${idx}`);
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = textarea.value;
+                                const before = text.substring(0, start);
+                                const after = text.substring(end, text.length);
+                                handleUpdateTrackRow(idx, 'lyrics', before + stamp + after);
+                                setTimeout(() => {
+                                  textarea.focus();
+                                  textarea.setSelectionRange(start + stamp.length, start + stamp.length);
+                                }, 50);
+                              } else {
+                                handleUpdateTrackRow(idx, 'lyrics', track.lyrics + stamp);
+                              }
+                            }}
+                            style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 'bold' }}
+                          >
+                            ⏱️ Stamp Current Time
+                          </button>
+                          
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              if (!track.lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
+                              const lines = track.lyrics.split('\n');
+                              let time = 0;
+                              const stamped = lines.map(line => {
+                                if (line.trim().length === 0) return line;
+                                const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
+                                const mins = Math.floor(time / 60).toString().padStart(2, '0');
+                                const secs = Math.floor(time % 60).toString().padStart(2, '0');
+                                const res = `[${mins}:${secs}] ${clean}`;
+                                time += 4;
+                                return res;
+                              });
+                              handleUpdateTrackRow(idx, 'lyrics', stamped.join('\n'));
+                              showToast('Auto-generated template timestamps every 4 seconds!');
+                            }}
+                            style={{ padding: '4px 10px', fontSize: '11px' }}
+                          >
+                            🪄 Auto-Stamp Template
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                 </div>

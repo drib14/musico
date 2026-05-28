@@ -542,27 +542,10 @@ const Home = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="grid-container carousel-desktop">
-                {tracks.slice(0, visibleTracksCount).map((track) => (
-                  <TrackCard key={track._id} track={track} trackList={tracks} />
+                {tracks.slice(0, 8).map((track) => (
+                  <TrackCard key={track._id} track={track} trackList={tracks.slice(0, 8)} />
                 ))}
               </div>
-              
-              {tracks.length > visibleTracksCount && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={handleLoadMoreSongs}
-                    style={{
-                      padding: '10px 24px',
-                      borderRadius: '20px',
-                      fontSize: '13px',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Load More Songs
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </section>

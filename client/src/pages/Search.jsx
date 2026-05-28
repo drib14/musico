@@ -32,6 +32,24 @@ const Search = () => {
   const limit = 20;
 
   const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
+  const [genresList, setGenresList] = useState([]);
+
+  // Fetch genres for Browse Categories (exactly 8 cards)
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const res = await fetch(`${API_URL}/tracks/jamendo/genres`);
+        if (res.ok) {
+          const data = await res.json();
+          // Slice genres list to exactly 8 cards
+          setGenresList(data.slice(0, 8));
+        }
+      } catch (err) {
+        console.error('Error loading Jamendo genres in search page:', err);
+      }
+    };
+    fetchGenres();
+  }, [API_URL]);
 
   // Trigger search on query/genre changes (resets pagination offset)
   useEffect(() => {
@@ -98,7 +116,7 @@ const Search = () => {
     fetchFilteredTracks(nextOffset, true);
   };
 
-  const hasAnyResults = searchResults.tracks.length > 0 || searchResults.artists.length > 0 || searchResults.albums.length > 0;
+  const showBrowseCategories = search.trim() === '' && genre === 'All';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -135,8 +153,65 @@ const Search = () => {
         ))}
       </div>
 
-      {/* Results division */}
-      {loading ? (
+      {/* Results division or Browse Categories */}
+      {showBrowseCategories ? (
+        genresList.length > 0 && (
+          <section style={{ animation: 'fadeIn 0.3s ease' }}>
+            <h2 style={{ fontSize: '22px', marginBottom: '16px', fontWeight: 'bold' }}>Browse All</h2>
+            <div className="genre-grid-container" style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: '20px'
+            }}>
+              {genresList.map((g, idx) => (
+                <div
+                  key={idx}
+                  className="genre-card"
+                  style={{
+                    position: 'relative',
+                    height: '110px',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    backgroundColor: g.color,
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.03)';
+                    e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.25)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
+                  }}
+                  onClick={() => {
+                    setGenre(g.name);
+                  }}
+                >
+                  <h3 style={{ fontSize: '18px', color: '#ffffff', fontWeight: '800', margin: 0 }}>{g.name}</h3>
+                  <img
+                    src={g.cover}
+                    alt={g.name}
+                    style={{
+                      position: 'absolute',
+                      right: '-15px',
+                      bottom: '-15px',
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: '6px',
+                      transform: 'rotate(25deg)',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      ) : loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
           <div className="spinner"></div>
         </div>
