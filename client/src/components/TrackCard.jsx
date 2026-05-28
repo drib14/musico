@@ -283,8 +283,10 @@ const TrackCard = ({ track, trackList = [] }) => {
           )}
         </div>
       </div>
-
-      <div className="song-card-genre" style={{ marginTop: 'auto' }}>{track.genre}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
+        <span className="song-card-genre" style={{ margin: 0 }}>{track.genre}</span>
+        <span>{track.plays ? `${track.plays.toLocaleString()} plays` : '0 plays'}</span>
+      </div>
     </div>
   );
 };

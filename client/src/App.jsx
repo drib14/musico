@@ -19,6 +19,9 @@ import PlaylistDetails from './pages/PlaylistDetails';
 import ChartDetails from './pages/ChartDetails';
 import Lyrics from './pages/Lyrics';
 import SongDetails from './pages/SongDetails';
+import AllArtists from './pages/AllArtists';
+import AllPlaylists from './pages/AllPlaylists';
+import AllTracks from './pages/AllTracks';
 
 const MainAppContent = () => {
   const { 
@@ -83,6 +86,9 @@ const MainAppContent = () => {
         <Route path="/pages/playlist-details" element={<PlaylistDetails />} />
         <Route path="/pages/chart-details" element={<ChartDetails />} />
         <Route path="/pages/song-details" element={<SongDetails />} />
+        <Route path="/pages/all-artists" element={<AllArtists />} />
+        <Route path="/pages/all-playlists" element={<AllPlaylists />} />
+        <Route path="/pages/all-tracks" element={<AllTracks />} />
         <Route path="*" element={<Navigate to="/pages/home" replace />} />
       </Routes>
     );

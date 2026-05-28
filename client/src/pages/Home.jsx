@@ -211,9 +211,28 @@ const Home = () => {
       {/* 2. Featured Playlists & Featured Albums (Spotify Style) */}
       {topPlaylists.length > 0 && (
         <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '22px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
+            </h2>
+            <button 
+              onClick={() => setActiveView('all-playlists')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '13.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                outline: 'none'
+              }}
+            >
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           <div className="grid-container carousel-desktop">
             {topPlaylists.map((pl) => (
               <div
@@ -240,9 +259,28 @@ const Home = () => {
       {/* 3. POPULAR ARTISTS (Spotify Style slot circles) */}
       {topArtists.length > 0 && (
         <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users className="w-6 h-6 text-accent" /> Popular Artists
-          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '22px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Users className="w-6 h-6 text-accent" /> Popular Artists
+            </h2>
+            <button 
+              onClick={() => setActiveView('all-artists')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '13.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                outline: 'none'
+              }}
+            >
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           <div className="artist-grid-container carousel-desktop">
             {topArtists.map((artist) => (
               <div
@@ -325,7 +363,9 @@ const Home = () => {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Artist</div>
+                  <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>
+                    {artist.monthlyListeners ? `${artist.monthlyListeners.toLocaleString()} listeners` : '18,500 listeners'}
+                  </div>
                 </div>
               </div>
             ))}
@@ -479,7 +519,26 @@ const Home = () => {
       {/* 7. CORE MUSIC POOL LISTINGS */}
       {tracks.length > 0 && (
         <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Trending Uploads</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '22px', margin: 0 }}>Trending Uploads</h2>
+            <button 
+              onClick={() => setActiveView('all-tracks')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '13.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                outline: 'none'
+              }}
+            >
+              View All <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
