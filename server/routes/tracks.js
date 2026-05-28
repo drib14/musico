@@ -7,6 +7,7 @@ const Track = require('../models/Track');
 const User = require('../models/User');
 const Playlist = require('../models/Playlist');
 const PlayLog = require('../models/PlayLog');
+const Album = require('../models/Album');
 const { protect } = require('../middleware/authMiddleware');
 
 const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
@@ -465,7 +466,12 @@ router.get('/search', async (req, res) => {
 
     const mergedArtists = [...localArtists, ...jamendoArtists];
 
-    // 3. Albums & Playlists Search (Local Playlists + Jamendo Albums)
+    // 3. Albums & Playlists Search (Local Albums + Local Playlists + Jamendo Albums)
+    const localAlbums = await Album.find({ name: { $regex: search || '', $options: 'i' } })
+      .populate('artist', 'name')
+      .skip(offset)
+      .limit(limit);
+
     const localPlaylists = await Playlist.find(playlistQuery).populate('creator', 'name').skip(offset).limit(limit);
 
     let jamendoAlbums = [];
@@ -492,7 +498,7 @@ router.get('/search', async (req, res) => {
       console.error('Error fetching Jamendo albums in search:', err);
     }
 
-    const mergedAlbums = [...localPlaylists, ...jamendoAlbums];
+    const mergedAlbums = [...localAlbums, ...localPlaylists, ...jamendoAlbums];
 
     res.json({
       tracks: mergedTracks,
@@ -978,5 +984,75 @@ router.post('/import', protect, async (req, res) => {
     res.status(500).json({ message: 'Failed to import track to database' });
   }
 });
+
+// @desc    Create a new album with cover and associated tracks
+// @route   POST /api/tracks/albums
+// @access  Private
+router.post(
+  '/albums',
+  protect,
+  upload.fields([{ name: 'cover', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      const { name, description, genre, tracks } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ message: 'Album name is required' });
+      }
+
+      // Validate presence of Artist Profile
+      if (!req.user.artistName) {
+        return res.status(400).json({ message: 'You must set up your Artist Profile before distributing albums on Musico.' });
+      }
+
+      const coverFile = req.files.cover ? req.files.cover[0] : null;
+
+      // Upload Cover to Cloudinary (or use fallback)
+      let coverUrl = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop'; // Modern fallback cover
+      if (coverFile) {
+        console.log('Uploading album cover image to Cloudinary...');
+        const coverResult = await uploadStreamToCloudinary(
+          coverFile.buffer,
+          'image',
+          'musico/albums'
+        );
+        coverUrl = coverResult.secure_url;
+      }
+
+      // Parse track IDs
+      let parsedTracks = [];
+      if (tracks) {
+        parsedTracks = typeof tracks === 'string' ? JSON.parse(tracks) : tracks;
+      }
+
+      // Create Album
+      const album = await Album.create({
+        name,
+        description: description || '',
+        coverUrl,
+        artist: req.user._id,
+        artistName: req.user.artistName,
+        tracks: parsedTracks,
+        genre: genre || 'Pop'
+      });
+
+      // Update all included tracks to use this album's cover art if they don't have one!
+      if (parsedTracks.length > 0) {
+        await Track.updateMany(
+          { _id: { $in: parsedTracks }, coverUrl: { $in: ['', null, 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop'] } },
+          { coverUrl: coverUrl }
+        );
+      }
+
+      res.status(201).json({
+        message: 'Album created successfully!',
+        album
+      });
+    } catch (error) {
+      console.error('Album creation error:', error);
+      res.status(500).json({ message: error.message || 'Server error during album creation' });
+    }
+  }
+);
 
 module.exports = router;

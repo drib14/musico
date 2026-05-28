@@ -105,6 +105,7 @@ const userSchema = new mongoose.Schema(
         city: { type: String, default: '' },
         venue: { type: String, default: '' },
         title: { type: String, default: '' },
+        url: { type: String, default: '' },
       }
     ],
     isJamendoArtist: {

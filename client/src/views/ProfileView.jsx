@@ -21,6 +21,7 @@ const ProfileView = () => {
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newEventCity, setNewEventCity] = useState('');
+  const [newEventUrl, setNewEventUrl] = useState('');
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -146,7 +147,8 @@ const ProfileView = () => {
       date: newEventDate.trim(),
       title: newEventTitle.trim(),
       venue: newEventVenue.trim(),
-      city: newEventCity.trim()
+      city: newEventCity.trim(),
+      url: newEventUrl.trim()
     };
     const updatedConcerts = [...(user.concerts || []), newConcert];
     saveProfileField('concerts', updatedConcerts);
@@ -156,6 +158,7 @@ const ProfileView = () => {
     setNewEventTitle('');
     setNewEventVenue('');
     setNewEventCity('');
+    setNewEventUrl('');
   };
 
   const handleDeleteConcert = (idx) => {
@@ -774,6 +777,24 @@ const ProfileView = () => {
                     placeholder="e.g. New York, USA"
                     value={newEventCity}
                     onChange={(e) => setNewEventCity(e.target.value)}
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px',
+                      padding: '10px 14px',
+                      color: 'var(--text-primary)',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Ticket Link / Event URL (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. https://tickets.com/event"
+                    value={newEventUrl}
+                    onChange={(e) => setNewEventUrl(e.target.value)}
                     style={{
                       backgroundColor: 'var(--bg-tertiary)',
                       border: '1px solid var(--border-color)',

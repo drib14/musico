@@ -162,7 +162,11 @@ const Sidebar = ({ onOpenAuth }) => {
 
         {/* User Card */}
         {user ? (
-          <div className="user-sidebar-card">
+          <div 
+            className="user-sidebar-card"
+            onClick={() => triggerProfileView(user._id, false)}
+            style={{ cursor: 'pointer' }}
+          >
             {user.userAvatar ? (
               <img 
                 src={user.userAvatar} 
@@ -174,8 +178,8 @@ const Sidebar = ({ onOpenAuth }) => {
                 {user.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="user-info">
-              <div className="user-name">{user.name}</div>
+            <div className="user-info" style={{ flex: 1, minWidth: 0 }}>
+              <div className="user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
               {user.isPremium ? (
                 <div className="user-badge">
                   <Crown style={{ width: '10px', height: '10px' }} />
@@ -188,7 +192,7 @@ const Sidebar = ({ onOpenAuth }) => {
             <button 
               className="btn-icon" 
               style={{ border: 'none', background: 'transparent' }}
-              onClick={logoutUser}
+              onClick={(e) => { e.stopPropagation(); logoutUser(); }}
               title="Logout"
             >
               <LogOut className="w-4 h-4" style={{ color: 'var(--danger)' }} />

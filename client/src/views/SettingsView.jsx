@@ -38,6 +38,10 @@ const SettingsView = () => {
   const [artistAvatarPreview, setArtistAvatarPreview] = useState(user?.artistAvatar || '');
   const [artistBannerFile, setArtistBannerFile] = useState(null);
   const [artistBannerPreview, setArtistBannerPreview] = useState(user?.artistBanner || '');
+  const [website, setWebsite] = useState(user?.website || '');
+  const [facebook, setFacebook] = useState(user?.facebook || '');
+  const [twitter, setTwitter] = useState(user?.twitter || '');
+  const [instagram, setInstagram] = useState(user?.instagram || '');
 
   // Billing history states
   const [billingHistory, setBillingHistory] = useState([]);
@@ -54,6 +58,10 @@ const SettingsView = () => {
       setIsArtistVerified(user.isArtistVerified || false);
       setArtistAvatarPreview(user.artistAvatar || '');
       setArtistBannerPreview(user.artistBanner || '');
+      setWebsite(user.website || '');
+      setFacebook(user.facebook || '');
+      setTwitter(user.twitter || '');
+      setInstagram(user.instagram || '');
     }
   }, [user]);
 
@@ -151,6 +159,10 @@ const SettingsView = () => {
     formData.append('artistName', artistName.trim());
     formData.append('artistBio', artistBio.trim());
     formData.append('isArtistVerified', isArtistVerified);
+    formData.append('website', website.trim());
+    formData.append('facebook', facebook.trim());
+    formData.append('twitter', twitter.trim());
+    formData.append('instagram', instagram.trim());
 
     // Append image files if selected
     if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
@@ -543,6 +555,50 @@ const SettingsView = () => {
                   placeholder="Share a short story of your music career, monthly listeners background, and creative style..."
                   value={artistBio}
                   onChange={(e) => setArtistBio(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Website and Social Contact inputs inside Settings */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '4px' }}>
+              <div className="form-group">
+                <label className="form-label">Website URL</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. https://mywebsite.com"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Facebook Profile Link / Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. facebook.com/stageName"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Twitter / X Link / Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. twitter.com/stageName"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Instagram Link / Username</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. instagram.com/stageName"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
                 />
               </div>
             </div>

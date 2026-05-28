@@ -37,8 +37,8 @@ const LyricsView = () => {
     const parsed = [];
     let hasAnyTimestamps = false;
 
-    // Pattern matching [mm:ss] or [mm:ss.xx]
-    const timeRegex = /\[(\d{2}):(\d{2})(?:[.:](\d{2,3}))?\]/;
+    // Pattern matching [m:ss], [mm:ss], [m:ss.xx], [mm:ss.xxx]
+    const timeRegex = /\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]/;
 
     lines.forEach((line) => {
       const match = timeRegex.exec(line);
@@ -46,9 +46,10 @@ const LyricsView = () => {
         hasAnyTimestamps = true;
         const mins = parseInt(match[1], 10);
         const secs = parseInt(match[2], 10);
-        const ms = match[3] ? parseInt(match[3], 10) : 0;
+        const msStr = match[3] || '0';
+        const msVal = parseInt(msStr, 10);
         
-        const timeInSecs = mins * 60 + secs + (ms >= 100 ? ms / 1000 : ms / 100);
+        const timeInSecs = mins * 60 + secs + (msVal / Math.pow(10, msStr.length));
         const text = line.replace(timeRegex, '').trim();
         parsed.push({ time: timeInSecs, text });
       } else {
