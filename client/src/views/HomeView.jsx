@@ -317,35 +317,6 @@ const HomeView = () => {
         </div>
       )}
 
-      {/* 2. Featured Playlists & Featured Albums (Spotify Style) */}
-      {topPlaylists.length > 0 && (
-        <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
-          </h2>
-          <div className="grid-container carousel-desktop">
-            {topPlaylists.map((pl) => (
-              <div
-                key={pl._id}
-                className="song-card"
-                onClick={() => {
-                  setActivePlaylistId(pl._id);
-                  setActiveView('playlist-details');
-                }}
-              >
-                <div className="song-card-cover-wrapper">
-                  <PlaylistCover playlist={pl} className="song-card-cover" />
-                </div>
-                <div className="song-card-title">{pl.name}</div>
-                <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
-                  By {pl.creator?.name || 'Musico'} • {pl.tracks?.length || 0} tracks
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* 3. POPULAR ARTISTS (Spotify Style slot circles) */}
       {topArtists.length > 0 && (
         <section>

@@ -21,6 +21,7 @@ const ChartDetailsView = () => {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [fullTracks, setFullTracks] = useState([]);
 
   const handleSaveToDb = async (e, trackId) => {
     e.stopPropagation();
@@ -71,6 +72,7 @@ const ChartDetailsView = () => {
       if (!res.ok) throw new Error('Failed to retrieve chart tracks');
       
       const data = await res.json();
+      setFullTracks(data); // Save the full list for calculating accurate rankings out of bounds
       setTracks(data.slice(0, activeChart.limit));
     } catch (err) {
       console.error(err);

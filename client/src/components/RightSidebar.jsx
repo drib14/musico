@@ -89,20 +89,38 @@ const RightSidebar = () => {
     }
   };
 
-  // Sync playback elapsed time
+  // Sync playback elapsed time via requestAnimationFrame for smoother updates
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
 
-    const handleTimeUpdate = () => {
+    let animationFrameId;
+    const updateTime = () => {
       setCurrentTime(audio.currentTime || 0);
+      animationFrameId = requestAnimationFrame(updateTime);
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    setCurrentTime(audio.currentTime || 0);
+    const handlePlay = () => {
+      animationFrameId = requestAnimationFrame(updateTime);
+    };
+
+    const handlePause = () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
+    if (!audio.paused) {
+      handlePlay();
+    } else {
+      setCurrentTime(audio.currentTime || 0);
+    }
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      cancelAnimationFrame(animationFrameId);
     };
   }, [audioRef, currentTrack]);
 
@@ -364,179 +382,36 @@ const RightSidebar = () => {
       {/* 2. DYNAMIC ARTIST DETAILS */}
       {artistInfo && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h3 
+          <button
             onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
-            style={{ 
-              fontSize: '15px', 
-              color: 'var(--text-secondary)', 
-              textTransform: 'uppercase', 
-              letterSpacing: '1px', 
-              fontWeight: 'bold', 
-              margin: 0,
-              cursor: 'pointer',
+            className="btn btn-secondary"
+            style={{
+              padding: '12px 16px',
+              fontSize: '14px',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'center',
+              gap: '8px',
+              width: '100%',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              border: '1px solid var(--border-color)'
             }}
           >
-            About the Artist <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--accent)', fontWeight: 'bold' }}>(view profile)</span>
-          </h3>
-          
-          <div style={{
-            position: 'relative',
-            backgroundColor: 'var(--bg-tertiary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '14px',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            boxShadow: 'var(--glass-shadow)',
-            overflow: 'hidden'
-          }}>
-            {/* Immersive blurred artist avatar in card background */}
-            {(artistInfo.artistAvatar || artistInfo.userAvatar) && (
-              <div 
-                style={{
-                  backgroundImage: `url(${artistInfo.artistAvatar || artistInfo.userAvatar})`,
-                  position: 'absolute',
-                  inset: 0,
-                  filter: 'blur(30px) brightness(0.2)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  zIndex: 0,
-                  opacity: 0.35,
-                  pointerEvents: 'none'
-                }}
+            {artistInfo.artistAvatar || artistInfo.userAvatar ? (
+              <img
+                src={artistInfo.artistAvatar || artistInfo.userAvatar}
+                alt={artistInfo.artistName || artistInfo.name}
+                style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
               />
-            )}
-
-            {/* Clickable redirect to Artist Profile */}
-            <div 
-              style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', position: 'relative', zIndex: 1 }}
-              onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
-            >
-              {artistInfo.artistAvatar || artistInfo.userAvatar ? (
-                <img 
-                  src={artistInfo.artistAvatar || artistInfo.userAvatar} 
-                  alt={artistInfo.artistName || artistInfo.name} 
-                  style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--accent)' }} 
-                />
-              ) : (
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                  {(artistInfo.artistName || artistInfo.name).charAt(0).toUpperCase()}
-                </div>
-              )}
-              
-              <div>
-                <h4 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
-                  {artistInfo.artistName || artistInfo.name}
-                </h4>
-                <div style={{ display: 'flex', gap: '10px', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  <span><strong>{artistInfo.monthlyListeners?.toLocaleString() || 0}</strong> Listeners</span>
-                  <span>•</span>
-                  <span><strong>{artistInfo.totalPlays?.toLocaleString() || 0}</strong> Streams</span>
-                </div>
-              </div>
-            </div>
-
-            {artistInfo.artistBio && (
-              <p style={{
-                fontSize: '12.5px',
-                color: 'var(--text-secondary)',
-                lineHeight: '1.5',
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                position: 'relative',
-                zIndex: 1
-              }}
-              >
-                {stripHtml(artistInfo.artistBio)}
-              </p>
-            )}
-
-            {(artistInfo.facebook || artistInfo.twitter || artistInfo.instagram || artistInfo.website) && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                {artistInfo.website && (
-                  <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Website">
-                    <Globe style={{ width: '14px', height: '14px' }} />
-                  </a>
-                )}
-                {artistInfo.facebook && (
-                  <a href={artistInfo.facebook.startsWith('http') ? artistInfo.facebook : `https://facebook.com/${artistInfo.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Facebook">
-                    <Facebook style={{ width: '14px', height: '14px' }} />
-                  </a>
-                )}
-                {artistInfo.twitter && (
-                  <a href={artistInfo.twitter.startsWith('http') ? artistInfo.twitter : `https://twitter.com/${artistInfo.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Twitter">
-                    <Twitter style={{ width: '14px', height: '14px' }} />
-                  </a>
-                )}
-                {artistInfo.instagram && (
-                  <a href={artistInfo.instagram.startsWith('http') ? artistInfo.instagram : `https://instagram.com/${artistInfo.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Instagram">
-                    <Instagram style={{ width: '14px', height: '14px' }} />
-                  </a>
-                )}
+            ) : (
+              <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontWeight: 'bold', fontSize: '10px' }}>
+                {(artistInfo.artistName || artistInfo.name).charAt(0).toUpperCase()}
               </div>
             )}
-
-            {artistInfo.concerts && artistInfo.concerts.length > 0 && (
-              <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px', position: 'relative', zIndex: 1 }}>
-                <h5 style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Calendar style={{ width: '13px', height: '13px' }} />
-                  Upcoming Concerts
-                </h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {artistInfo.concerts.map((c, idx) => (
-                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '2px', backgroundColor: 'var(--bg-secondary)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--accent)' }}>{c.date}</span>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{c.title}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</span>
-                      {c.url && (
-                        <a 
-                          href={c.url}
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '11px',
-                            color: 'var(--accent)',
-                            textDecoration: 'underline',
-                            fontWeight: 'bold',
-                            display: 'inline-block'
-                          }}
-                        >
-                          Get Tickets
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
-              className="btn btn-secondary"
-              style={{
-                marginTop: '6px',
-                padding: '8px 12px',
-                fontSize: '12px',
-                borderRadius: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                width: '100%',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                zIndex: 1,
-                position: 'relative'
-              }}
-            >
-              View Full Profile
-            </button>
-          </div>
+            View Artist Profile
+          </button>
         </section>
       )}
 

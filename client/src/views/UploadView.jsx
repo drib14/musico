@@ -237,7 +237,7 @@ const UploadView = () => {
 
   // Dynamic Album list rows management
   const handleAddNewTrackRow = () => {
-    setNewAlbumTracks([...newAlbumTracks, { title: '', audioFile: null, lyrics: '' }]);
+    setNewAlbumTracks([...newAlbumTracks, { title: '', audioFile: null, lyrics: '', coverFile: null }]);
   };
 
   const handleRemoveTrackRow = (idx) => {
@@ -262,6 +262,18 @@ const UploadView = () => {
       return;
     }
     handleUpdateTrackRow(idx, 'audioFile', file);
+  };
+
+  const handleNewTrackCoverSelect = (idx, file) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload a valid image file for track cover', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Track cover file size exceeds 5MB limit', 'error');
+      return;
+    }
+    handleUpdateTrackRow(idx, 'coverFile', file);
   };
 
   // Album Compilation Submission
@@ -300,7 +312,11 @@ const UploadView = () => {
         trackData.append('genre', albumGenre);
         trackData.append('lyrics', track.lyrics.trim());
         trackData.append('audio', track.audioFile);
-        trackData.append('cover', albumCoverFile); // inherit album cover
+        if (track.coverFile) {
+          trackData.append('cover', track.coverFile); // specific track cover
+        } else {
+          trackData.append('cover', albumCoverFile); // inherit album cover
+        }
 
         const trackRes = await fetch(`${API_URL}/tracks/upload`, {
           method: 'POST',
@@ -683,8 +699,33 @@ const UploadView = () => {
 
           </div>
 
+          {/* Contributors Input */}
+          <div style={{ marginTop: '24px', backgroundColor: 'var(--bg-tertiary)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <h4 style={{ fontSize: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              👥 Track Contributors <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 'normal' }}>(Optional)</span>
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '12px' }}>Main Vocalist</label>
+                <input type="text" className="form-input" placeholder="e.g. John Doe" value={contributors.mainVocalist} onChange={(e) => setContributors({ ...contributors, mainVocalist: e.target.value })} style={{ height: '36px', fontSize: '13px' }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '12px' }}>Composer</label>
+                <input type="text" className="form-input" placeholder="e.g. Jane Doe" value={contributors.composer} onChange={(e) => setContributors({ ...contributors, composer: e.target.value })} style={{ height: '36px', fontSize: '13px' }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '12px' }}>Lyricist</label>
+                <input type="text" className="form-input" placeholder="e.g. Max Smith" value={contributors.lyricist} onChange={(e) => setContributors({ ...contributors, lyricist: e.target.value })} style={{ height: '36px', fontSize: '13px' }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: '12px' }}>Producer</label>
+                <input type="text" className="form-input" placeholder="e.g. Dr. Dre" value={contributors.producer} onChange={(e) => setContributors({ ...contributors, producer: e.target.value })} style={{ height: '36px', fontSize: '13px' }} />
+              </div>
+            </div>
+          </div>
+
           {/* Row 3: Optional Scrolling Lyrics */}
-          <div className="form-group">
+          <div className="form-group" style={{ marginTop: '24px' }}>
             <label className="form-label">Lyrics (Optional)</label>
             <textarea
               className="form-input"
@@ -1006,10 +1047,50 @@ const UploadView = () => {
                         )}
                       </div>
                     </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Individual Track Cover (Optional)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleNewTrackCoverSelect(idx, e.target.files[0]);
+                            }
+                          }}
+                          style={{ display: 'none' }}
+                          id={`album-track-cover-${idx}`}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => document.getElementById(`album-track-cover-${idx}`).click()}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          {track.coverFile ? '✓ Change Cover' : 'Select Cover'}
+                        </button>
+                        {track.coverFile && (
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }} title={track.coverFile.name}>
+                            {track.coverFile.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Contributors (Optional)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+                      <input type="text" className="form-input" placeholder="Main Vocalist" value={track.contributors?.mainVocalist || ''} onChange={(e) => handleUpdateTrackRow(idx, 'contributors', { ...track.contributors, mainVocalist: e.target.value })} style={{ height: '32px', fontSize: '12px' }} />
+                      <input type="text" className="form-input" placeholder="Composer" value={track.contributors?.composer || ''} onChange={(e) => handleUpdateTrackRow(idx, 'contributors', { ...track.contributors, composer: e.target.value })} style={{ height: '32px', fontSize: '12px' }} />
+                      <input type="text" className="form-input" placeholder="Lyricist" value={track.contributors?.lyricist || ''} onChange={(e) => handleUpdateTrackRow(idx, 'contributors', { ...track.contributors, lyricist: e.target.value })} style={{ height: '32px', fontSize: '12px' }} />
+                      <input type="text" className="form-input" placeholder="Producer" value={track.contributors?.producer || ''} onChange={(e) => handleUpdateTrackRow(idx, 'contributors', { ...track.contributors, producer: e.target.value })} style={{ height: '32px', fontSize: '12px' }} />
+                    </div>
                   </div>
 
                   {/* Lyrics row */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
                     <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Scrolling Lyrics (Optional)</label>
                     <textarea
                       className="form-input"

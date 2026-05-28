@@ -213,6 +213,82 @@ const SongDetailsView = () => {
               </button>
             )}
           </div>
+
+          {currentTrack.contributors && (currentTrack.contributors.mainVocalist || currentTrack.contributors.composer || currentTrack.contributors.lyricist || currentTrack.contributors.producer) && (
+            <div style={{ marginTop: '24px', backgroundColor: 'var(--bg-tertiary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px' }}>
+              {currentTrack.contributors.mainVocalist && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '4px' }}>Main Vocalist</div>
+                  <div
+                    style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => {
+                      // Redirect to search view
+                      setActiveView('search');
+                      // Wait a bit, then set search
+                      setTimeout(() => {
+                        const evt = new CustomEvent('setGlobalSearch', { detail: currentTrack.contributors.mainVocalist });
+                        window.dispatchEvent(evt);
+                      }, 100);
+                    }}
+                  >
+                    {currentTrack.contributors.mainVocalist}
+                  </div>
+                </div>
+              )}
+              {currentTrack.contributors.composer && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '4px' }}>Composer</div>
+                  <div
+                    style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => {
+                      setActiveView('search');
+                      setTimeout(() => {
+                        const evt = new CustomEvent('setGlobalSearch', { detail: currentTrack.contributors.composer });
+                        window.dispatchEvent(evt);
+                      }, 100);
+                    }}
+                  >
+                    {currentTrack.contributors.composer}
+                  </div>
+                </div>
+              )}
+              {currentTrack.contributors.lyricist && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '4px' }}>Lyricist</div>
+                  <div
+                    style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => {
+                      setActiveView('search');
+                      setTimeout(() => {
+                        const evt = new CustomEvent('setGlobalSearch', { detail: currentTrack.contributors.lyricist });
+                        window.dispatchEvent(evt);
+                      }, 100);
+                    }}
+                  >
+                    {currentTrack.contributors.lyricist}
+                  </div>
+                </div>
+              )}
+              {currentTrack.contributors.producer && (
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '4px' }}>Producer</div>
+                  <div
+                    style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline' }}
+                    onClick={() => {
+                      setActiveView('search');
+                      setTimeout(() => {
+                        const evt = new CustomEvent('setGlobalSearch', { detail: currentTrack.contributors.producer });
+                        window.dispatchEvent(evt);
+                      }, 100);
+                    }}
+                  >
+                    {currentTrack.contributors.producer}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
 

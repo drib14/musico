@@ -7,20 +7,38 @@ const LyricsView = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const activeLineRef = useRef(null);
 
-  // Synchronize playback time with HTML5 audio
+  // Synchronize playback time with HTML5 audio via requestAnimationFrame for smoother updates
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
 
-    const handleTimeUpdate = () => {
+    let animationFrameId;
+    const updateTime = () => {
       setCurrentTime(audio.currentTime || 0);
+      animationFrameId = requestAnimationFrame(updateTime);
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    setCurrentTime(audio.currentTime || 0);
+    const handlePlay = () => {
+      animationFrameId = requestAnimationFrame(updateTime);
+    };
+
+    const handlePause = () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
+    if (!audio.paused) {
+      handlePlay();
+    } else {
+      setCurrentTime(audio.currentTime || 0);
+    }
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      cancelAnimationFrame(animationFrameId);
     };
   }, [audioRef, currentTrack]);
 

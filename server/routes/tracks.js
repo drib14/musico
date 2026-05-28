@@ -80,7 +80,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
 
     // 2. Fetch track metadata from Jamendo
     const jamRes = await fetch(
-      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&id=${numericId}&include=lyrics`
+      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&id=${numericId}&include=lyrics+musicinfo`
     );
     if (!jamRes.ok) throw new Error('Failed to retrieve track from Jamendo');
 
@@ -106,7 +106,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: t.lyrics || ''
+      lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
     return track;
@@ -144,12 +144,11 @@ router.get('/trending', async (req, res) => {
       matchQuery.city = { $regex: new RegExp('^' + city.trim() + '$', 'i') };
     }
 
-    // Execute aggregation pipeline grouping play records
+    // Execute aggregation pipeline grouping play records. Do not limit here, so we can calculate user rank outside of the top 50
     const trendingList = await PlayLog.aggregate([
       { $match: matchQuery },
       { $group: { _id: '$track', periodPlays: { $sum: 1 } } },
       { $sort: { periodPlays: -1 } },
-      { $limit: 10 },
       {
         $lookup: {
           from: 'tracks',
@@ -184,7 +183,7 @@ router.get('/trending', async (req, res) => {
       } else if (period === 'month') {
         orderParam = 'popularity_month';
       }
-      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=${orderParam}&audioformat=mp32&include=lyrics`;
+      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=${orderParam}&audioformat=mp32&include=lyrics+musicinfo`;
       const jamRes = await fetch(jamUrl);
       if (jamRes.ok) {
         const data = await jamRes.json();
@@ -199,7 +198,7 @@ router.get('/trending', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || ''
+          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -229,7 +228,7 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { title, genre, lyrics } = req.body;
+      const { title, genre, lyrics, contributors } = req.body;
 
       if (!title) {
         return res.status(400).json({ message: 'Track title is required' });
@@ -278,6 +277,16 @@ router.post(
         coverUrl = coverResult.secure_url;
       }
 
+      // Parse contributors
+      let parsedContributors = { mainVocalist: '', composer: '', lyricist: '', producer: '' };
+      if (contributors) {
+        try {
+          parsedContributors = JSON.parse(contributors);
+        } catch (e) {
+          console.error("Failed to parse contributors JSON", e);
+        }
+      }
+
       // Create Track in database
       const track = await Track.create({
         title,
@@ -288,6 +297,7 @@ router.post(
         duration: audioResult.duration || 0,
         genre: genre || 'Unknown',
         lyrics: lyrics || '',
+        contributors: parsedContributors,
       });
 
       res.status(201).json({
@@ -328,7 +338,7 @@ router.get('/', async (req, res) => {
     // 2. Fetch public Jamendo licensed tracks matching search/genre
     let jamendoTracks = [];
     try {
-      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&audioformat=mp32&order=popularity_total&include=lyrics`;
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&audioformat=mp32&order=popularity_total&include=lyrics+musicinfo`;
       if (search) {
         jamUrl += `&namesearch=${encodeURIComponent(search)}`;
       }
@@ -350,7 +360,7 @@ router.get('/', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || genre || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || ''
+          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -401,7 +411,7 @@ router.get('/search', async (req, res) => {
 
     let jamendoTracks = [];
     try {
-      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&audioformat=mp32&order=popularity_total&include=lyrics`;
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&audioformat=mp32&order=popularity_total&include=lyrics+musicinfo`;
       if (search) {
         jamUrl += `&namesearch=${encodeURIComponent(search)}`;
       }
@@ -425,7 +435,7 @@ router.get('/search', async (req, res) => {
           isJamendo: true,
           jamendoArtistId: t.artist_id,
           jamendoTrackId: t.id,
-          lyrics: t.lyrics || ''
+          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -686,9 +696,9 @@ router.get('/artist-stats', protect, async (req, res) => {
     const tracks = await Track.find({ artist: req.user._id });
     const trackIds = tracks.map(t => t._id);
 
-    // 2. Count plays based on unique user accounts (1 user account = 1 play)
-    const uniqueStreamers = await PlayLog.distinct('user', { track: { $in: trackIds }, user: { $ne: null } });
-    const totalPlays = uniqueStreamers.length;
+    // 2. Count plays (total streams: sum of all play logs)
+    const allPlaysCount = await PlayLog.countDocuments({ track: { $in: trackIds } });
+    const totalPlays = allPlaysCount;
 
     // 3. Aggregate geolocated listener cities
     const topCities = await PlayLog.aggregate([
@@ -725,7 +735,7 @@ router.get('/jamendo', async (req, res) => {
 
   try {
     const jamendoRes = await fetch(
-      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=20&imagesize=200&audioformat=mp32&order=popularity_total&include=lyrics`
+      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=20&imagesize=200&audioformat=mp32&order=popularity_total&include=lyrics+musicinfo`
     );
 
     if (!jamendoRes.ok) {
@@ -744,7 +754,7 @@ router.get('/jamendo', async (req, res) => {
       genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
       plays: t.stats?.playcount_total || 24500,
       isJamendo: true,
-      lyrics: t.lyrics || ''
+      lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     }));
 
     res.json(tracksList);
@@ -907,7 +917,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     let tracksList = [];
     try {
       const tracksRes = await fetch(
-        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&artist_id=${artist.id}&audioformat=mp32&include=lyrics`
+        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&artist_id=${artist.id}&audioformat=mp32&include=lyrics+musicinfo`
       );
       if (tracksRes.ok) {
         const tracksData = await tracksRes.json();
@@ -922,7 +932,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || ''
+          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {

@@ -7,6 +7,8 @@ const ProfileView = () => {
   const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView, user: currentUser, token, updateUser } = useContext(AppContext);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
 
   const [editedArtistName, setEditedArtistName] = useState('');
   const [editedArtistBio, setEditedArtistBio] = useState('');
@@ -22,6 +24,7 @@ const ProfileView = () => {
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newEventCity, setNewEventCity] = useState('');
   const [newEventUrl, setNewEventUrl] = useState('');
+  const [activeTab, setActiveTab] = useState('tracks'); // 'tracks', 'playlists', 'followers', 'following'
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -111,10 +114,38 @@ const ProfileView = () => {
       if (!res.ok) throw new Error('Failed to load profile details');
       const data = await res.json();
       setProfileData(data);
+      if (data.user) {
+        setFollowersCount(data.user.followers?.length || 0);
+        if (currentUser) {
+          setIsFollowing(data.user.followers?.includes(currentUser._id));
+        }
+      }
     } catch (error) {
       showToast(error.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFollow = async () => {
+    if (!token) {
+      return showToast('Please log in to follow artists.', 'error');
+    }
+    try {
+      const res = await fetch(`${API_URL}/auth/users/${activeProfileId}/follow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to follow/unfollow');
+      const data = await res.json();
+      setIsFollowing(data.isFollowing);
+      setFollowersCount(data.followersCount);
+      showToast(data.message);
+    } catch (error) {
+      showToast(error.message, 'error');
     }
   };
 
@@ -532,21 +563,99 @@ const ProfileView = () => {
             )}
             
             {/* Spotify Monthly Listeners stats */}
-            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
               <span><strong>{user.monthlyListeners?.toLocaleString() || 0}</strong> Monthly Listeners</span>
               <span>•</span>
               <span><strong>{user.totalPlays?.toLocaleString() || 0}</strong> Lifetime Streams</span>
+              <span>•</span>
+              <span><strong>{followersCount.toLocaleString() || 0}</strong> Followers</span>
+
+              {!isOwnProfile && (
+                <button
+                  onClick={toggleFollow}
+                  className="btn btn-secondary"
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    borderRadius: '20px',
+                    marginLeft: 'auto'
+                  }}
+                >
+                  {isFollowing ? 'Unfollow' : 'Follow'}
+                </button>
+              )}
             </div>
           </div>
         </section>
       )}
 
+      {/* Tabs Menu */}
+      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px' }}>
+        <button
+          onClick={() => setActiveTab('tracks')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 4px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            color: activeTab === 'tracks' ? 'var(--accent)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'tracks' ? '3px solid var(--accent)' : '3px solid transparent'
+          }}
+        >
+          Tracks
+        </button>
+        <button
+          onClick={() => setActiveTab('playlists')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 4px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            color: activeTab === 'playlists' ? 'var(--accent)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'playlists' ? '3px solid var(--accent)' : '3px solid transparent'
+          }}
+        >
+          Playlists
+        </button>
+        <button
+          onClick={() => setActiveTab('followers')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 4px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            color: activeTab === 'followers' ? 'var(--accent)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'followers' ? '3px solid var(--accent)' : '3px solid transparent'
+          }}
+        >
+          Followers
+        </button>
+        <button
+          onClick={() => setActiveTab('following')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 4px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            color: activeTab === 'following' ? 'var(--accent)' : 'var(--text-secondary)',
+            borderBottom: activeTab === 'following' ? '3px solid var(--accent)' : '3px solid transparent'
+          }}
+        >
+          Following
+        </button>
+      </div>
+
       {/* 2. UPLOADED TRACKS LIST */}
-      {tracks.length > 0 && (
+      {activeTab === 'tracks' && tracks.length > 0 && (
         <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            Uploaded Songs
-          </h2>
           <table className="track-table">
             <thead>
               <tr>
@@ -588,10 +697,15 @@ const ProfileView = () => {
         </section>
       )}
 
+      {activeTab === 'tracks' && tracks.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+          No uploaded songs available.
+        </div>
+      )}
+
       {/* 3. PUBLIC PLAYLISTS */}
-      {playlists.length > 0 && (
+      {activeTab === 'playlists' && playlists.length > 0 && (
         <section>
-          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Public Playlists</h2>
           <div className="grid-container carousel-desktop">
             {playlists.map((pl) => (
               <div

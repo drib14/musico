@@ -464,11 +464,11 @@ router.get('/users/:id', async (req, res) => {
     });
     const monthlyListeners = uniqueMonthlyUsers.length;
 
-    const uniqueTotalUsers = await PlayLog.distinct('user', {
-      track: { $in: trackIds },
-      user: { $ne: null }
+    // totalPlays calculation according to requirements: Total Streams = sum of all plays
+    const allPlays = await PlayLog.countDocuments({
+      track: { $in: trackIds }
     });
-    const totalPlays = uniqueTotalUsers.length;
+    const totalPlays = allPlays;
 
     const userObj = user.toObject();
     userObj.monthlyListeners = monthlyListeners || 0;
@@ -510,11 +510,9 @@ router.get('/artists/top', async (req, res) => {
       const PlayLog = require('../models/PlayLog');
       const tracks = await Track.find({ artist: art._id });
       const trackIds = tracks.map(t => t._id);
-      const uniqueTotalUsers = await PlayLog.distinct('user', {
-        track: { $in: trackIds },
-        user: { $ne: null }
+      const totalPlays = await PlayLog.countDocuments({
+        track: { $in: trackIds }
       });
-      const totalPlays = uniqueTotalUsers.length;
       const artObj = art.toObject();
       artObj.totalPlays = totalPlays;
       artObj.tracksCount = tracks.length;
@@ -553,6 +551,52 @@ router.get('/artists/top', async (req, res) => {
   } catch (error) {
     console.error('Top artists fetch error:', error);
     res.status(500).json({ message: 'Server error retrieving top artists' });
+  }
+});
+
+// @desc    Toggle follow status for a user/artist
+// @route   POST /api/auth/users/:id/follow
+// @access  Private
+router.post('/users/:id/follow', protect, async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const currentUserId = req.user._id;
+
+    if (targetUserId === currentUserId.toString()) {
+      return res.status(400).json({ message: "You cannot follow yourself" });
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    const currentUser = await User.findById(currentUserId);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isFollowing = currentUser.following.includes(targetUserId);
+
+    if (isFollowing) {
+      // Unfollow
+      currentUser.following.pull(targetUserId);
+      targetUser.followers.pull(currentUserId);
+    } else {
+      // Follow
+      currentUser.following.push(targetUserId);
+      targetUser.followers.push(currentUserId);
+    }
+
+    await currentUser.save();
+    await targetUser.save();
+
+    res.json({
+      message: isFollowing ? "Unfollowed successfully" : "Followed successfully",
+      isFollowing: !isFollowing,
+      followersCount: targetUser.followers.length,
+      followingCount: targetUser.following.length
+    });
+  } catch (error) {
+    console.error('Follow toggle error:', error);
+    res.status(500).json({ message: 'Server error during follow toggle' });
   }
 });
 

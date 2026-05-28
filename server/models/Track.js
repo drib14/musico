@@ -53,6 +53,12 @@ const trackSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    contributors: {
+      mainVocalist: { type: String, default: '' },
+      composer: { type: String, default: '' },
+      lyricist: { type: String, default: '' },
+      producer: { type: String, default: '' },
+    },
   },
   {
     timestamps: true,

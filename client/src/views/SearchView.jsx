@@ -43,6 +43,17 @@ const SearchView = () => {
     return () => clearTimeout(delayDebounce);
   }, [search, genre]);
 
+  useEffect(() => {
+    const handleSetGlobalSearch = (e) => {
+      setSearch(e.detail);
+      setGenre('All');
+    };
+    window.addEventListener('setGlobalSearch', handleSetGlobalSearch);
+    return () => {
+      window.removeEventListener('setGlobalSearch', handleSetGlobalSearch);
+    };
+  }, []);
+
   const fetchFilteredTracks = async (currentOffset, append = false) => {
     if (append) {
       setLoadingMore(true);
