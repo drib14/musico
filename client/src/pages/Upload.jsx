@@ -698,7 +698,35 @@ const Upload = () => {
 
           {/* Row 3: Optional Scrolling Lyrics */}
           <div className="form-group" style={{ marginTop: '24px' }}>
-            <label className="form-label">Lyrics (Optional)</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Lyrics (Optional)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="file"
+                  accept=".lrc,.txt"
+                  id="single-lyrics-file-upload"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setLyrics(ev.target.result);
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => document.getElementById('single-lyrics-file-upload').click()}
+                  style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 'bold' }}
+                >
+                  Upload .LRC / .TXT
+                </button>
+              </div>
+            </div>
             <textarea
               id="single-lyrics-textarea"
               className="form-input"
@@ -1161,7 +1189,35 @@ const Upload = () => {
 
                   {/* Lyrics row */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '12px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Scrolling Lyrics (Optional)</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Scrolling Lyrics (Optional)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="file"
+                          accept=".lrc,.txt"
+                          id={`album-track-lyrics-file-${idx}`}
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                handleUpdateTrackRow(idx, 'lyrics', ev.target.result);
+                              };
+                              reader.readAsText(file);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => document.getElementById(`album-track-lyrics-file-${idx}`).click()}
+                          style={{ padding: '2px 8px', fontSize: '10px', fontWeight: 'bold' }}
+                        >
+                          Upload .LRC
+                        </button>
+                      </div>
+                    </div>
                     <textarea
                       id={`album-track-lyrics-textarea-${idx}`}
                       className="form-input"

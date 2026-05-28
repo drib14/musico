@@ -521,12 +521,13 @@ const RightSidebar = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '16px',
-                  maxHeight: '260px',
+                  maxHeight: '380px',
+                  height: '100%',
                   overflowY: 'auto',
                   scrollBehavior: 'smooth'
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '30px', paddingTop: '10px' }}>
                   {parsedLines.map((line, idx) => {
                     const isActive = idx === activeIndex;
                     const isPast = idx < activeIndex;
@@ -539,9 +540,9 @@ const RightSidebar = () => {
                         onClick={() => handleLineClick(line.time)}
                         className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
                         style={{
-                          fontSize: '15px',
-                          fontWeight: '700',
-                          lineHeight: '1.4',
+                          fontSize: '18px',
+                          fontWeight: '800',
+                          lineHeight: '1.5',
                           cursor: 'pointer',
                           margin: 0,
                           transition: 'all 0.2s ease'

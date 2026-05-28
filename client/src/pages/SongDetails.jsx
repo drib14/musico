@@ -489,6 +489,26 @@ const SongDetails = () => {
             </section>
           )}
 
+          {/* SECTION: CONTRIBUTORS */}
+          {currentTrack.contributors && (currentTrack.contributors.mainVocalist || currentTrack.contributors.composer || currentTrack.contributors.lyricist || currentTrack.contributors.producer) && (
+            <section style={{ marginTop: '24px' }}>
+              <h3 style={{ fontSize: '18px', marginBottom: '12px', color: 'var(--text-primary)', fontFamily: 'Outfit', fontWeight: '800' }}>Contributors</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {currentTrack.contributors.mainVocalist && (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}><span style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block' }}>Main Vocalist</span><span style={{ fontSize: '14px', fontWeight: '600' }}>{currentTrack.contributors.mainVocalist}</span></div>
+                )}
+                {currentTrack.contributors.composer && (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}><span style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block' }}>Composer</span><span style={{ fontSize: '14px', fontWeight: '600' }}>{currentTrack.contributors.composer}</span></div>
+                )}
+                {currentTrack.contributors.lyricist && (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}><span style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block' }}>Lyricist</span><span style={{ fontSize: '14px', fontWeight: '600' }}>{currentTrack.contributors.lyricist}</span></div>
+                )}
+                {currentTrack.contributors.producer && (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}><span style={{ color: 'var(--text-muted)', fontSize: '12px', display: 'block' }}>Producer</span><span style={{ fontSize: '14px', fontWeight: '600' }}>{currentTrack.contributors.producer}</span></div>
+                )}
+              </div>
+            </section>
+          )}
           {/* SECTION: SIMILAR SONGS */}
           {similarTracks.length > 0 && (
             <section>

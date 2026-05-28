@@ -169,6 +169,7 @@ router.get('/trending', async (req, res) => {
           duration: '$trackDetails.duration',
           genre: '$trackDetails.genre',
           plays: '$trackDetails.plays',
+          contributors: '$trackDetails.contributors',
           periodPlays: 1
         }
       }
@@ -183,7 +184,8 @@ router.get('/trending', async (req, res) => {
       } else if (period === 'month') {
         orderParam = 'popularity_month';
       }
-      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=${orderParam}&audioformat=mp32&include=lyrics+musicinfo`;
+      // Fetch up to 100 Jamendo tracks to accurately calculate global leaderboard rankings outside of the top 20 limit
+      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=100&order=${orderParam}&audioformat=mp32&include=lyrics+musicinfo`;
       const jamRes = await fetch(jamUrl);
       if (jamRes.ok) {
         const data = await jamRes.json();
@@ -205,7 +207,8 @@ router.get('/trending', async (req, res) => {
       console.error('Error fetching Jamendo charts in trending route:', err);
     }
 
-    const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(25);
+    // Fetch up to 1000 tracks to make sure we gather all local top tracks based on stream counts
+    const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(1000);
     
     const mappedLocalList = localList.map(t => {
       const trackObj = t.toObject ? t.toObject() : t;

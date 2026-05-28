@@ -187,8 +187,6 @@ const Lyrics = () => {
           className="lyrics-close-btn"
           onClick={() => {
             setShowLyrics(false);
-            setActiveView('home');
-            navigate('/pages/home');
           }}
           title="Close Lyrics"
         >

@@ -111,8 +111,9 @@ const ChartDetails = () => {
 
   const isUserArtist = user && user.artistName && user.artistName.trim().length > 0;
   
-  // Check loaded top charts to find rankings matching user artist identifiers
-  const userRankings = tracks
+  // Check loaded top charts to find rankings matching user artist identifiers.
+  // Use `fullTracks` to calculate rank out-of-bounds of the current chart limits.
+  const userRankings = fullTracks
     .map((track, index) => ({ track, rank: index + 1 }))
     .filter(item => {
       if (item.track.artist === user?._id) return true;

@@ -2660,3 +2660,23 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 0 !important;
   }
 }
+
+/* Additional responsive fixes for player */
+@media (max-width: 480px) {
+  .player-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .player-track-info {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .control-btn-play {
+    transform: scale(0.85);
+  }
+}

@@ -47,14 +47,15 @@ const Search = () => {
       try {
         const [genresRes, artistsRes, playlistsRes, tracksRes] = await Promise.all([
           fetch(`${API_URL}/tracks/jamendo/genres`),
-          fetch(`${API_URL}/auth/artists/top`),
-          fetch(`${API_URL}/playlists`),
-          fetch(`${API_URL}/tracks`)
+          fetch(`${API_URL}/auth/artists/top?limit=16`),
+          fetch(`${API_URL}/playlists?limit=16`),
+          fetch(`${API_URL}/tracks?limit=16`)
         ]);
 
         if (genresRes.ok) {
           const data = await genresRes.json();
-          setGenresList(data.slice(0, 8));
+          // Keep at least 8 to be safe, up to 16 for better view
+          setGenresList(data.slice(0, 16));
         }
         if (artistsRes.ok) {
           const artistsData = await artistsRes.json();
@@ -187,7 +188,30 @@ const Search = () => {
           {/* Section 1: Browse Categories */}
           {genresList.length > 0 && (
             <section>
-              <h2 style={{ fontSize: '22px', marginBottom: '16px', fontWeight: '800' }}>Browse Categories</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>Browse Categories</h2>
+                <button
+                  onClick={() => {
+                    setActiveView('search');
+                    // We don't have a dedicated categories view, but setting genre triggers endless scrolling search in this view
+                    /* No-op placeholder for expanding results without full pagination*/
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    outline: 'none'
+                  }}
+                >
+                  View All <span style={{ fontSize: '12px' }}>→</span>
+                </button>
+              </div>
               <div className="genre-grid-container" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
