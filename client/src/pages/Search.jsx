@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { Search as SearchIcon, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
@@ -17,6 +18,7 @@ const Search = () => {
     setSearchGenre: setGenre
   } = useContext(AppContext);
   
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   
   // Categorized search results state
@@ -33,22 +35,46 @@ const Search = () => {
 
   const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
   const [genresList, setGenresList] = useState([]);
+  const [topArtists, setTopArtists] = useState([]);
+  const [topTracks, setTopTracks] = useState([]);
+  const [topPlaylists, setTopPlaylists] = useState([]);
+  const [chartsLoading, setChartsLoading] = useState(false);
 
-  // Fetch genres for Browse Categories (exactly 8 cards)
+  // Fetch dynamic search page charts and categories (exactly 8 cards each)
   useEffect(() => {
-    const fetchGenres = async () => {
+    const fetchSearchLandingData = async () => {
+      setChartsLoading(true);
       try {
-        const res = await fetch(`${API_URL}/tracks/jamendo/genres`);
-        if (res.ok) {
-          const data = await res.json();
-          // Slice genres list to exactly 8 cards
+        const [genresRes, artistsRes, playlistsRes, tracksRes] = await Promise.all([
+          fetch(`${API_URL}/tracks/jamendo/genres`),
+          fetch(`${API_URL}/auth/artists/top`),
+          fetch(`${API_URL}/playlists`),
+          fetch(`${API_URL}/tracks`)
+        ]);
+
+        if (genresRes.ok) {
+          const data = await genresRes.json();
           setGenresList(data.slice(0, 8));
         }
+        if (artistsRes.ok) {
+          const artistsData = await artistsRes.json();
+          setTopArtists(artistsData.slice(0, 8));
+        }
+        if (playlistsRes.ok) {
+          const playlistsData = await playlistsRes.json();
+          setTopPlaylists(playlistsData.slice(0, 8));
+        }
+        if (tracksRes.ok) {
+          const tracksData = await tracksRes.json();
+          setTopTracks(tracksData.slice(0, 8));
+        }
       } catch (err) {
-        console.error('Error loading Jamendo genres in search page:', err);
+        console.error('Error loading search landing charts:', err);
+      } finally {
+        setChartsLoading(false);
       }
     };
-    fetchGenres();
+    fetchSearchLandingData();
   }, [API_URL]);
 
   // Trigger search on query/genre changes (resets pagination offset)
@@ -154,63 +180,273 @@ const Search = () => {
       </div>
 
       {/* Results division or Browse Categories */}
+      {/* Results division or Browse Categories */}
       {showBrowseCategories ? (
-        genresList.length > 0 && (
-          <section style={{ animation: 'fadeIn 0.3s ease' }}>
-            <h2 style={{ fontSize: '22px', marginBottom: '16px', fontWeight: 'bold' }}>Browse All</h2>
-            <div className="genre-grid-container" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '20px'
-            }}>
-              {genresList.map((g, idx) => (
-                <div
-                  key={idx}
-                  className="genre-card"
-                  style={{
-                    position: 'relative',
-                    height: '110px',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    backgroundColor: g.color,
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.03)';
-                    e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
-                  }}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', animation: 'fadeIn 0.3s ease' }}>
+          
+          {/* Section 1: Browse Categories */}
+          {genresList.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '22px', marginBottom: '16px', fontWeight: '800' }}>Browse Categories</h2>
+              <div className="genre-grid-container" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: '20px'
+              }}>
+                {genresList.map((g, idx) => (
+                  <div
+                    key={idx}
+                    className="genre-card"
+                    style={{
+                      position: 'relative',
+                      height: '110px',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      backgroundColor: g.color,
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.03)';
+                      e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.25)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.15)';
+                    }}
+                    onClick={() => {
+                      setGenre(g.name);
+                    }}
+                  >
+                    <h3 style={{ fontSize: '18px', color: '#ffffff', fontWeight: '800', margin: 0 }}>{g.name}</h3>
+                    <img
+                      src={g.cover}
+                      alt={g.name}
+                      style={{
+                        position: 'absolute',
+                        right: '-15px',
+                        bottom: '-15px',
+                        width: '70px',
+                        height: '70px',
+                        borderRadius: '6px',
+                        transform: 'rotate(25deg)',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 2: Top Tracks */}
+          {topTracks.length > 0 && (
+            <section>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>Top Tracks</h2>
+                <button 
                   onClick={() => {
-                    setGenre(g.name);
+                    setActiveView('all-tracks');
+                    navigate('/pages/all-tracks');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    outline: 'none'
                   }}
                 >
-                  <h3 style={{ fontSize: '18px', color: '#ffffff', fontWeight: '800', margin: 0 }}>{g.name}</h3>
-                  <img
-                    src={g.cover}
-                    alt={g.name}
+                  View All <span style={{ fontSize: '12px' }}>→</span>
+                </button>
+              </div>
+              <div className="grid-container carousel-desktop">
+                {topTracks.map((track) => (
+                  <TrackCard key={track._id} track={track} trackList={topTracks} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 3: Top Artists */}
+          {topArtists.length > 0 && (
+            <section>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>Top Artists</h2>
+                <button 
+                  onClick={() => {
+                    setActiveView('all-artists');
+                    navigate('/pages/all-artists');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    outline: 'none'
+                  }}
+                >
+                  View All <span style={{ fontSize: '12px' }}>→</span>
+                </button>
+              </div>
+              <div className="artist-grid-container carousel-desktop">
+                {topArtists.map((artist) => (
+                  <div
+                    key={artist._id}
+                    className="artist-card"
+                    onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
                     style={{
-                      position: 'absolute',
-                      right: '-15px',
-                      bottom: '-15px',
-                      width: '70px',
-                      height: '70px',
-                      borderRadius: '6px',
-                      transform: 'rotate(25deg)',
-                      boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                      objectFit: 'cover'
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '20px 16px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px',
+                      transition: 'all 0.25s ease',
+                      boxShadow: 'var(--glass-shadow)'
                     }}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        )
+                  >
+                    {artist.artistAvatar || artist.userAvatar ? (
+                      <img
+                        src={artist.artistAvatar || artist.userAvatar}
+                        alt={artist.artistName || artist.name}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid var(--accent)',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-gradient)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '28px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Outfit'
+                      }}>
+                        {(artist.artistName || artist.name).charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                      <div style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '120px'
+                      }}>
+                        {artist.artistName || artist.name}
+                        {artist.isArtistVerified && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            color: '#fff',
+                            fontSize: '7px',
+                            fontWeight: 'bold'
+                          }}>
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {artist.isJamendo ? 'Licensed Artist' : 'Musico Creator'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 4: Top Albums & Playlists */}
+          {topPlaylists.length > 0 && (
+            <section>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>Top Albums & Playlists</h2>
+                <button 
+                  onClick={() => {
+                    setActiveView('all-playlists');
+                    navigate('/pages/all-playlists');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    outline: 'none'
+                  }}
+                >
+                  View All <span style={{ fontSize: '12px' }}>→</span>
+                </button>
+              </div>
+              <div className="grid-container carousel-desktop">
+                {topPlaylists.map((pl) => (
+                  <div
+                    key={pl._id}
+                    className="song-card"
+                    onClick={() => {
+                      setActivePlaylistId(pl._id);
+                      setActiveView('playlist-details');
+                    }}
+                  >
+                    <div className="song-card-cover-wrapper">
+                      <PlaylistCover playlist={pl} className="song-card-cover" />
+                    </div>
+                    <div className="song-card-title">{pl.name}</div>
+                    <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
+                      {pl.isJamendoAlbum 
+                        ? `Album by ${pl.artistName}` 
+                        : `Playlist • ${pl.creator?.name || 'Musico User'}`
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+        </div>
       ) : loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
           <div className="spinner"></div>

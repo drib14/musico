@@ -63,19 +63,13 @@ const Lyrics = () => {
 
     // Fallback: If no timestamps exist, distribute lines evenly across duration
     if (!hasAnyTimestamps) {
-      const trackDuration = currentTrack.duration || 30; // default 30s spotify previews
-      const validLines = parsed.filter(p => p.text.length > 0);
-      const totalValid = validLines.length;
+      const trackDuration = audioRef?.current?.duration || currentTrack.duration || 180;
+      const totalLines = parsed.length;
 
-      let lineIndex = 0;
-      const distributed = parsed.map((p) => {
-        if (p.text.length === 0) {
-          return { time: 0, text: '' };
-        }
-        const time = totalValid > 1 
-          ? 1.5 + (lineIndex / (totalValid - 1)) * (trackDuration - 3.5)
+      const distributed = parsed.map((p, idx) => {
+        const time = totalLines > 1 
+          ? 1.0 + (idx / (totalLines - 1)) * (trackDuration - 3.0)
           : 0;
-        lineIndex++;
         return { time, text: p.text };
       });
       return distributed;
@@ -191,7 +185,11 @@ const Lyrics = () => {
         
         <button 
           className="lyrics-close-btn"
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            setShowLyrics(false);
+            setActiveView('home');
+            navigate('/pages/home');
+          }}
           title="Close Lyrics"
         >
           <X className="w-6 h-6" />
