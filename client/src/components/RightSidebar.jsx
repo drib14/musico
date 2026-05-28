@@ -196,15 +196,11 @@ const RightSidebar = () => {
   const parsedLines = parseLyrics();
 
   // Find active line index based on playback time (exact vocal synchronization matching Spotify)
-  // Advanced the highlight check to match exactly when the time hits, instead of preemptively
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
     if (parsedLines[i].time !== null) {
-      // Find the last line whose time has passed. We check if the current time is >= the line time.
-      // To ensure we don't highlight early if audio hasn't actually reached it (preventing advance highlight), we add a tiny tolerance buffer.
-      if (currentTime >= parsedLines[i].time) {
-        activeIndex = i;
-      }
+      // Remove any + 0.2 advance offset to ensure exact vocal synchronization
+      if (currentTime >= parsedLines[i].time) activeIndex = i;
     }
   }
 
@@ -543,9 +539,9 @@ const RightSidebar = () => {
                         key={idx}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
+                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')}`}
                         style={{
-                          fontSize: '28px',
+                          fontSize: isActive ? '32px' : '24px',
                           fontWeight: '800',
                           lineHeight: '1.5',
                           cursor: 'pointer',
