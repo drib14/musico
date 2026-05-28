@@ -34,7 +34,7 @@ const Home = () => {
   // All local pools states
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [visibleTracksCount, setVisibleTracksCount] = useState(10);
+  const [visibleTracksCount, setVisibleTracksCount] = useState(8);
 
   // Artist active rank dashboard states
   const [artistGlobalRankings, setArtistGlobalRankings] = useState([]);
@@ -129,13 +129,13 @@ const Home = () => {
         const artistsRes = await fetch(`${API_URL}/auth/artists/top`);
         if (artistsRes.ok) {
           const artistsData = await artistsRes.json();
-          setTopArtists(artistsData);
+          setTopArtists(artistsData.slice(0, 8)); // Top 8 popular artists
         }
 
         const playlistsRes = await fetch(`${API_URL}/playlists`);
         if (playlistsRes.ok) {
           const playlistsData = await playlistsRes.json();
-          setTopPlaylists(playlistsData.slice(0, 10)); // Top 10 public playlists
+          setTopPlaylists(playlistsData.slice(0, 8)); // Top 8 public playlists
         }
       } catch (err) {
         console.error('Error loading home featured sections:', err);

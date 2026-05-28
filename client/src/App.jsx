@@ -63,17 +63,13 @@ const MainAppContent = () => {
   // Sync browser URL path with activeView context state changes (two-way binding)
   useEffect(() => {
     const expectedPath = `/pages/${activeView}`;
-    if (location.pathname !== expectedPath && location.pathname !== '/' && !location.pathname.startsWith('/pages/lyrics')) {
+    if (location.pathname !== expectedPath && location.pathname !== '/') {
       navigate(expectedPath);
     }
   }, [activeView, navigate, location.pathname]);
 
   // Render matched view inside dynamic wrapper
   const renderView = () => {
-    if (showLyrics && currentTrack) {
-      return <Lyrics />;
-    }
-    
     return (
       <Routes>
         <Route path="/" element={<Navigate to="/pages/home" replace />} />
@@ -89,6 +85,7 @@ const MainAppContent = () => {
         <Route path="/pages/all-artists" element={<AllArtists />} />
         <Route path="/pages/all-playlists" element={<AllPlaylists />} />
         <Route path="/pages/all-tracks" element={<AllTracks />} />
+        <Route path="/pages/lyrics" element={<Lyrics />} />
         <Route path="*" element={<Navigate to="/pages/home" replace />} />
       </Routes>
     );

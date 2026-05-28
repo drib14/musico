@@ -2523,12 +2523,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* TIMED LYRICS SPOTIFY UX STYLING RULES */
 .lyrics-text-line {
-  color: rgba(255, 255, 255, 0.35) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .lyrics-text-line.past {
-  color: rgba(0, 0, 0, 0.55) !important;
+  color: rgba(255, 255, 255, 0.18) !important;
 }
 
 .lyrics-text-line.active {
@@ -2546,19 +2546,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Sidebar Lyrics Sync Styles */
 .sidebar-lyric-line {
-  color: rgba(255, 255, 255, 0.35) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .sidebar-lyric-line.past {
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(255, 255, 255, 0.18) !important;
 }
 
 .sidebar-lyric-line.active {
-  color: var(--accent) !important;
+  color: #ffffff !important;
   opacity: 1 !important;
   transform: scale(1.02);
-  text-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4) !important;
 }
 
 /* Mobile Bottom Navigation Bar Styles */

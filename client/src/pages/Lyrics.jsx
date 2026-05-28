@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { X, Crown, Music, AlertCircle } from 'lucide-react';
 
@@ -6,6 +7,7 @@ const Lyrics = () => {
   const { currentTrack, user, setShowLyrics, setActiveView, audioRef } = useContext(AppContext);
   const [currentTime, setCurrentTime] = useState(0);
   const activeLineRef = useRef(null);
+  const navigate = useNavigate();
 
   // Synchronize playback time with HTML5 audio via requestAnimationFrame for smoother updates
   useEffect(() => {
@@ -205,7 +207,7 @@ const Lyrics = () => {
         
         <button 
           className="lyrics-close-btn"
-          onClick={() => setShowLyrics(false)}
+          onClick={() => navigate(-1)}
           title="Close Lyrics"
         >
           <X className="w-6 h-6" />

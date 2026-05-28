@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { Music, Calendar, Star, Send, Crown, CheckCircle, Plus, X, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 
@@ -25,6 +26,7 @@ const RightSidebar = () => {
   const [showLyricsForm, setShowLyricsForm] = useState(false);
   const [savingTrack, setSavingTrack] = useState(false);
   const activeLineRef = useRef(null);
+  const navigate = useNavigate();
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -512,7 +514,7 @@ const RightSidebar = () => {
           <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minHeight: 0 }}>
             {/* Clickable Header redirect to Fullscreen LyricsView */}
             <h3 
-              onClick={() => setShowLyrics(true)}
+              onClick={() => navigate('/pages/lyrics')}
               style={{ 
                 fontSize: '15px', 
                 color: 'var(--text-secondary)', 
@@ -532,48 +534,55 @@ const RightSidebar = () => {
             {hasLyrics ? (
               <div 
                 style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  borderRadius: '14px',
+                  backgroundColor: '#121212',
+                  borderRadius: '12px',
                   border: '1px solid var(--border-color)',
-                  padding: '16px'
+                  padding: '20px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                  maxHeight: '260px',
+                  overflowY: 'auto',
+                  scrollBehavior: 'smooth'
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {(() => {
-                    const displayLinesCount = 3;
-                    const startIndex = activeIndex === -1 ? 0 : Math.max(0, activeIndex);
-                    const endIndex = Math.min(parsedLines.length, startIndex + displayLinesCount);
-                    const slicedLines = parsedLines.slice(startIndex, endIndex);
-
-                    return slicedLines.map((line, slicedIdx) => {
-                      const absoluteIdx = startIndex + slicedIdx;
-                      const isActive = absoluteIdx === activeIndex;
-                      const isPast = absoluteIdx < activeIndex;
-                      const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
-                      
-                      return (
-                        <p
-                          key={absoluteIdx}
-                          ref={isActive ? activeLineRef : null}
-                          onClick={() => handleLineClick(line.time)}
-                          className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
-                        >
-                          {isInstrumental ? (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '18px' }}>
-                              {isActive && <span className="spinning-music-note">🎵</span>}
-                              🎵
-                            </span>
-                          ) : (
-                            line.text.length === 0 ? '\u00A0' : line.text
-                          )}
-                        </p>
-                      );
-                    });
-                  })()}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {parsedLines.map((line, idx) => {
+                    const isActive = idx === activeIndex;
+                    const isPast = idx < activeIndex;
+                    const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
+                    
+                    return (
+                      <p
+                        key={idx}
+                        ref={isActive ? activeLineRef : null}
+                        onClick={() => handleLineClick(line.time)}
+                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
+                        style={{
+                          fontSize: '15px',
+                          fontWeight: '700',
+                          lineHeight: '1.4',
+                          cursor: 'pointer',
+                          margin: 0,
+                          transition: 'all 0.2s ease',
+                          color: isActive ? '#ffffff' : (isPast ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.45)')
+                        }}
+                      >
+                        {isInstrumental ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {isActive && <span className="spinning-music-note">🎵</span>}
+                            🎵 Instrumental 🎵
+                          </span>
+                        ) : (
+                          line.text.length === 0 ? '\u00A0' : line.text
+                        )}
+                      </p>
+                    );
+                  })}
                 </div>
                 {parsedLines.length > 3 && (
                   <button
-                    onClick={() => setShowLyrics(true)}
+                    onClick={() => navigate('/pages/lyrics')}
                     className="btn btn-secondary"
                     style={{
                       marginTop: '12px',
