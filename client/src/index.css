@@ -136,7 +136,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .app-container.has-right-panel.has-player {
-  grid-template-columns: var(--sidebar-width) 1fr 350px;
+  grid-template-columns: var(--sidebar-width) 1fr 400px;
   grid-template-areas: 
     "sidebar main rightpanel"
     "player player player";
@@ -292,6 +292,9 @@ h1, h2, h3, h4, h5, h6 {
   border: none !important;
   border-radius: 8px;
   height: 100%;
+  width: 400px;
+  min-width: 400px;
+  flex-shrink: 0;
 }
 
 /* Top Navigation Bar inside Main Content */

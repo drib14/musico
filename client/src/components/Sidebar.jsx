@@ -73,11 +73,7 @@ const Sidebar = ({ onOpenAuth }) => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isSelected = activeView === item.id;
-            
-            // Render custom styling for upgrade option
-            if (item.id === 'billing' && user?.isPremium) return null;
-
-            const isMobileHide = item.id === 'settings' || item.id === 'billing';
+            const isMobileHide = item.id === 'settings';
 
             return (
               <div

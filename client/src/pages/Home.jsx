@@ -196,15 +196,10 @@ const Home = () => {
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
           <button 
             className="btn btn-primary" 
-            onClick={() => setActiveView(user ? 'upload' : 'billing')}
+            onClick={() => setActiveView('upload')}
           >
-            {user?.isPremium ? 'Upload Song Now' : 'Join Premium Tier'}
+            Upload Song Now
           </button>
-          {!user?.isPremium && (
-            <button className="btn btn-secondary" onClick={() => setActiveView('billing')}>
-              <Crown className="w-4 h-4 text-premium-color" /> Learn More
-            </button>
-          )}
         </div>
       </div>
 

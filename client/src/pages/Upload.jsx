@@ -424,78 +424,7 @@ const Upload = () => {
     );
   }
 
-  // RENDER: UPGRADE WARNING CARD IF TIER CONSTRAINT HIT
-  if (limitReached) {
-    return (
-      <div style={{
-        maxWidth: '650px',
-        margin: '40px auto',
-        backgroundColor: 'var(--bg-secondary)',
-        border: '2px solid var(--premium-color)',
-        borderRadius: '20px',
-        padding: '40px',
-        textAlign: 'center',
-        boxShadow: 'var(--glass-shadow)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '24px',
-        animation: 'slide-up 0.4s ease'
-      }}>
-        <div style={{
-          backgroundColor: 'rgba(245, 158, 11, 0.15)',
-          color: 'var(--premium-color)',
-          padding: '16px',
-          borderRadius: '50%'
-        }}>
-          <Crown className="w-12 h-12" />
-        </div>
-        
-        <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px' }}>Upload Limit Reached</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.6' }}>
-            Free accounts are limited to <strong style={{ color: 'var(--text-primary)' }}>3 direct uploads</strong>. 
-            You have already published {uploadsCount} songs on the Musico self-distribution network.
-          </p>
-        </div>
 
-        <div style={{
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          padding: '16px 24px',
-          fontSize: '14px',
-          width: '100%',
-          textAlign: 'left',
-          display: 'flex',
-          gap: '12px',
-          color: 'var(--text-secondary)'
-        }}>
-          <AlertTriangle className="w-5 h-5 text-premium-color" style={{ flexShrink: 0 }} />
-          <span>
-            By upgrading to the **Musico Premium Plan**, you get unlimited audio uploads, higher upload size limits, and a premium gold profile badge.
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-          <button 
-            className="btn btn-secondary" 
-            style={{ flex: 1 }}
-            onClick={() => setActiveView('library')}
-          >
-            Manage Existing Tracks
-          </button>
-          <button 
-            className="btn btn-primary" 
-            style={{ flex: 1, backgroundColor: 'var(--premium-color)', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)' }}
-            onClick={() => setActiveView('billing')}
-          >
-            Upgrade to Premium
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>

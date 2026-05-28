@@ -12,7 +12,6 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import Library from './pages/Library';
 import Upload from './pages/Upload';
-import Billing from './pages/Billing';
 import SettingsView from './pages/Settings';
 import Profile from './pages/Profile';
 import PlaylistDetails from './pages/PlaylistDetails';

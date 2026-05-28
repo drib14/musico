@@ -278,7 +278,9 @@ const RightSidebar = () => {
 
   return (
     <aside className="right-sidebar" style={{
-      width: '350px',
+      width: '400px',
+      minWidth: '400px',
+      flexShrink: 0,
       backgroundColor: 'var(--bg-secondary)',
       borderLeft: '1px solid var(--border-color)',
       padding: '24px 20px 80px 20px',
@@ -514,7 +516,7 @@ const RightSidebar = () => {
           <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minHeight: 0 }}>
             {/* Clickable Header redirect to Fullscreen LyricsView */}
             <h3 
-              onClick={() => navigate('/pages/lyrics')}
+              onClick={() => setActiveView('lyrics')}
               style={{ 
                 fontSize: '15px', 
                 color: 'var(--text-secondary)', 

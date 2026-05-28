@@ -180,61 +180,7 @@ const MusicPlayer = () => {
     <footer className="music-player" style={{ position: 'relative' }}>
       
       {/* 0. ADVERTISEMENT OVERLAY INTERCEPTOR */}
-      {adActive && (
-        <div className="player-ad-overlay" style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(7, 10, 19, 0.95)',
-          backdropFilter: 'blur(12px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          zIndex: 100,
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          animation: 'slideUp 0.3s ease-out'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #ff416c, #ff4b2b)',
-              color: '#fff',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>ADVERTISEMENT</div>
-            <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '13px', fontWeight: '500' }}>
-              Support Musico by listening to this short ad. Premium gets you uninterrupted streaming!
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ color: 'var(--accent)', fontWeight: '600', fontSize: '13px' }}>
-              Resuming in {adCountdown}s...
-            </span>
-            <button 
-              onClick={() => {
-                setActiveView('billing');
-                setShowLyrics(false);
-              }} 
-              style={{
-                background: 'var(--accent)',
-                color: '#070a13',
-                border: 'none',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '11px',
-                transition: 'all 0.2s'
-              }}
-            >
-              Go Premium
-            </button>
-          </div>
-        </div>
-      )}
+
       
       {/* 1. PLAYER LEFT: TRACK DATA */}
       <div className="player-left">
