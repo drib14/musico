@@ -23,7 +23,7 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com", "*.cloudinary.com"],
       mediaSrc: ["'self'", "https://res.cloudinary.com", "*.cloudinary.com", "https://www.soundhelix.com"],
-      connectSrc: ["'self'", "https://api.paymongo.com", "https://us1.locationiq.com", "https://api.cloudinary.com"]
+      connectSrc: ["'self'", "https://api.paymongo.com", "https://us1.locationiq.com", "https://api.cloudinary.com", "https://app.ticketmaster.com"]
     }
   },
   crossOriginEmbedderPolicy: false
@@ -54,6 +54,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tracks', require('./routes/tracks'));
 app.use('/api/playlists', require('./routes/playlists'));
 app.use('/api/billing', require('./routes/billing'));
+app.use('/api/events', require('./routes/events'));
 
 // Root Status Check Route
 app.get('/status', (req, res) => {
