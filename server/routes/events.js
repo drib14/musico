@@ -1,7 +1,7 @@
 const express = require('express');
 const Event = require('../models/Event');
 const ticketmaster = require('../utils/ticketmaster');
-const auth = require('../middleware/auth');
+const auth = require('../middleware/authMiddleware').protect;
 
 const router = express.Router();
 
