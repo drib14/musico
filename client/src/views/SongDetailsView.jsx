@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, ArrowLeft, Disc3, Calendar, CheckCircle, Ticket, Heart } from 'lucide-react';
+import { Play, Music, ArrowLeft, Calendar, CheckCircle, Ticket, Heart, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
+import TrackCard from '../components/TrackCard';
 
 const SongDetailsView = () => {
   const { 
@@ -83,6 +84,8 @@ const SongDetailsView = () => {
     if (!html) return '';
     return html.replace(/<\/?[^>]+(>|$)/g, "");
   };
+
+  const isLiked = user && user.likedTracks && user.likedTracks.some(id => id === currentTrack._id);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '36px', animation: 'fadeIn 0.3s ease' }}>
@@ -201,9 +204,9 @@ const SongDetailsView = () => {
                 onClick={() => toggleLike(currentTrack._id)}
                 className="btn btn-secondary"
                 style={{ padding: '12px 18px', borderRadius: '24px' }}
-                title="Like Track"
+                title={isLiked ? "Unlike Track" : "Like Track"}
               >
-                <Heart className="w-5 h-5" />
+                <Heart className="w-5 h-5" style={{ fill: isLiked ? 'var(--accent)' : 'none', color: isLiked ? 'var(--accent)' : 'inherit' }} />
               </button>
             )}
           </div>
@@ -218,13 +221,11 @@ const SongDetailsView = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
           
           {/* SECTION: OTHER TRACKS BY THIS ARTIST */}
-          <section>
-            <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>
-              Other Releases by {currentTrack.artistName}
-            </h2>
-            {artistTracks.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No other songs uploaded by this artist.</div>
-            ) : (
+          {artistTracks.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>
+                Other Releases by {currentTrack.artistName}
+              </h2>
               <table className="track-table">
                 <thead>
                   <tr>
@@ -250,8 +251,107 @@ const SongDetailsView = () => {
                   ))}
                 </tbody>
               </table>
-            )}
-          </section>
+            </section>
+          )}
+
+          {/* SPOTIFY STYLE ABOUT THE ARTIST SECTION WITH SOCIAL LINKS */}
+          {artistInfo && (
+            <section style={{ animation: 'fadeIn 0.3s ease' }}>
+              <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>About the Artist</h2>
+              <div 
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--glass-shadow)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '0',
+                  alignItems: 'stretch'
+                }}
+              >
+                {(artistInfo.artistAvatar || artistInfo.userAvatar) && (
+                  <div 
+                    style={{
+                      width: '100%',
+                      minHeight: '220px',
+                      background: `url(${artistInfo.artistAvatar || artistInfo.userAvatar}) center/cover no-repeat`,
+                      borderRight: '1px solid var(--border-color)'
+                    }}
+                  />
+                )}
+                <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: '1px' }}>
+                      Independent Creator Profile
+                    </span>
+                    {artistInfo.isArtistVerified && (
+                      <span style={{
+                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                        color: '#3b82f6',
+                        padding: '2px 8px',
+                        borderRadius: '99px',
+                        fontSize: '10px',
+                        fontWeight: '700'
+                      }}>
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  
+                  <h3 style={{ fontSize: '24px', fontFamily: 'Outfit', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                    {artistInfo.artistName || artistInfo.name}
+                  </h3>
+                  
+                  {artistInfo.artistBio && (
+                    <p style={{ 
+                      color: 'var(--text-secondary)', 
+                      fontSize: '13.5px', 
+                      lineHeight: '1.6', 
+                      margin: 0,
+                      maxHeight: '120px',
+                      overflowY: 'auto'
+                    }}>
+                      {stripHtml(artistInfo.artistBio)}
+                    </p>
+                  )}
+
+                  {/* Populated Social Links */}
+                  {(artistInfo.facebook || artistInfo.twitter || artistInfo.instagram || artistInfo.website) && (
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '8px', alignItems: 'center' }}>
+                      {artistInfo.website && (
+                        <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Website">
+                          <Globe style={{ width: '16px', height: '16px' }} />
+                        </a>
+                      )}
+                      {artistInfo.facebook && (
+                        <a href={artistInfo.facebook.startsWith('http') ? artistInfo.facebook : `https://facebook.com/${artistInfo.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Facebook">
+                          <Facebook style={{ width: '16px', height: '16px' }} />
+                        </a>
+                      )}
+                      {artistInfo.twitter && (
+                        <a href={artistInfo.twitter.startsWith('http') ? artistInfo.twitter : `https://twitter.com/${artistInfo.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Twitter">
+                          <Twitter style={{ width: '16px', height: '16px' }} />
+                        </a>
+                      )}
+                      {artistInfo.instagram && (
+                        <a href={artistInfo.instagram.startsWith('http') ? artistInfo.instagram : `https://instagram.com/${artistInfo.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Instagram">
+                          <Instagram style={{ width: '16px', height: '16px' }} />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '20px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                    <span><strong>{artistInfo.monthlyListeners?.toLocaleString() || 0}</strong> Listeners</span>
+                    <span>•</span>
+                    <span><strong>{artistInfo.totalPlays?.toLocaleString() || 0}</strong> Plays</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* SECTION: UPCOMING CONCERTS */}
           {artistInfo?.concerts && artistInfo.concerts.length > 0 && (
@@ -259,10 +359,11 @@ const SongDetailsView = () => {
               <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Calendar className="w-6 h-6 text-accent" /> Upcoming Concerts & Live Events
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+              <div className="concert-grid-container">
                 {artistInfo.concerts.map((c, idx) => (
                   <div 
                     key={idx}
+                    className="concert-card"
                     style={{
                       backgroundColor: 'var(--bg-secondary)',
                       border: '1px solid var(--border-color)',
@@ -322,97 +423,18 @@ const SongDetailsView = () => {
           )}
 
           {/* SECTION: SIMILAR SONGS */}
-          <section>
-            <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>
-              More Songs Like This
-            </h2>
-            {similarTracks.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No similar tracks found for this genre.</div>
-            ) : (
-              <div className="grid-container">
+          {similarTracks.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>
+                More Songs Like This
+              </h2>
+              <div className="grid-container carousel-desktop">
                 {similarTracks.map((track) => (
-                  <div 
-                    key={track._id} 
-                    className="song-card"
-                    onClick={() => playTrack(track, similarTracks)}
-                  >
-                    <div className="song-card-cover-wrapper">
-                      <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                      <div className="song-card-play-hover">
-                        <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                      </div>
-                    </div>
-                    <div className="song-card-title">{track.title}</div>
-                    
-                    {/* Clickable Artist link */}
-                    <div 
-                      className="song-card-artist"
-                      style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId || track.artist);
-                      }}
-                    >
-                      {track.artistName}
-                    </div>
-                    <div className="song-card-genre" style={{ marginBottom: '4px' }}>{track.genre}</div>
-
-                    {/* Inline Dropdown menu to add to custom playlists */}
-                    {token && userPlaylists && userPlaylists.length > 0 && (
-                      <div 
-                        style={{ width: '100%', marginTop: '6px' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <select 
-                          defaultValue=""
-                          onChange={async (e) => {
-                            const playlistId = e.target.value;
-                            if (!playlistId) return;
-                            try {
-                              const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  Authorization: `Bearer ${token}`
-                                },
-                                body: JSON.stringify({ trackId: track._id })
-                              });
-                              const data = await res.json();
-                              if (res.ok) {
-                                showToast('Added to playlist successfully!');
-                                loadUserPlaylists();
-                              } else {
-                                showToast(data.message || 'Error adding to playlist', 'error');
-                              }
-                            } catch (err) {
-                              showToast('Failed to add track', 'error');
-                            }
-                            e.target.value = ""; // Reset select
-                          }}
-                          style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            color: 'var(--text-secondary)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            padding: '4px 6px',
-                            cursor: 'pointer',
-                            width: '100%',
-                            outline: 'none'
-                          }}
-                        >
-                          <option value="" disabled>+ Add to Playlist</option>
-                          {userPlaylists.map(pl => (
-                            <option key={pl._id} value={pl._id}>{pl.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
+                  <TrackCard key={track._id} track={track} trackList={similarTracks} />
                 ))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
         </div>
       )}

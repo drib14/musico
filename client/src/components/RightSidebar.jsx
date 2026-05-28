@@ -2,7 +2,6 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Music, Calendar, Star, Send, Crown, CheckCircle, Plus, X, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 
-
 const RightSidebar = () => {
   const { 
     API_URL, 
@@ -12,7 +11,11 @@ const RightSidebar = () => {
     audioRef, 
     user, 
     token, 
-    showToast 
+    showToast,
+    triggerProfileView,
+    setActiveView,
+    showLyrics,
+    setShowLyrics
   } = useContext(AppContext);
 
   const [artistInfo, setArtistInfo] = useState(null);
@@ -28,7 +31,8 @@ const RightSidebar = () => {
     return html.replace(/<\/?[^>]+(>|$)/g, "");
   };
 
-  const handleSaveToDb = async () => {
+  const handleSaveToDb = async (e) => {
+    e.stopPropagation();
     if (!token) {
       showToast('Please log in to save tracks to the database!', 'error');
       return;
@@ -137,7 +141,7 @@ const RightSidebar = () => {
       const totalValid = validLines.length;
 
       let lineIndex = 0;
-      return parsed.map((p) => {
+      const distributed = parsed.map((p) => {
         if (p.text.length === 0) {
           return { time: 0, text: '' };
         }
@@ -147,6 +151,7 @@ const RightSidebar = () => {
         lineIndex++;
         return { time, text: p.text };
       });
+      return distributed;
     }
 
     // Interpolate missing timestamps sequentially
@@ -159,7 +164,30 @@ const RightSidebar = () => {
       }
     }
 
-    return parsed;
+    // Sort chronologically
+    parsed.sort((a, b) => a.time - b.time);
+
+    // Delta gap checks to inject rotating musical note solo row
+    const parsedWithInstrumentals = [];
+    for (let i = 0; i < parsed.length; i++) {
+      parsedWithInstrumentals.push(parsed[i]);
+      if (i < parsed.length - 1) {
+        const currentLine = parsed[i];
+        const nextLine = parsed[i + 1];
+        if (currentLine.time !== null && nextLine.time !== null && currentLine.text.length > 0 && nextLine.text.length > 0) {
+          const gap = nextLine.time - currentLine.time;
+          if (gap > 8) {
+            parsedWithInstrumentals.push({
+              time: currentLine.time + 2,
+              text: '🎸 Instrumental Solo 🎸',
+              isInstrumental: true
+            });
+          }
+        }
+      }
+    }
+
+    return parsedWithInstrumentals;
   };
 
   const parsedLines = parseLyrics();
@@ -212,7 +240,6 @@ const RightSidebar = () => {
       if (!res.ok) throw new Error('Failed to update lyrics');
       
       showToast('Lyrics updated successfully!');
-      // Sync local track context
       setCurrentTrack({ ...currentTrack, lyrics: newLyrics.trim() });
       setNewLyrics('');
       setShowLyricsForm(false);
@@ -237,6 +264,7 @@ const RightSidebar = () => {
       gap: '24px',
       overflowY: 'auto',
       height: '100%',
+      maxHeight: 'calc(100vh - var(--player-height) - 16px)',
       zIndex: '10',
       transition: 'background-color var(--transition-normal)'
     }}>
@@ -247,14 +275,19 @@ const RightSidebar = () => {
           Now Playing
         </h3>
         
-        <div style={{
-          width: '100%',
-          aspectRatio: '1',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-          position: 'relative'
-        }}>
+        {/* Cover Art clickable redirect to Song Details view */}
+        <div 
+          onClick={() => setActiveView('song-details')}
+          style={{
+            width: '100%',
+            aspectRatio: '1',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+            position: 'relative',
+            cursor: 'pointer'
+          }}
+        >
           {currentTrack.coverUrl ? (
             <img src={currentTrack.coverUrl} alt={currentTrack.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
@@ -265,11 +298,20 @@ const RightSidebar = () => {
         </div>
 
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', margin: 0, fontFamily: 'Outfit' }}>
+          {/* Song title clickable redirect to Song Details view */}
+          <h2 
+            onClick={() => setActiveView('song-details')}
+            style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', margin: 0, fontFamily: 'Outfit', cursor: 'pointer', textDecoration: 'underline' }}
+          >
             {currentTrack.title}
           </h2>
+          
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+            {/* Artist name clickable redirect to Artist Profile view */}
+            <span 
+              onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+              style={{ fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer', textDecoration: 'underline' }}
+            >
               {currentTrack.artistName}
             </span>
             {artistInfo?.isArtistVerified && (
@@ -362,7 +404,11 @@ const RightSidebar = () => {
             gap: '12px',
             boxShadow: 'var(--glass-shadow)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Clickable redirect to Artist Profile */}
+            <div 
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+              onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.artist)}
+            >
               {artistInfo.artistAvatar || artistInfo.userAvatar ? (
                 <img 
                   src={artistInfo.artistAvatar || artistInfo.userAvatar} 
@@ -407,22 +453,22 @@ const RightSidebar = () => {
             {(artistInfo.facebook || artistInfo.twitter || artistInfo.instagram || artistInfo.website) && (
               <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
                 {artistInfo.website && (
-                  <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Website">
+                  <a href={artistInfo.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Website">
                     <Globe style={{ width: '14px', height: '14px' }} />
                   </a>
                 )}
                 {artistInfo.facebook && (
-                  <a href={artistInfo.facebook.startsWith('http') ? artistInfo.facebook : `https://facebook.com/${artistInfo.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Facebook">
+                  <a href={artistInfo.facebook.startsWith('http') ? artistInfo.facebook : `https://facebook.com/${artistInfo.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Facebook">
                     <Facebook style={{ width: '14px', height: '14px' }} />
                   </a>
                 )}
                 {artistInfo.twitter && (
-                  <a href={artistInfo.twitter.startsWith('http') ? artistInfo.twitter : `https://twitter.com/${artistInfo.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Twitter">
+                  <a href={artistInfo.twitter.startsWith('http') ? artistInfo.twitter : `https://twitter.com/${artistInfo.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Twitter">
                     <Twitter style={{ width: '14px', height: '14px' }} />
                   </a>
                 )}
                 {artistInfo.instagram && (
-                  <a href={artistInfo.instagram.startsWith('http') ? artistInfo.instagram : `https://instagram.com/${artistInfo.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Instagram">
+                  <a href={artistInfo.instagram.startsWith('http') ? artistInfo.instagram : `https://instagram.com/${artistInfo.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justify: 'center', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }} title="Instagram">
                     <Instagram style={{ width: '14px', height: '14px' }} />
                   </a>
                 )}
@@ -461,12 +507,6 @@ const RightSidebar = () => {
                 </div>
               </div>
             )}
-
-            {artistInfo.source && (
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
-                Description Source: {artistInfo.source}
-              </div>
-            )}
           </div>
         </section>
       )}
@@ -477,8 +517,23 @@ const RightSidebar = () => {
 
           {/* 3. TIMED LYRICS SECTION */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minHeight: 0 }}>
-            <h3 style={{ fontSize: '15px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', margin: 0 }}>
-              Lyrics
+            {/* Clickable Header redirect to Fullscreen LyricsView */}
+            <h3 
+              onClick={() => setShowLyrics(true)}
+              style={{ 
+                fontSize: '15px', 
+                color: 'var(--text-secondary)', 
+                textTransform: 'uppercase', 
+                letterSpacing: '1px', 
+                fontWeight: 'bold', 
+                margin: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              Lyrics <span style={{ fontSize: '11px', textTransform: 'lowercase', color: 'var(--accent)', fontWeight: 'bold' }}>(expand fullscreen)</span>
             </h3>
             
             {hasLyrics ? (
@@ -502,8 +557,11 @@ const RightSidebar = () => {
                         key={idx}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : ''}`}
+                        className={`sidebar-lyric-line ${isActive ? 'active' : ''} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
                       >
+                        {line.isInstrumental && isActive && (
+                          <span className="spinning-music-note">🎵</span>
+                        )}
                         {line.text.length === 0 ? '\u00A0' : line.text}
                       </p>
                     );

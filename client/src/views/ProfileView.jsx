@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Music, Play, Crown, Calendar, Sparkles, CheckCircle } from 'lucide-react';
+import { Music, Play, Crown, Calendar, Sparkles, CheckCircle, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 
 const ProfileView = () => {
@@ -242,7 +242,7 @@ const ProfileView = () => {
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  Official Verified Check Badge
+                  Official Verified
                 </span>
               )}
             </div>
@@ -261,17 +261,29 @@ const ProfileView = () => {
               {stripHtml(user.artistBio)}
             </p>
 
-            {user.website && (
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                <strong>Contact/Website:</strong>{' '}
-                <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>
-                  {user.website}
-                </a>
-              </div>
-            )}
-            {user.source && (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '4px' }}>
-                Description Source: {user.source}
+            {/* Dynamic Clickable Social Icons shortcut */}
+            {(user.facebook || user.twitter || user.instagram || user.website) && (
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
+                {user.website && (
+                  <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Website">
+                    <Globe style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.facebook && (
+                  <a href={user.facebook.startsWith('http') ? user.facebook : `https://facebook.com/${user.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Facebook">
+                    <Facebook style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.twitter && (
+                  <a href={user.twitter.startsWith('http') ? user.twitter : `https://twitter.com/${user.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Twitter">
+                    <Twitter style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.instagram && (
+                  <a href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Instagram">
+                    <Instagram style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
               </div>
             )}
             
@@ -286,17 +298,11 @@ const ProfileView = () => {
       )}
 
       {/* 2. UPLOADED TRACKS LIST */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          Uploaded Songs
-        </h2>
-        
-        {tracks.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <Music className="w-10 h-10 text-muted" style={{ margin: '0 auto 12px auto' }} />
-            <p>This creator has not uploaded any tracks yet.</p>
-          </div>
-        ) : (
+      {tracks.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Uploaded Songs
+          </h2>
           <table className="track-table">
             <thead>
               <tr>
@@ -328,26 +334,21 @@ const ProfileView = () => {
                   <td className="table-genre">{track.genre}</td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="btn-icon" onClick={(e) => { e.stopPropagation(); playTrack(track, tracks); }}>
-                      <Play fill="currentColor" className="w-3 h-3" />
+                      <Play fill="currentColor" className="w-3 h-3" style={{ transform: 'translateX(1px)' }} />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 3. PUBLIC PLAYLISTS */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Public Playlists</h2>
-        
-        {playlists.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <p>This user has no public playlists.</p>
-          </div>
-        ) : (
-          <div className="grid-container">
+      {playlists.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Public Playlists</h2>
+          <div className="grid-container carousel-desktop">
             {playlists.map((pl) => (
               <div
                 key={pl._id}
@@ -366,8 +367,8 @@ const ProfileView = () => {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 4. UPCOMING CONCERTS */}
       {user.concerts && user.concerts.length > 0 && (
@@ -375,10 +376,11 @@ const ProfileView = () => {
           <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Calendar className="w-6 h-6 text-accent" /> Upcoming Concerts & Events
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div className="concert-grid-container">
             {user.concerts.map((c, idx) => (
               <div 
                 key={idx}
+                className="concert-card"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
                   border: '1px solid var(--border-color)',

@@ -1,12 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Search, Music, Play, Star, Users, Disc3, Disc, CheckCircle } from 'lucide-react';
+import { Search, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
+import TrackCard from '../components/TrackCard';
 
 const SearchView = () => {
   const { 
     API_URL, 
-    playTrack, 
     triggerProfileView, 
     token, 
     userPlaylists, 
@@ -27,56 +27,31 @@ const SearchView = () => {
   });
   
   const [loading, setLoading] = useState(false);
-  const [savingId, setSavingId] = useState(null);
-
-  const handleSaveToDb = async (e, trackId) => {
-    e.stopPropagation();
-    if (!token) {
-      showToast('Please log in to save tracks to the database!', 'error');
-      return;
-    }
-    setSavingId(trackId);
-    try {
-      const res = await fetch(`${API_URL}/tracks/import`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ trackId })
-      });
-      if (res.ok) {
-        showToast('Track imported to Musico DB successfully!');
-        setSearchResults(prev => ({
-          ...prev,
-          tracks: prev.tracks.map(t => t._id === trackId ? { ...t, isJamendo: false } : t)
-        }));
-      } else {
-        const errData = await res.json();
-        throw new Error(errData.message || 'Failed to save track');
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setSavingId(null);
-    }
-  };
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
 
   const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
-  // Trigger parallel local and Spotify searches on input query changes
+  // Trigger search on query/genre changes (resets pagination offset)
   useEffect(() => {
+    setOffset(0);
     const delayDebounce = setTimeout(() => {
-      fetchFilteredTracks();
+      fetchFilteredTracks(0, false);
     }, 450);
 
     return () => clearTimeout(delayDebounce);
   }, [search, genre]);
 
-  const fetchFilteredTracks = async () => {
-    setLoading(true);
+  const fetchFilteredTracks = async (currentOffset, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
-      let queryParams = [];
+      let queryParams = [`limit=${limit}`, `offset=${currentOffset}`];
       if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
       if (genre && genre !== 'All') queryParams.push(`genre=${encodeURIComponent(genre)}`);
 
@@ -84,18 +59,35 @@ const SearchView = () => {
       const res = await fetch(`${API_URL}/tracks/search${queryString}`);
       if (res.ok) {
         const data = await res.json();
-        setSearchResults({
-          tracks: data.tracks || [],
-          artists: data.artists || [],
-          albums: data.albums || []
-        });
+        if (append) {
+          setSearchResults(prev => ({
+            tracks: [...prev.tracks, ...(data.tracks || [])],
+            artists: [...prev.artists, ...(data.artists || [])],
+            albums: [...prev.albums, ...(data.albums || [])]
+          }));
+        } else {
+          setSearchResults({
+            tracks: data.tracks || [],
+            artists: data.artists || [],
+            albums: data.albums || []
+          });
+        }
       }
     } catch (error) {
       console.error('Unified search index load failed:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleLoadMore = () => {
+    const nextOffset = offset + limit;
+    setOffset(nextOffset);
+    fetchFilteredTracks(nextOffset, true);
+  };
+
+  const hasAnyResults = searchResults.tracks.length > 0 || searchResults.artists.length > 0 || searchResults.albums.length > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -141,115 +133,30 @@ const SearchView = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
           
           {/* SECTION 1: SONGS (TRACKS) */}
-          <section>
-            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Music className="w-5 h-5 text-accent" /> Songs
-            </h2>
-            
-            {searchResults.tracks.length === 0 ? (
-              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p style={{ fontSize: '14px' }}>No songs found matching criteria.</p>
+          {searchResults.tracks.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Music className="w-5 h-5 text-accent" /> Songs
+              </h2>
+              <div className="grid-container carousel-desktop">
+                {searchResults.tracks.map((track) => (
+                  <TrackCard key={track._id} track={track} trackList={searchResults.tracks} />
+                ))}
               </div>
-            ) : (
-              <div className="grid-container">
-                  {searchResults.tracks.map((track) => (
-                    <div 
-                      key={track._id} 
-                      className="song-card"
-                      onClick={() => playTrack(track, searchResults.tracks)}
-                    >
-                      <div className="song-card-cover-wrapper">
-                        <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                        <div className="song-card-play-hover">
-                          <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                        </div>
-                      </div>
-                      <div className="song-card-title">{track.title}</div>
-                      
-                      {/* Clickable Artist link */}
-                      <div 
-                        className="song-card-artist"
-                        style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId);
-                        }}
-                      >
-                        {track.artistName}
-                      </div>
-                      <div className="song-card-genre" style={{ marginBottom: '4px' }}>{track.genre}</div>
-
-                      {/* Inline Dropdown menu to add to custom playlists */}
-                      {token && userPlaylists && userPlaylists.length > 0 && (
-                        <div 
-                          style={{ width: '100%', marginTop: '6px' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <select 
-                            defaultValue=""
-                            onChange={async (e) => {
-                              const playlistId = e.target.value;
-                              if (!playlistId) return;
-                              try {
-                                const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    Authorization: `Bearer ${token}`
-                                  },
-                                  body: JSON.stringify({ trackId: track._id })
-                                });
-                                const data = await res.json();
-                                if (res.ok) {
-                                  showToast('Added to playlist successfully!');
-                                } else {
-                                  showToast(data.message || 'Error adding to playlist', 'error');
-                                }
-                              } catch (err) {
-                                showToast('Failed to add track', 'error');
-                              }
-                              e.target.value = ""; // Reset select
-                            }}
-                            style={{
-                              background: 'rgba(255,255,255,0.05)',
-                              color: 'var(--text-secondary)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              borderRadius: '8px',
-                              fontSize: '11px',
-                              padding: '4px 6px',
-                              cursor: 'pointer',
-                              width: '100%',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="" disabled>+ Add to Playlist</option>
-                            {userPlaylists.map(pl => (
-                              <option key={pl._id} value={pl._id}>{pl.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* SECTION 2: ARTISTS */}
-          <section>
-            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users className="w-5 h-5 text-accent" /> Artists
-            </h2>
-            
-            {searchResults.artists.length === 0 ? (
-              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p style={{ fontSize: '14px' }}>No creators or artists found matching criteria.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '20px' }}>
+          {searchResults.artists.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users className="w-5 h-5 text-accent" /> Artists
+              </h2>
+              <div className="artist-grid-container carousel-desktop">
                 {searchResults.artists.map((artist) => (
                   <div
                     key={artist._id}
+                    className="artist-card"
                     onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
                     style={{
                       backgroundColor: 'var(--bg-secondary)',
@@ -264,14 +171,6 @@ const SearchView = () => {
                       gap: '12px',
                       transition: 'all 0.25s ease',
                       boxShadow: 'var(--glass-shadow)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                     }}
                   >
                     {artist.artistAvatar || artist.userAvatar ? (
@@ -342,21 +241,16 @@ const SearchView = () => {
                   </div>
                 ))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* SECTION 3: PLAYLISTS & ALBUMS */}
-          <section>
-            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Disc3 className="w-5 h-5 text-accent" /> Playlists & Albums
-            </h2>
-            
-            {searchResults.albums.length === 0 ? (
-              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p style={{ fontSize: '14px' }}>No playlists or albums found matching criteria.</p>
-              </div>
-            ) : (
-              <div className="grid-container">
+          {searchResults.albums.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Disc3 className="w-5 h-5 text-accent" /> Playlists & Albums
+              </h2>
+              <div className="grid-container carousel-desktop">
                 {searchResults.albums.map((pl) => (
                   <div
                     key={pl._id}
@@ -379,8 +273,53 @@ const SearchView = () => {
                   </div>
                 ))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
+
+          {/* Fallback empty view */}
+          {!hasAnyResults && (
+            <div style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '60px 40px',
+              textAlign: 'center',
+              color: 'var(--text-secondary)'
+            }}>
+              <Music className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
+              <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No matches found</h3>
+              <p style={{ fontSize: '14px' }}>Try exploring other genres or check spelling for songs or artists.</p>
+            </div>
+          )}
+
+          {/* Paging controls */}
+          {hasAnyResults && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="spinner" style={{ width: '12px', height: '12px' }}></div>
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Results'
+                )}
+              </button>
+            </div>
+          )}
 
         </div>
       )}

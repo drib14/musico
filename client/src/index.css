@@ -2099,3 +2099,149 @@ h1, h2, h3, h4, h5, h6 {
       "player player" !important;
   }
 }
+
+/* Custom Spotify-Style Glassmorphic Context Menu & Sub-menu */
+.spotify-context-menu {
+  background: rgba(13, 19, 38, 0.95) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  overflow: visible !important;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.context-menu-item:hover {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.spotify-context-submenu {
+  background: rgba(13, 19, 38, 0.95) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Universal 3D Carousel & Scroll-Snap Perspective */
+.artist-grid-container,
+.genre-grid-container,
+.concert-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid-container,
+  .artist-grid-container,
+  .genre-grid-container,
+  .concert-grid-container {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding: 20px 10px !important;
+    perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid-container::-webkit-scrollbar,
+  .artist-grid-container::-webkit-scrollbar,
+  .genre-grid-container::-webkit-scrollbar,
+  .concert-grid-container::-webkit-scrollbar {
+    display: none !important;
+  }
+  .song-card,
+  .artist-card,
+  .genre-card,
+  .concert-card {
+    flex: 0 0 220px !important;
+    scroll-snap-align: center;
+    transform: rotateY(-8deg) translateZ(0px);
+    transition: transform var(--transition-normal), background-color var(--transition-normal);
+  }
+  .song-card:hover, .song-card:active,
+  .artist-card:hover, .artist-card:active,
+  .genre-card:hover, .genre-card:active,
+  .concert-card:hover, .concert-card:active {
+    transform: rotateY(0deg) scale(1.04) translateZ(15px) !important;
+  }
+}
+
+/* Desktop Horizontal Carousel Extension */
+@media (min-width: 769px) {
+  .grid-container.carousel-desktop,
+  .artist-grid-container.carousel-desktop,
+  .genre-grid-container.carousel-desktop {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 24px;
+    padding: 12px 4px;
+  }
+  .grid-container.carousel-desktop::-webkit-scrollbar,
+  .artist-grid-container.carousel-desktop::-webkit-scrollbar,
+  .genre-grid-container.carousel-desktop::-webkit-scrollbar {
+    height: 6px;
+  }
+  .grid-container.carousel-desktop .song-card,
+  .artist-grid-container.carousel-desktop .artist-card,
+  .genre-grid-container.carousel-desktop .genre-card {
+    flex: 0 0 210px !important;
+    scroll-snap-align: start;
+  }
+}
+
+/* Spinning Animated Music Notes for lyrics */
+@keyframes spin-note {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning-music-note {
+  display: inline-block;
+  animation: spin-note 2s linear infinite;
+  color: var(--premium-color);
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.sidebar-lyric-line.active {
+  color: var(--accent) !important;
+  font-weight: 700;
+  transform: scale(1.03);
+  transition: all 0.25s ease;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.sidebar-lyric-line.instrumental-solo {
+  color: var(--premium-color) !important;
+  font-weight: 800;
+  letter-spacing: 1px;
+  animation: pulse-instrumental 2s infinite ease-in-out;
+}
+
+@keyframes pulse-instrumental {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; text-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
+  100% { opacity: 0.7; }
+}

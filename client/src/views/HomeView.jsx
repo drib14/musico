@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
+import TrackCard from '../components/TrackCard';
 
 const HomeView = () => {
   const { 
@@ -10,8 +11,6 @@ const HomeView = () => {
     history, 
     user, 
     token, 
-    userPlaylists, 
-    loadUserPlaylists, 
     activeView, 
     setActiveView, 
     setActiveChart, 
@@ -35,38 +34,7 @@ const HomeView = () => {
   // All local pools states
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState(null);
-
-  const handleSaveToDb = async (e, trackId) => {
-    e.stopPropagation();
-    if (!token) {
-      showToast('Please log in to save tracks to the database!', 'error');
-      return;
-    }
-    setSavingId(trackId);
-    try {
-      const res = await fetch(`${API_URL}/tracks/import`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ trackId })
-      });
-      if (res.ok) {
-        showToast('Track imported to Musico DB successfully!');
-        // Update both lists
-        setTracks(prev => prev.map(t => t._id === trackId ? { ...t, isJamendo: false } : t));
-      } else {
-        const errData = await res.json();
-        throw new Error(errData.message || 'Failed to save track');
-      }
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setSavingId(null);
-    }
-  };
+  const [visibleTracksCount, setVisibleTracksCount] = useState(10);
 
   // Load trending local charts
   useEffect(() => {
@@ -150,6 +118,10 @@ const HomeView = () => {
     fetchGenres();
   }, []);
 
+  const handleLoadMoreSongs = () => {
+    setVisibleTracksCount(prev => prev + 10);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
       
@@ -176,16 +148,12 @@ const HomeView = () => {
       </div>
 
       {/* 2. Featured Playlists & Featured Albums (Spotify Style) */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
-        </h2>
-        {topPlaylists.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '36px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <p style={{ fontSize: '13px' }}>Create public playlists to show them here on the global charts!</p>
-          </div>
-        ) : (
-          <div className="grid-container">
+      {topPlaylists.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Disc3 className="w-6 h-6 text-accent" /> Featured Playlists & Collections
+          </h2>
+          <div className="grid-container carousel-desktop">
             {topPlaylists.map((pl) => (
               <div
                 key={pl._id}
@@ -205,21 +173,20 @@ const HomeView = () => {
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 3. POPULAR ARTISTS (Spotify Style slot circles) */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Users className="w-6 h-6 text-accent" /> Popular Artists
-        </h2>
-        {topArtists.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>No trending creators yet.</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' }}>
+      {topArtists.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users className="w-6 h-6 text-accent" /> Popular Artists
+          </h2>
+          <div className="artist-grid-container carousel-desktop">
             {topArtists.map((artist) => (
               <div
                 key={artist._id}
+                className="artist-card"
                 onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
@@ -234,14 +201,6 @@ const HomeView = () => {
                   gap: '12px',
                   transition: 'all 0.25s ease',
                   boxShadow: 'var(--glass-shadow)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                 }}
               >
                 {artist.artistAvatar || artist.userAvatar ? (
@@ -310,10 +269,8 @@ const HomeView = () => {
               </div>
             ))}
           </div>
-        )}
-      </section>
-
-
+        </section>
+      )}
 
       {/* 5. IMMERSIVE SPOTIFY-STYLE TOP CHART CARDS */}
       <section>
@@ -450,249 +407,98 @@ const HomeView = () => {
       {history.length > 0 && (
         <section>
           <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Recently Played</h2>
-          <div className="grid-container">
+          <div className="grid-container carousel-desktop">
             {history.map((track) => (
-              <div 
-                key={track._id} 
-                className="song-card"
-                onClick={() => playTrack(track, history)}
-              >
-                <div className="song-card-cover-wrapper">
-                  {track.coverUrl ? (
-                    <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                      <Music className="w-12 h-12 text-accent" />
-                    </div>
-                  )}
-                  <div className="song-card-play-hover">
-                    <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                  </div>
-                </div>
-                <div className="song-card-title">{track.title}</div>
-                
-                {/* Clickable Artist Profile Link */}
-                <div 
-                  className="song-card-artist"
-                  style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId || track.artist);
-                  }}
-                >
-                  {track.artistName}
-                </div>
-                <div className="song-card-genre">{track.genre}</div>
-                  {/* Inline Dropdown menu to add to custom playlists */}
-                  {token && userPlaylists && userPlaylists.length > 0 && (
-                    <div 
-                      style={{ width: '100%', marginTop: '6px' }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <select 
-                        defaultValue=""
-                        onChange={async (e) => {
-                          const playlistId = e.target.value;
-                          if (!playlistId) return;
-                          try {
-                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
-                              },
-                              body: JSON.stringify({ trackId: track._id })
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              showToast('Added to playlist successfully!');
-                              loadUserPlaylists();
-                            } else {
-                              showToast(data.message || 'Error adding to playlist', 'error');
-                            }
-                          } catch (err) {
-                            showToast('Failed to add track', 'error');
-                          }
-                          e.target.value = ""; // Reset select
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          padding: '4px 6px',
-                          cursor: 'pointer',
-                          width: '100%',
-                          outline: 'none'
-                        }}
-                      >
-                        <option value="" disabled>+ Add to Playlist</option>
-                        {userPlaylists.map(pl => (
-                          <option key={pl._id} value={pl._id}>{pl.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-               </div>
+              <TrackCard key={track._id} track={track} trackList={history} />
             ))}
           </div>
         </section>
       )}
 
       {/* 7. CORE MUSIC POOL LISTINGS */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Trending Uploads</h2>
-        
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-            <div className="spinner"></div>
-          </div>
-        ) : tracks.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <Music className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
-            <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No Songs Uploaded Yet</h3>
-            <p style={{ fontSize: '14px', marginBottom: '16px' }}>Be the first creator to upload a song directly inside Musico!</p>
-            <button className="btn btn-primary" onClick={() => setActiveView('upload')}>
-              Upload Your First Track
-            </button>
-          </div>
-        ) : (
-          <div className="grid-container">
-            {tracks.slice(0, 10).map((track) => (
-              <div 
-                key={track._id} 
-                className="song-card"
-                onClick={() => playTrack(track, tracks)}
-              >
-                <div className="song-card-cover-wrapper">
-                  {track.coverUrl ? (
-                    <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                      <Music className="w-12 h-12 text-accent" />
-                    </div>
-                  )}
-                  <div className="song-card-play-hover">
-                    <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                  </div>
+      {tracks.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Trending Uploads</h2>
+          
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner"></div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="grid-container carousel-desktop">
+                {tracks.slice(0, visibleTracksCount).map((track) => (
+                  <TrackCard key={track._id} track={track} trackList={tracks} />
+                ))}
+              </div>
+              
+              {tracks.length > visibleTracksCount && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={handleLoadMoreSongs}
+                    style={{
+                      padding: '10px 24px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Load More Songs
+                  </button>
                 </div>
-                <div className="song-card-title">{track.title}</div>
-                
-                {/* Clickable Artist Profile Link */}
-                <div 
-                  className="song-card-artist"
-                  style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId || track.artist);
-                  }}
-                >
-                  {track.artistName}
-                </div>
-                <div className="song-card-genre">{track.genre}</div>
-                  {/* Inline Dropdown menu to add to custom playlists */}
-                  {token && userPlaylists && userPlaylists.length > 0 && (
-                    <div 
-                      style={{ width: '100%', marginTop: '6px' }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <select 
-                        defaultValue=""
-                        onChange={async (e) => {
-                          const playlistId = e.target.value;
-                          if (!playlistId) return;
-                          try {
-                            const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
-                              },
-                              body: JSON.stringify({ trackId: track._id })
-                            });
-                            const data = await res.json();
-                            if (res.ok) {
-                              showToast('Added to playlist successfully!');
-                              loadUserPlaylists();
-                            } else {
-                              showToast(data.message || 'Error adding to playlist', 'error');
-                            }
-                          } catch (err) {
-                            showToast('Failed to add track', 'error');
-                          }
-                          e.target.value = ""; // Reset select
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          color: 'var(--text-secondary)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          padding: '4px 6px',
-                          cursor: 'pointer',
-                          width: '100%',
-                          outline: 'none'
-                        }}
-                      >
-                        <option value="" disabled>+ Add to Playlist</option>
-                        {userPlaylists.map(pl => (
-                          <option key={pl._id} value={pl._id}>{pl.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 8. QUICK SEARCH GENRE CATEGORIES */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Browse Genres</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px' }}>
-          {genresList.map((g, idx) => (
-            <div
-              key={idx}
-              style={{
-                position: 'relative',
-                height: '110px',
-                borderRadius: '12px',
-                padding: '16px',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                backgroundColor: g.color,
-                boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-                transition: 'transform var(--transition-fast)'
-              }}
-              onClick={() => {
-                setSearchGenre(g.name);
-                setActiveView('search');
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              <h3 style={{ fontSize: '18px', color: '#ffffff', fontWeight: '800' }}>{g.name}</h3>
-              <img
-                src={g.cover}
-                alt={g.name}
+      {genresList.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Browse Genres</h2>
+          <div className="genre-grid-container carousel-desktop">
+            {genresList.map((g, idx) => (
+              <div
+                key={idx}
+                className="genre-card"
                 style={{
-                  position: 'absolute',
-                  right: '-15px',
-                  bottom: '-15px',
-                  width: '70px',
-                  height: '70px',
-                  borderRadius: '6px',
-                  transform: 'rotate(25deg)',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                  objectFit: 'cover'
+                  position: 'relative',
+                  height: '110px',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  backgroundColor: g.color,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                  transition: 'transform var(--transition-fast)'
                 }}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
+                onClick={() => {
+                  setSearchGenre(g.name);
+                  setActiveView('search');
+                }}
+              >
+                <h3 style={{ fontSize: '18px', color: '#ffffff', fontWeight: '800' }}>{g.name}</h3>
+                <img
+                  src={g.cover}
+                  alt={g.name}
+                  style={{
+                    position: 'absolute',
+                    right: '-15px',
+                    bottom: '-15px',
+                    width: '70px',
+                    height: '70px',
+                    borderRadius: '6px',
+                    transform: 'rotate(25deg)',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                    objectFit: 'cover'
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );

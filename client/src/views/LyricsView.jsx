@@ -17,7 +17,6 @@ const LyricsView = () => {
     };
 
     audio.addEventListener('timeupdate', handleTimeUpdate);
-    // Grab initial value in case already playing
     setCurrentTime(audio.currentTime || 0);
 
     return () => {
@@ -64,7 +63,7 @@ const LyricsView = () => {
       const totalValid = validLines.length;
 
       let lineIndex = 0;
-      return parsed.map((p) => {
+      const distributed = parsed.map((p) => {
         if (p.text.length === 0) {
           return { time: 0, text: '' };
         }
@@ -74,6 +73,7 @@ const LyricsView = () => {
         lineIndex++;
         return { time, text: p.text };
       });
+      return distributed;
     }
 
     // Interpolate missing timestamps sequentially
@@ -86,7 +86,30 @@ const LyricsView = () => {
       }
     }
 
-    return parsed;
+    // Sort chronologically
+    parsed.sort((a, b) => a.time - b.time);
+
+    // Delta gap checks to inject rotating musical note solo row
+    const parsedWithInstrumentals = [];
+    for (let i = 0; i < parsed.length; i++) {
+      parsedWithInstrumentals.push(parsed[i]);
+      if (i < parsed.length - 1) {
+        const currentLine = parsed[i];
+        const nextLine = parsed[i + 1];
+        if (currentLine.time !== null && nextLine.time !== null && currentLine.text.length > 0 && nextLine.text.length > 0) {
+          const gap = nextLine.time - currentLine.time;
+          if (gap > 8) {
+            parsedWithInstrumentals.push({
+              time: currentLine.time + 2,
+              text: '🎸 Instrumental Solo 🎸',
+              isInstrumental: true
+            });
+          }
+        }
+      }
+    }
+
+    return parsedWithInstrumentals;
   };
 
   const parsedLines = parseLyrics();
@@ -120,12 +143,7 @@ const LyricsView = () => {
     }
   };
 
-  const handleUpgradeClick = () => {
-    setShowLyrics(false);
-    setActiveView('billing');
-  };
-
-  // Restrict lines if Free tier user
+  // Restrict lines if Free tier user (Bypassed since premium is free!)
   const visibleLines = isPremium ? parsedLines : parsedLines.slice(0, 3);
 
   return (
@@ -187,15 +205,24 @@ const LyricsView = () => {
                 <p 
                   key={idx} 
                   ref={isActive ? activeLineRef : null}
-                  className={`lyrics-text-line ${isActive ? 'active' : ''}`}
+                  className={`lyrics-text-line ${isActive ? 'active' : ''} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
                   onClick={() => handleLineClick(line.time)}
+                  style={line.isInstrumental ? {
+                    color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',
+                    fontStyle: 'italic',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px'
+                  } : {}}
                 >
+                  {line.isInstrumental && isActive && (
+                    <span className="spinning-music-note">🎵</span>
+                  )}
                   {line.text.length === 0 ? '\u00A0' : line.text}
                 </p>
               );
             })}
-            
-            {/* Gated blocks removed */}
           </div>
         ) : (
           // Fallback Placeholder if no lyrics are uploaded
@@ -206,7 +233,7 @@ const LyricsView = () => {
               Lyrics haven't been provided for this track yet. 
               {user?._id === currentTrack.artist ? (
                 <span style={{ display: 'block', marginTop: '10px', color: 'var(--accent)' }}>
-                  As the artist, you can delete this track and upload a fresh version with full lyrics in the Upload section!
+                  As the artist, you can add lyrics in the panel on the right sidebar!
                 </span>
               ) : (
                 " The artist hasn't uploaded them yet."

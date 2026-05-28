@@ -200,12 +200,8 @@ router.get('/trending', async (req, res) => {
     }
 
     const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(15);
-    const mergedTracks = [];
-    const maxLen = Math.max(localList.length, jamendoTracks.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (i < localList.length) mergedTracks.push(localList[i]);
-      if (i < jamendoTracks.length) mergedTracks.push(jamendoTracks[i]);
-    }
+    const mergedTracks = [...localList, ...jamendoTracks];
+    mergedTracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
 
     res.json(mergedTracks);
   } catch (error) {
@@ -368,6 +364,8 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/search', async (req, res) => {
   const { search, genre } = req.query;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = parseInt(req.query.offset) || 0;
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
   try {
@@ -392,11 +390,11 @@ router.get('/search', async (req, res) => {
     }
 
     // 1. Tracks Search (Local + Jamendo)
-    const localTracks = await Track.find(trackQuery).sort({ plays: -1 }).limit(20);
+    const localTracks = await Track.find(trackQuery).sort({ plays: -1 }).skip(offset).limit(limit);
 
     let jamendoTracks = [];
     try {
-      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=20&audioformat=mp32&order=popularity_total&include=lyrics`;
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&audioformat=mp32&order=popularity_total&include=lyrics`;
       if (search) {
         jamUrl += `&namesearch=${encodeURIComponent(search)}`;
       }
@@ -430,57 +428,62 @@ router.get('/search', async (req, res) => {
     const mergedTracks = [...localTracks, ...jamendoTracks];
 
     // 2. Artists Search (Local + Jamendo)
-    const localArtists = await User.find(artistQuery).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires').limit(10);
+    const localArtists = await User.find(artistQuery)
+      .select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires')
+      .skip(offset)
+      .limit(limit);
     
     let jamendoArtists = [];
-    if (search) {
-      try {
-        const jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=10&namesearch=${encodeURIComponent(search)}`;
-        const jamArtistRes = await fetch(jamArtistUrl);
-        if (jamArtistRes.ok) {
-          const data = await jamArtistRes.json();
-          jamendoArtists = (data.results || []).map((a) => ({
-            _id: a.id,
-            artistName: a.name,
-            name: a.name,
-            artistAvatar: a.image || '',
-            userAvatar: a.image || '',
-            isArtistVerified: true,
-            isJamendo: true,
-            monthlyListeners: a.stats?.popularity_total ? Math.round(a.stats.popularity_total * 4.5) : 18500,
-          }));
-        }
-      } catch (err) {
-        console.error('Error fetching Jamendo artists in search:', err);
+    try {
+      let jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
+      if (search) {
+        jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&namesearch=${encodeURIComponent(search)}`;
       }
+      const jamArtistRes = await fetch(jamArtistUrl);
+      if (jamArtistRes.ok) {
+        const data = await jamArtistRes.json();
+        jamendoArtists = (data.results || []).map((a) => ({
+          _id: a.id,
+          artistName: a.name,
+          name: a.name,
+          artistAvatar: a.image || '',
+          userAvatar: a.image || '',
+          isArtistVerified: true,
+          isJamendo: true,
+          monthlyListeners: a.stats?.popularity_total ? Math.round(a.stats.popularity_total * 4.5) : 18500,
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo artists in search:', err);
     }
 
     const mergedArtists = [...localArtists, ...jamendoArtists];
 
     // 3. Albums & Playlists Search (Local Playlists + Jamendo Albums)
-    const localPlaylists = await Playlist.find(playlistQuery).populate('creator', 'name').limit(10);
+    const localPlaylists = await Playlist.find(playlistQuery).populate('creator', 'name').skip(offset).limit(limit);
 
     let jamendoAlbums = [];
-    if (search) {
-      try {
-        const jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=10&namesearch=${encodeURIComponent(search)}`;
-        const jamAlbumRes = await fetch(jamAlbumUrl);
-        if (jamAlbumRes.ok) {
-          const data = await jamAlbumRes.json();
-          jamendoAlbums = (data.results || []).map((al) => ({
-            _id: `jamendo-album-${al.id}`,
-            name: al.name,
-            description: `Album by ${al.artist_name}. Released on Jamendo.`,
-            coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
-            tracksCount: 10,
-            isJamendoAlbum: true,
-            artistName: al.artist_name,
-            artistId: al.artist_id
-          }));
-        }
-      } catch (err) {
-        console.error('Error fetching Jamendo albums in search:', err);
+    try {
+      let jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
+      if (search) {
+        jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&namesearch=${encodeURIComponent(search)}`;
       }
+      const jamAlbumRes = await fetch(jamAlbumUrl);
+      if (jamAlbumRes.ok) {
+        const data = await jamAlbumRes.json();
+        jamendoAlbums = (data.results || []).map((al) => ({
+          _id: `jamendo-album-${al.id}`,
+          name: al.name,
+          description: `Album by ${al.artist_name}. Released on Jamendo.`,
+          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          tracksCount: 10,
+          isJamendoAlbum: true,
+          artistName: al.artist_name,
+          artistId: al.artist_id
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo albums in search:', err);
     }
 
     const mergedAlbums = [...localPlaylists, ...jamendoAlbums];
@@ -843,10 +846,30 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       }
     }
 
+    const generateUpcomingDates = () => {
+      const dates = [];
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      
+      const concert1 = new Date();
+      concert1.setDate(concert1.getDate() + 15);
+      dates.push(concert1.toLocaleDateString('en-US', options));
+      
+      const concert2 = new Date();
+      concert2.setDate(concert2.getDate() + 35);
+      dates.push(concert2.toLocaleDateString('en-US', options));
+      
+      const concert3 = new Date();
+      concert3.setDate(concert3.getDate() + 55);
+      dates.push(concert3.toLocaleDateString('en-US', options));
+      
+      return dates;
+    };
+    
+    const upcomingDates = generateUpcomingDates();
     const concerts = [
-      { date: 'June 18, 2026', city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
-      { date: 'July 05, 2026', city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
-      { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
+      { date: upcomingDates[0], city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
+      { date: upcomingDates[1], city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
+      { date: upcomingDates[2], city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
     ];
 
     const monthlyListeners = artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500;
