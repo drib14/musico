@@ -130,6 +130,7 @@ router.post('/verify-email', async (req, res) => {
     user.verificationCode = null;
     user.verificationCodeExpires = null;
     await user.save();
+    await user.populate('likedTracks');
 
     res.json({
       _id: user._id,
@@ -137,6 +138,7 @@ router.post('/verify-email', async (req, res) => {
       email: user.email,
       isVerified: user.isVerified,
       isPremium: user.isPremium,
+      likedTracks: user.likedTracks,
       token: generateToken(user._id),
       message: 'Account successfully verified!',
     });
@@ -217,13 +219,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const populatedUser = await User.findById(user._id).populate('likedTracks');
+
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isVerified: user.isVerified,
-      isPremium: user.isPremium,
-      token: generateToken(user._id),
+      _id: populatedUser._id,
+      name: populatedUser.name,
+      email: populatedUser.email,
+      isVerified: populatedUser.isVerified,
+      isPremium: populatedUser.isPremium,
+      likedTracks: populatedUser.likedTracks,
+      token: generateToken(populatedUser._id),
     });
   } catch (error) {
     console.error(error);
@@ -324,7 +329,7 @@ router.post('/reset-password', async (req, res) => {
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id).select('-password').populate('likedTracks');
     res.json(user);
   } catch (error) {
     console.error(error);
@@ -407,7 +412,7 @@ router.put(
       await user.save();
 
       // Refetch without password
-      const updatedUser = await User.findById(user._id).select('-password');
+      const updatedUser = await User.findById(user._id).select('-password').populate('likedTracks');
       res.json({
         message: 'Profile updated successfully!',
         user: updatedUser,
@@ -433,20 +438,113 @@ router.get('/users/:id', async (req, res) => {
     // Fetch tracks uploaded by this artist
     const Track = require('../models/Track');
     const Playlist = require('../models/Playlist');
+    const PlayLog = require('../models/PlayLog');
 
     const tracks = await Track.find({ artist: user._id }).sort({ createdAt: -1 });
-    
+    const trackIds = tracks.map(t => t._id);
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const uniqueMonthlyUsers = await PlayLog.distinct('user', {
+      track: { $in: trackIds },
+      createdAt: { $gte: thirtyDaysAgo },
+      user: { $ne: null }
+    });
+    const monthlyListeners = uniqueMonthlyUsers.length;
+
+    const uniqueTotalUsers = await PlayLog.distinct('user', {
+      track: { $in: trackIds },
+      user: { $ne: null }
+    });
+    const totalPlays = uniqueTotalUsers.length;
+
+    const userObj = user.toObject();
+    userObj.monthlyListeners = monthlyListeners || 0;
+    userObj.totalPlays = totalPlays || 0;
+    userObj.website = userObj.website || `https://www.musico.com/artist/${userObj._id}`;
+    userObj.facebook = userObj.facebook || `https://facebook.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+    userObj.concerts = [
+      { date: 'June 18, 2026', city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
+      { date: 'July 05, 2026', city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
+      { date: 'August 12, 2026', city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
+    ];
+
     // Fetch public playlists created by this user
     const playlists = await Playlist.find({ creator: user._id, isPublic: true }).sort({ createdAt: -1 });
 
     res.json({
-      user,
+      user: userObj,
       tracks,
       playlists
     });
   } catch (error) {
     console.error('Public profile fetch error:', error);
     res.status(500).json({ message: 'Server error fetching profile details' });
+  }
+});
+
+// @desc    Get top verified artists / creators
+// @route   GET /api/auth/artists/top
+// @access  Public
+router.get('/artists/top', async (req, res) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  try {
+    const Track = require('../models/Track');
+
+    // Find all users who have set up an artist profile
+    const artists = await User.find({ artistName: { $ne: '' } }).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
+
+    // Aggregate streams dynamically for each artist
+    const localWithStats = await Promise.all(artists.map(async (art) => {
+      const PlayLog = require('../models/PlayLog');
+      const tracks = await Track.find({ artist: art._id });
+      const trackIds = tracks.map(t => t._id);
+      const uniqueTotalUsers = await PlayLog.distinct('user', {
+        track: { $in: trackIds },
+        user: { $ne: null }
+      });
+      const totalPlays = uniqueTotalUsers.length;
+      const artObj = art.toObject();
+      artObj.totalPlays = totalPlays;
+      artObj.tracksCount = tracks.length;
+      return artObj;
+    }));
+
+    // Fetch popular Jamendo artists
+    let jamendoArtists = [];
+    try {
+      const jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=10&order=popularity_total`;
+      const jamArtistRes = await fetch(jamArtistUrl);
+      if (jamArtistRes.ok) {
+        const data = await jamArtistRes.json();
+        jamendoArtists = (data.results || []).map((a) => ({
+          _id: a.id,
+          artistName: a.name,
+          name: a.name,
+          artistAvatar: a.image || '',
+          userAvatar: a.image || '',
+          isArtistVerified: true,
+          isJamendo: true,
+          totalPlays: a.stats?.playcount_total || 120000,
+          tracksCount: 15
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo top artists:', err);
+    }
+
+    const mergedArtists = [...localWithStats, ...jamendoArtists];
+
+    // Sort by total plays descending
+    mergedArtists.sort((a, b) => b.totalPlays - a.totalPlays);
+
+    res.json(mergedArtists.slice(0, 12)); // return top 12
+  } catch (error) {
+    console.error('Top artists fetch error:', error);
+    res.status(500).json({ message: 'Server error retrieving top artists' });
   }
 });
 

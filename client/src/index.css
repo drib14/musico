@@ -1,3 +1,25 @@
+/* Sleek Global Scrollbar Overrides */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
 /* Core Design Tokens & Palette Config */
 :root {
   /* Default Navy Dark Mode variables */
@@ -90,30 +112,48 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.02em;
 }
 
-/* Application Layout grid */
+/* Application Layout grid - Panelized Spotify Style */
 .app-container {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: 1fr;
+  grid-template-areas: 
+    "sidebar main";
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  background-color: var(--bg-primary);
+  padding: 8px 8px 8px 8px;
+  gap: 8px;
+}
+
+.app-container.has-player {
   grid-template-rows: 1fr var(--player-height);
   grid-template-areas: 
     "sidebar main"
     "player player";
-  height: 100vh;
-  width: 100vw;
-  position: relative;
+  padding: 8px 8px 0 8px;
+}
+
+.app-container.has-right-panel.has-player {
+  grid-template-columns: var(--sidebar-width) 1fr 350px;
+  grid-template-areas: 
+    "sidebar main rightpanel"
+    "player player player";
 }
 
 /* Sidebar Styling */
 .sidebar {
   grid-area: sidebar;
   background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
+  border: none;
+  border-radius: 8px;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 10;
-  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+  transition: background-color var(--transition-normal);
 }
 
 .logo-container {
@@ -236,15 +276,22 @@ h1, h2, h3, h4, h5, h6 {
 /* Main Content Area */
 .main-content {
   grid-area: main;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
   overflow-y: auto;
   padding: 32px 40px;
-  padding-bottom: 40px;
-  height: calc(100vh - var(--player-height));
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 32px;
   transition: background-color var(--transition-normal);
+}
+
+.right-sidebar {
+  grid-area: rightpanel;
+  border: none !important;
+  border-radius: 8px;
+  height: 100%;
 }
 
 /* Top Navigation Bar inside Main Content */
@@ -581,6 +628,30 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding: 20px 10px;
+    perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid-container::-webkit-scrollbar {
+    display: none;
+  }
+  .song-card {
+    flex: 0 0 220px !important;
+    scroll-snap-align: center;
+    transform: rotateY(-8deg) translateZ(0px);
+    transition: transform var(--transition-normal), background-color var(--transition-normal);
+  }
+  .song-card:hover, .song-card:active {
+    transform: rotateY(0deg) scale(1.04) translateZ(15px) !important;
+  }
 }
 
 .song-card {
@@ -1408,7 +1479,13 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .logo-text, .user-sidebar-card .user-info {
-    display: none;
+    display: none !important;
+  }
+  
+  .sidebar .logo-container {
+    justify-content: center;
+    padding-left: 0;
+    margin-bottom: 24px;
   }
   
   .nav-item {
@@ -1417,7 +1494,27 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .nav-item span {
-    display: none;
+    display: none !important;
+  }
+  
+  .sidebar .btn-secondary, .sidebar .btn-primary {
+    padding: 8px !important;
+    justify-content: center !important;
+  }
+  
+  .sidebar .btn-secondary span, .sidebar .btn-primary span, .sidebar .sidebar-footer span {
+    display: none !important;
+  }
+  
+  .sidebar .user-sidebar-card {
+    padding: 4px !important;
+    justify-content: center !important;
+    background: none !important;
+    border: none !important;
+  }
+  
+  .sidebar .user-sidebar-card button {
+    display: none !important;
   }
   
   .music-player {
@@ -1436,11 +1533,18 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
   .app-container {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr var(--player-height) 60px;
+    grid-template-rows: 1fr 60px;
+    grid-template-areas:
+      "main"
+      "sidebar";
+  }
+  
+  .app-container.has-player {
+    grid-template-rows: 1fr var(--player-height) 60px !important;
     grid-template-areas:
       "main"
       "player"
-      "sidebar";
+      "sidebar" !important;
   }
   
   .sidebar {
@@ -1467,6 +1571,10 @@ h1, h2, h3, h4, h5, h6 {
   
   .main-content {
     padding: 20px;
+    height: calc(100vh - 60px);
+  }
+
+  .app-container.has-player .main-content {
     height: calc(100vh - var(--player-height) - 60px);
   }
   
@@ -1774,30 +1882,59 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .lyrics-lines-wrapper {
-  max-width: 720px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 20px 0 80px 0;
+  padding: 30px 24px 100px 24px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .lyrics-text-line {
   font-family: 'Outfit', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 38px;
+  font-weight: 900;
   line-height: 1.45;
   color: #ffffff;
-  opacity: 0.6;
-  transition: all var(--transition-fast);
-  cursor: default;
-  letter-spacing: -0.025em;
+  opacity: 0.35;
+  filter: blur(0.5px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  letter-spacing: -0.03em;
+  transform-origin: left center;
+  padding: 8px 0;
+  position: relative;
+  padding-left: 36px;
+}
+
+.lyrics-text-line::before {
+  content: '▶';
+  position: absolute;
+  left: 6px;
+  opacity: 0;
+  color: var(--accent);
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 16px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.8);
 }
 
 .lyrics-text-line:hover {
+  opacity: 0.85;
+  filter: none;
+  transform: translateX(4px);
+}
+
+.lyrics-text-line:hover::before {
+  opacity: 0.8;
+  transform: translateY(-50%) scale(1);
+}
+
+.lyrics-text-line.active {
   opacity: 1;
-  transform: scale(1.015);
-  text-shadow: 0 0 16px rgba(59, 130, 246, 0.5);
+  filter: none;
+  transform: scale(1.04);
+  text-shadow: 0 4px 20px rgba(255, 255, 255, 0.25);
 }
 
 .lyrics-text-line.blurred-line {
@@ -1805,6 +1942,51 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.2;
   pointer-events: none;
   user-select: none;
+}
+
+/* Premium Sidebar Lyrics Showcase Styles */
+.sidebar-lyric-line {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  opacity: 0.4;
+  cursor: pointer;
+  margin: 0;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  padding-left: 20px;
+  transform-origin: left center;
+}
+
+.sidebar-lyric-line::before {
+  content: '▶';
+  position: absolute;
+  left: 2px;
+  opacity: 0;
+  color: var(--accent);
+  transition: opacity 0.2s, transform 0.2s;
+  font-size: 10px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.8);
+}
+
+.sidebar-lyric-line:hover {
+  opacity: 0.85;
+  color: var(--text-primary);
+  transform: translateX(3px);
+}
+
+.sidebar-lyric-line:hover::before {
+  opacity: 0.8;
+  transform: translateY(-50%) scale(1);
+}
+
+.sidebar-lyric-line.active {
+  opacity: 1;
+  color: var(--text-primary);
+  transform: scale(1.03);
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.15);
 }
 
 .lyrics-blur-fade {
@@ -1888,6 +2070,34 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Small Screens Lyrics Adjustments */
+/* Premium Responsive Scale overrides for Timed Lyrics & Platform containers */
+@media (min-width: 1440px) {
+  .lyrics-text-line {
+    font-size: 46px !important;
+    padding-left: 48px !important;
+  }
+  .lyrics-text-line::before {
+    font-size: 18px !important;
+    left: 12px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 210px;
+  }
+  .search-box {
+    width: 280px !important;
+  }
+  .search-box:focus-within {
+    width: 320px !important;
+  }
+  .lyrics-text-line {
+    font-size: 30px !important;
+    padding-left: 28px !important;
+  }
+}
+
 @media (max-width: 768px) {
   .lyrics-view-overlay {
     border-radius: 12px;
@@ -1896,8 +2106,14 @@ h1, h2, h3, h4, h5, h6 {
   }
   
   .lyrics-text-line {
-    font-size: 22px;
-    line-height: 1.4;
+    font-size: 24px !important;
+    line-height: 1.4 !important;
+    padding-left: 24px !important;
+  }
+  
+  .lyrics-text-line::before {
+    font-size: 13px !important;
+    left: 4px !important;
   }
   
   .lyrics-premium-gate-card {
@@ -1907,6 +2123,17 @@ h1, h2, h3, h4, h5, h6 {
   
   .gate-title {
     font-size: 19px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lyrics-text-line {
+    font-size: 20px !important;
+    padding-left: 20px !important;
+  }
+  .lyrics-text-line::before {
+    font-size: 11px !important;
+    left: 2px !important;
   }
 }
 
@@ -2007,4 +2234,223 @@ h1, h2, h3, h4, h5, h6 {
   .modal-content.open {
     transform: translateY(0);
   }
+}
+
+/* Global Mobile Fixes for Layout Constraints */
+@media (max-width: 768px) {
+  /* Fix player controls wrapping on small screens */
+  .music-player {
+    grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto !important;
+    grid-template-areas: "left center" !important;
+    padding: 10px 16px !important;
+    height: 72px !important;
+    gap: 12px !important;
+  }
+
+  .player-right {
+    display: none !important;
+  }
+
+  .player-center {
+    width: auto !important;
+    margin-top: 0 !important;
+  }
+
+  .player-scrubber {
+    display: none !important;
+  }
+
+  .player-controls {
+    gap: 12px !important;
+  }
+
+  /* Optimize layout spacing for grid lists in search/library */
+  .grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .song-card {
+    padding: 12px !important;
+  }
+
+  .song-card-cover-wrapper {
+    margin-bottom: 10px !important;
+  }
+
+  .song-card-title {
+    font-size: 13px !important;
+  }
+
+  .song-card-artist {
+    font-size: 11px !important;
+  }
+
+  .hero-banner {
+    padding: 32px 24px !important;
+  }
+
+  .hero-title {
+    font-size: 28px !important;
+  }
+}
+
+/* 3-panel responsive tablet/mobile adjust */
+@media (max-width: 1200px) {
+  .right-sidebar {
+    display: none !important;
+  }
+  .app-container.has-right-panel {
+    grid-template-columns: var(--sidebar-width) 1fr !important;
+    grid-template-areas: 
+      "sidebar main"
+      "player player" !important;
+  }
+}
+
+/* Custom Spotify-Style Glassmorphic Context Menu & Sub-menu */
+.spotify-context-menu {
+  background: rgba(13, 19, 38, 0.95) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  overflow: visible !important;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.context-menu-item:hover {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.spotify-context-submenu {
+  background: rgba(13, 19, 38, 0.95) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Universal 3D Carousel & Scroll-Snap Perspective */
+.artist-grid-container,
+.genre-grid-container,
+.concert-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid-container,
+  .artist-grid-container,
+  .genre-grid-container,
+  .concert-grid-container {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding: 20px 10px !important;
+    perspective: 1000px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid-container::-webkit-scrollbar,
+  .artist-grid-container::-webkit-scrollbar,
+  .genre-grid-container::-webkit-scrollbar,
+  .concert-grid-container::-webkit-scrollbar {
+    display: none !important;
+  }
+  .song-card,
+  .artist-card,
+  .genre-card,
+  .concert-card {
+    flex: 0 0 220px !important;
+    scroll-snap-align: center;
+    transform: rotateY(-8deg) translateZ(0px);
+    transition: transform var(--transition-normal), background-color var(--transition-normal);
+  }
+  .song-card:hover, .song-card:active,
+  .artist-card:hover, .artist-card:active,
+  .genre-card:hover, .genre-card:active,
+  .concert-card:hover, .concert-card:active {
+    transform: rotateY(0deg) scale(1.04) translateZ(15px) !important;
+  }
+}
+
+/* Desktop Horizontal Carousel Extension */
+@media (min-width: 769px) {
+  .grid-container.carousel-desktop,
+  .artist-grid-container.carousel-desktop,
+  .genre-grid-container.carousel-desktop {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory;
+    gap: 24px;
+    padding: 12px 4px;
+  }
+  .grid-container.carousel-desktop::-webkit-scrollbar,
+  .artist-grid-container.carousel-desktop::-webkit-scrollbar,
+  .genre-grid-container.carousel-desktop::-webkit-scrollbar {
+    height: 6px;
+  }
+  .grid-container.carousel-desktop .song-card,
+  .artist-grid-container.carousel-desktop .artist-card,
+  .genre-grid-container.carousel-desktop .genre-card {
+    flex: 0 0 210px !important;
+    scroll-snap-align: start;
+  }
+}
+
+/* Spinning Animated Music Notes for lyrics */
+@keyframes spin-note {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning-music-note {
+  display: inline-block;
+  animation: spin-note 2s linear infinite;
+  color: var(--premium-color);
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.sidebar-lyric-line.active {
+  color: var(--accent) !important;
+  font-weight: 700;
+  transform: scale(1.03);
+  transition: all 0.25s ease;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.sidebar-lyric-line.instrumental-solo {
+  color: var(--premium-color) !important;
+  font-weight: 800;
+  letter-spacing: 1px;
+  animation: pulse-instrumental 2s infinite ease-in-out;
+}
+
+@keyframes pulse-instrumental {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; text-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
+  100% { opacity: 0.7; }
 }

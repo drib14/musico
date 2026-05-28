@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 const SettingsView = () => {
-  const { API_URL, token, user, loginUser, showToast } = useContext(AppContext);
+  const { API_URL, token, user, loginUser, showToast, logoutUser, setActiveView } = useContext(AppContext);
   
   // Tab Management state
   const [activeTab, setActiveTab] = useState('user'); // 'user' or 'artist'
@@ -367,6 +367,34 @@ const SettingsView = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Log Out button for mobile & tablet responsive viewports */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{
+                  width: '100%',
+                  borderColor: 'var(--danger)',
+                  color: 'var(--danger)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.04)',
+                  padding: '12px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  borderRadius: '10px'
+                }}
+                onClick={() => {
+                  logoutUser();
+                  setActiveView('home');
+                }}
+              >
+                Log Out Account
+              </button>
             </div>
 
           </div>

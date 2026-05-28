@@ -1,27 +1,174 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import { X, Crown, Music, AlertCircle } from 'lucide-react';
 
 const LyricsView = () => {
-  const { currentTrack, user, setShowLyrics, setActiveView } = useContext(AppContext);
+  const { currentTrack, user, setShowLyrics, setActiveView, audioRef } = useContext(AppContext);
+  const [currentTime, setCurrentTime] = useState(0);
+  const activeLineRef = useRef(null);
+
+  // Synchronize playback time with HTML5 audio
+  useEffect(() => {
+    const audio = audioRef?.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime || 0);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    setCurrentTime(audio.currentTime || 0);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [audioRef, currentTrack]);
 
   if (!currentTrack) return null;
 
-  const isPremium = user?.isPremium || false;
+  const isPremium = true; // All users have premium features for free!
   const hasLyrics = currentTrack.lyrics && currentTrack.lyrics.trim().length > 0;
   
-  // Split the lyrics by lines
-  const lyricsLines = hasLyrics ? currentTrack.lyrics.split('\n') : [];
+  // Immersive timed parser & auto-interpolator
+  const parseLyrics = () => {
+    if (!hasLyrics) return [];
 
-  const handleUpgradeClick = () => {
-    setShowLyrics(false);
-    setActiveView('billing');
+    const lines = currentTrack.lyrics.split('\n');
+    const parsed = [];
+    let hasAnyTimestamps = false;
+
+    // Pattern matching [mm:ss] or [mm:ss.xx]
+    const timeRegex = /\[(\d{2}):(\d{2})(?:[.:](\d{2,3}))?\]/;
+
+    lines.forEach((line) => {
+      const match = timeRegex.exec(line);
+      if (match) {
+        hasAnyTimestamps = true;
+        const mins = parseInt(match[1], 10);
+        const secs = parseInt(match[2], 10);
+        const ms = match[3] ? parseInt(match[3], 10) : 0;
+        
+        const timeInSecs = mins * 60 + secs + (ms >= 100 ? ms / 1000 : ms / 100);
+        const text = line.replace(timeRegex, '').trim();
+        parsed.push({ time: timeInSecs, text });
+      } else {
+        parsed.push({ time: null, text: line.trim() });
+      }
+    });
+
+    // Fallback: If no timestamps exist, distribute lines evenly across duration
+    if (!hasAnyTimestamps) {
+      const trackDuration = currentTrack.duration || 30; // default 30s spotify previews
+      const validLines = parsed.filter(p => p.text.length > 0);
+      const totalValid = validLines.length;
+
+      let lineIndex = 0;
+      const distributed = parsed.map((p) => {
+        if (p.text.length === 0) {
+          return { time: 0, text: '' };
+        }
+        const time = totalValid > 1 
+          ? 1.5 + (lineIndex / (totalValid - 1)) * (trackDuration - 3.5)
+          : 0;
+        lineIndex++;
+        return { time, text: p.text };
+      });
+      return distributed;
+    }
+
+    // Interpolate missing timestamps sequentially
+    let lastTime = 0;
+    for (let i = 0; i < parsed.length; i++) {
+      if (parsed[i].time === null) {
+        parsed[i].time = lastTime + 1.5;
+      } else {
+        lastTime = parsed[i].time;
+      }
+    }
+
+    // Sort chronologically
+    parsed.sort((a, b) => a.time - b.time);
+
+    // Delta gap checks to inject rotating musical note solo row
+    const parsedWithInstrumentals = [];
+    for (let i = 0; i < parsed.length; i++) {
+      parsedWithInstrumentals.push(parsed[i]);
+      if (i < parsed.length - 1) {
+        const currentLine = parsed[i];
+        const nextLine = parsed[i + 1];
+        if (currentLine.time !== null && nextLine.time !== null && currentLine.text.length > 0 && nextLine.text.length > 0) {
+          const gap = nextLine.time - currentLine.time;
+          if (gap > 8) {
+            parsedWithInstrumentals.push({
+              time: currentLine.time + 2,
+              text: '🎸 Instrumental Solo 🎸',
+              isInstrumental: true
+            });
+          }
+        }
+      }
+    }
+
+    return parsedWithInstrumentals;
   };
+
+  const parsedLines = parseLyrics();
+
+  // Find active line index based on playback time
+  let activeIndex = -1;
+  for (let i = 0; i < parsedLines.length; i++) {
+    if (parsedLines[i].text.length > 0 && currentTime >= parsedLines[i].time) {
+      activeIndex = i;
+    } else if (parsedLines[i].text.length > 0 && currentTime < parsedLines[i].time) {
+      break;
+    }
+  }
+
+  // Smooth auto-scroll the active line to the center
+  useEffect(() => {
+    if (activeLineRef.current) {
+      activeLineRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }, [activeIndex]);
+
+  const handleLineClick = (time) => {
+    if (time === null) return;
+    const audio = audioRef?.current;
+    if (audio) {
+      audio.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  // Restrict lines if Free tier user (Bypassed since premium is free!)
+  const visibleLines = isPremium ? parsedLines : parsedLines.slice(0, 3);
 
   return (
     <div className="lyrics-view-overlay">
+      {/* Immersive blurred cover art background overlay (Musixmatch / Spotify UX) */}
+      {currentTrack.coverUrl && (
+        <div 
+          className="lyrics-artwork-bg"
+          style={{ 
+            backgroundImage: `url(${currentTrack.coverUrl})`,
+            position: 'absolute',
+            inset: 0,
+            filter: 'blur(70px) brightness(0.25)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            zIndex: 0,
+            opacity: 0.75,
+            transition: 'background-image 0.5s ease-in-out',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+      
       {/* Dynamic colorful glowing orb in background */}
-      <div className="lyrics-glow-orb"></div>
+      <div className="lyrics-glow-orb" style={{ zIndex: 1 }}></div>
       
       {/* Top Header Row */}
       <div className="lyrics-header">
@@ -52,46 +199,30 @@ const LyricsView = () => {
       <div className="lyrics-body-container">
         {hasLyrics ? (
           <div className="lyrics-lines-wrapper">
-            {isPremium ? (
-              // Premium View: Full scrollable lyrics
-              lyricsLines.map((line, idx) => (
-                <p key={idx} className="lyrics-text-line">
-                  {line.trim().length === 0 ? '\u00A0' : line}
+            {visibleLines.map((line, idx) => {
+              const isActive = idx === activeIndex;
+              return (
+                <p 
+                  key={idx} 
+                  ref={isActive ? activeLineRef : null}
+                  className={`lyrics-text-line ${isActive ? 'active' : ''} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
+                  onClick={() => handleLineClick(line.time)}
+                  style={line.isInstrumental ? {
+                    color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',
+                    fontStyle: 'italic',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px'
+                  } : {}}
+                >
+                  {line.isInstrumental && isActive && (
+                    <span className="spinning-music-note">🎵</span>
+                  )}
+                  {line.text.length === 0 ? '\u00A0' : line.text}
                 </p>
-              ))
-            ) : (
-              // Free View: Limited preview of first 3 lines
-              <>
-                {lyricsLines.slice(0, 3).map((line, idx) => (
-                  <p key={idx} className="lyrics-text-line">
-                    {line.trim().length === 0 ? '\u00A0' : line}
-                  </p>
-                ))}
-                
-                {/* Visual Blurred Fading Effect */}
-                <div className="lyrics-blur-fade">
-                  <p className="lyrics-text-line blurred-line">Lyrics are locked...</p>
-                  <p className="lyrics-text-line blurred-line" style={{ filter: 'blur(8px)' }}>Hidden content...</p>
-                </div>
-
-                {/* Premium Gate Card */}
-                <div className="lyrics-premium-gate-card">
-                  <div className="gate-icon-wrapper">
-                    <Crown className="w-8 h-8 text-premium-color" />
-                  </div>
-                  <h3 className="gate-title">Enjoying the Lyrics?</h3>
-                  <p className="gate-desc">
-                    Upgrade to <span style={{ color: 'var(--premium-color)', fontWeight: '600' }}>Musico Premium</span> to sing along with full timed lyrics, unlock unlimited high-quality audio uploads, and enjoy complete ad-free streaming.
-                  </p>
-                  <button 
-                    className="btn btn-primary gate-cta-btn"
-                    onClick={handleUpgradeClick}
-                  >
-                    Upgrade to Premium
-                  </button>
-                </div>
-              </>
-            )}
+              );
+            })}
           </div>
         ) : (
           // Fallback Placeholder if no lyrics are uploaded
@@ -102,7 +233,7 @@ const LyricsView = () => {
               Lyrics haven't been provided for this track yet. 
               {user?._id === currentTrack.artist ? (
                 <span style={{ display: 'block', marginTop: '10px', color: 'var(--accent)' }}>
-                  As the artist, you can delete this track and upload a fresh version with full lyrics in the Upload section!
+                  As the artist, you can add lyrics in the panel on the right sidebar!
                 </span>
               ) : (
                 " The artist hasn't uploaded them yet."

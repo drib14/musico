@@ -40,8 +40,8 @@ router.post('/checkout', protect, async (req, res) => {
             }
           ],
           payment_method_types: ['card', 'gcash', 'paymaya'],
-          success_url: 'http://localhost:5173/billing?session=success',
-          cancel_url: 'http://localhost:5173/billing?session=cancel',
+          success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/billing?session=success`,
+          cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/billing?session=cancel`,
           description: 'Musico Premium tier activation checkout'
         }
       }

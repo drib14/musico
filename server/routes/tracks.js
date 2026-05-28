@@ -5,8 +5,11 @@ const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
 const Track = require('../models/Track');
 const User = require('../models/User');
+const Playlist = require('../models/Playlist');
 const PlayLog = require('../models/PlayLog');
 const { protect } = require('../middleware/authMiddleware');
+
+const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -64,11 +67,60 @@ const uploadStreamToCloudinary = (fileBuffer, resourceType, folderName) => {
   });
 };
 
+// Helper to mirror Jamendo track as a standard MongoDB Track document
+const getOrCreateMirroredTrack = async (trackId) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  const numericId = trackId.replace('jamendo-', '');
+
+  try {
+    // 1. Check if track already mirrored in our DB
+    let track = await Track.findOne({ audioUrl: { $regex: numericId } });
+    if (track) return track;
+
+    // 2. Fetch track metadata from Jamendo
+    const jamRes = await fetch(
+      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&id=${numericId}&include=lyrics`
+    );
+    if (!jamRes.ok) throw new Error('Failed to retrieve track from Jamendo');
+
+    const data = await jamRes.json();
+    if (!data.results || data.results.length === 0) {
+      throw new Error('Track not found on Jamendo');
+    }
+
+    const t = data.results[0];
+
+    // Static verified system creator ID to attribute independent Jamendo tracks
+    const systemArtistId = '60d5ecb8b5de9f0015b3c5a0';
+
+    track = await Track.create({
+      title: t.name,
+      artist: systemArtistId,
+      artistName: t.artist_name,
+      audioUrl: t.audio,
+      coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+      duration: t.duration || 180,
+      genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+      plays: t.stats?.playcount_total || 24500,
+      isJamendo: true,
+      jamendoArtistId: t.artist_id,
+      jamendoTrackId: t.id,
+      lyrics: t.lyrics || ''
+    });
+
+    return track;
+  } catch (err) {
+    console.error('getOrCreateMirroredTrack failure:', err);
+    throw err;
+  }
+};
+
 // @desc    Get trending charts per week, month, year (globally or locally)
 // @route   GET /api/tracks/trending
 // @access  Public
 router.get('/trending', async (req, res) => {
   const { period, scope, city } = req.query; // period: 'week', 'month', 'year'; scope: 'global', 'local'
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
   try {
     let dateLimit = new Date();
@@ -122,13 +174,42 @@ router.get('/trending', async (req, res) => {
       }
     ]);
 
-    // Fallback: If no streaming plays logged yet in active filter, return standard tracks sorted by plays
-    if (trendingList.length === 0) {
-      const fallbackTracks = await Track.find().sort({ plays: -1 }).limit(10);
-      return res.json(fallbackTracks);
+    // Fetch popular Jamendo licensed tracks to represent global charts
+    let jamendoTracks = [];
+    try {
+      let orderParam = 'popularity_total';
+      if (period === 'week') {
+        orderParam = 'popularity_week';
+      } else if (period === 'month') {
+        orderParam = 'popularity_month';
+      }
+      const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=25&order=${orderParam}&audioformat=mp32&include=lyrics`;
+      const jamRes = await fetch(jamUrl);
+      if (jamRes.ok) {
+        const data = await jamRes.json();
+        jamendoTracks = (data.results || []).map((t) => ({
+          _id: `jamendo-${t.id}`,
+          title: t.name,
+          artist: t.artist_id,
+          artistName: t.artist_name,
+          audioUrl: t.audio,
+          coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+          duration: t.duration || 180,
+          genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+          plays: t.stats?.playcount_total || 24500,
+          isJamendo: true,
+          lyrics: t.lyrics || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo charts in trending route:', err);
     }
 
-    res.json(trendingList);
+    const localList = trendingList.length > 0 ? trendingList : await Track.find().sort({ plays: -1 }).limit(15);
+    const mergedTracks = [...localList, ...jamendoTracks];
+    mergedTracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+
+    res.json(mergedTracks);
   } catch (error) {
     console.error('Trending charts aggregation error:', error);
     res.status(500).json({ message: 'Server error loading charts' });
@@ -157,16 +238,21 @@ router.post(
         return res.status(400).json({ message: 'Audio track file is required' });
       }
 
-      // Check Spotify-like premium upload limitations
-      if (!req.user.isPremium) {
-        const uploadCount = await Track.countDocuments({ artist: req.user._id });
-        if (uploadCount >= 3) {
-          return res.status(403).json({
-            message: 'Free tier limit reached (max 3 uploads). Please upgrade to Premium for unlimited direct uploads!',
-            limitReached: true,
-          });
-        }
+      // Validate presence of Artist Profile
+      if (!req.user.artistName) {
+        return res.status(400).json({ message: 'You must set up your Artist Profile before distributing tracks on Musico.' });
       }
+
+      // Check Spotify-like premium upload limitations (Bypassed for free tier democratisation!)
+      // if (!req.user.isPremium) {
+      //   const uploadCount = await Track.countDocuments({ artist: req.user._id });
+      //   if (uploadCount >= 3) {
+      //     return res.status(403).json({
+      //       message: 'Free tier limit reached (max 3 uploads). Please upgrade to Premium for unlimited direct uploads!',
+      //       limitReached: true,
+      //     });
+      //   }
+      // }
 
       const audioFile = req.files.audio[0];
       const coverFile = req.files.cover ? req.files.cover[0] : null;
@@ -195,7 +281,7 @@ router.post(
       const track = await Track.create({
         title,
         artist: req.user._id,
-        artistName: req.user.name,
+        artistName: req.user.artistName,
         audioUrl: audioResult.secure_url,
         coverUrl,
         duration: audioResult.duration || 0,
@@ -219,6 +305,7 @@ router.post(
 // @access  Public
 router.get('/', async (req, res) => {
   const { search, genre } = req.query;
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
   try {
     let query = {};
@@ -234,11 +321,187 @@ router.get('/', async (req, res) => {
       query.genre = { $regex: `^${genre}$`, $options: 'i' };
     }
 
-    const tracks = await Track.find(query).sort({ createdAt: -1 });
-    res.json(tracks);
+    // 1. Fetch local database direct uploads
+    const localTracks = await Track.find(query).sort({ createdAt: -1 });
+
+    // 2. Fetch public Jamendo licensed tracks matching search/genre
+    let jamendoTracks = [];
+    try {
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&audioformat=mp32&order=popularity_total&include=lyrics`;
+      if (search) {
+        jamUrl += `&namesearch=${encodeURIComponent(search)}`;
+      }
+      if (genre && genre !== 'All') {
+        jamUrl += `&tags=${encodeURIComponent(genre)}`;
+      }
+      
+      const jamRes = await fetch(jamUrl);
+      if (jamRes.ok) {
+        const data = await jamRes.json();
+        jamendoTracks = (data.results || []).map((t) => ({
+          _id: `jamendo-${t.id}`,
+          title: t.name,
+          artist: t.artist_id,
+          artistName: t.artist_name,
+          audioUrl: t.audio,
+          coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+          duration: t.duration || 180,
+          genre: t.musicinfo?.tags?.genres?.[0] || genre || 'Licensed Music',
+          plays: t.stats?.playcount_total || 24500,
+          isJamendo: true,
+          lyrics: t.lyrics || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo tracks in main list:', err);
+    }
+
+    // 3. Merge direct uploads and public catalog tracks seamlessly
+    const mergedTracks = [...localTracks, ...jamendoTracks];
+    res.json(mergedTracks);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error retrieving tracks' });
+  }
+});
+
+// @desc    Unified search for tracks, artists, and albums
+// @route   GET /api/tracks/search
+// @access  Public
+router.get('/search', async (req, res) => {
+  const { search, genre } = req.query;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = parseInt(req.query.offset) || 0;
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+
+  try {
+    let trackQuery = {};
+    let artistQuery = { artistName: { $ne: '' } };
+    let playlistQuery = { isPublic: true };
+
+    if (search) {
+      trackQuery.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { artistName: { $regex: search, $options: 'i' } },
+      ];
+      artistQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { artistName: { $regex: search, $options: 'i' } },
+      ];
+      playlistQuery.name = { $regex: search, $options: 'i' };
+    }
+
+    if (genre && genre !== 'All') {
+      trackQuery.genre = { $regex: `^${genre}$`, $options: 'i' };
+    }
+
+    // 1. Tracks Search (Local + Jamendo)
+    const localTracks = await Track.find(trackQuery).sort({ plays: -1 }).skip(offset).limit(limit);
+
+    let jamendoTracks = [];
+    try {
+      let jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&audioformat=mp32&order=popularity_total&include=lyrics`;
+      if (search) {
+        jamUrl += `&namesearch=${encodeURIComponent(search)}`;
+      }
+      if (genre && genre !== 'All') {
+        jamUrl += `&tags=${encodeURIComponent(genre)}`;
+      }
+      
+      const jamRes = await fetch(jamUrl);
+      if (jamRes.ok) {
+        const data = await jamRes.json();
+        jamendoTracks = (data.results || []).map((t) => ({
+          _id: `jamendo-${t.id}`,
+          title: t.name,
+          artist: t.artist_id,
+          artistName: t.artist_name,
+          audioUrl: t.audio,
+          coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+          duration: t.duration || 180,
+          genre: t.musicinfo?.tags?.genres?.[0] || genre || 'Licensed Music',
+          plays: t.stats?.playcount_total || 24500,
+          isJamendo: true,
+          jamendoArtistId: t.artist_id,
+          jamendoTrackId: t.id,
+          lyrics: t.lyrics || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo tracks in search:', err);
+    }
+
+    const mergedTracks = [...localTracks, ...jamendoTracks];
+
+    // 2. Artists Search (Local + Jamendo)
+    const localArtists = await User.find(artistQuery)
+      .select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires')
+      .skip(offset)
+      .limit(limit);
+    
+    let jamendoArtists = [];
+    try {
+      let jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
+      if (search) {
+        jamArtistUrl = `https://api.jamendo.com/v3.0/artists/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&namesearch=${encodeURIComponent(search)}`;
+      }
+      const jamArtistRes = await fetch(jamArtistUrl);
+      if (jamArtistRes.ok) {
+        const data = await jamArtistRes.json();
+        jamendoArtists = (data.results || []).map((a) => ({
+          _id: a.id,
+          artistName: a.name,
+          name: a.name,
+          artistAvatar: a.image || '',
+          userAvatar: a.image || '',
+          isArtistVerified: true,
+          isJamendo: true,
+          monthlyListeners: a.stats?.popularity_total ? Math.round(a.stats.popularity_total * 4.5) : 18500,
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo artists in search:', err);
+    }
+
+    const mergedArtists = [...localArtists, ...jamendoArtists];
+
+    // 3. Albums & Playlists Search (Local Playlists + Jamendo Albums)
+    const localPlaylists = await Playlist.find(playlistQuery).populate('creator', 'name').skip(offset).limit(limit);
+
+    let jamendoAlbums = [];
+    try {
+      let jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
+      if (search) {
+        jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&namesearch=${encodeURIComponent(search)}`;
+      }
+      const jamAlbumRes = await fetch(jamAlbumUrl);
+      if (jamAlbumRes.ok) {
+        const data = await jamAlbumRes.json();
+        jamendoAlbums = (data.results || []).map((al) => ({
+          _id: `jamendo-album-${al.id}`,
+          name: al.name,
+          description: `Album by ${al.artist_name}. Released on Jamendo.`,
+          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          tracksCount: 10,
+          isJamendoAlbum: true,
+          artistName: al.artist_name,
+          artistId: al.artist_id
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching Jamendo albums in search:', err);
+    }
+
+    const mergedAlbums = [...localPlaylists, ...jamendoAlbums];
+
+    res.json({
+      tracks: mergedTracks,
+      artists: mergedArtists,
+      albums: mergedAlbums
+    });
+  } catch (error) {
+    console.error('Search aggregation error:', error);
+    res.status(500).json({ message: 'Server error during unified search' });
   }
 });
 
@@ -315,6 +578,10 @@ router.delete('/:id', protect, async (req, res) => {
 // @access  Public
 router.put('/:id/play', async (req, res) => {
   try {
+    if (req.params.id && req.params.id.startsWith('jamendo-')) {
+      return res.json({ message: 'Play logged successfully for licensed catalog track', plays: 10000 });
+    }
+
     const track = await Track.findById(req.params.id);
     if (!track) {
       return res.status(404).json({ message: 'Track not found' });
@@ -355,7 +622,15 @@ router.put('/:id/play', async (req, res) => {
 // @access  Private
 router.post('/:id/like', protect, async (req, res) => {
   try {
-    const track = await Track.findById(req.params.id);
+    let trackId = req.params.id;
+    let track;
+
+    if (trackId.startsWith('jamendo-')) {
+      track = await getOrCreateMirroredTrack(trackId);
+    } else {
+      track = await Track.findById(trackId);
+    }
+
     if (!track) {
       return res.status(404).json({ message: 'Track not found' });
     }
@@ -372,6 +647,7 @@ router.post('/:id/like', protect, async (req, res) => {
     }
 
     await user.save();
+    await user.populate('likedTracks');
     res.json({ liked, likedTracks: user.likedTracks });
   } catch (error) {
     console.error(error);
@@ -404,8 +680,9 @@ router.get('/artist-stats', protect, async (req, res) => {
     const tracks = await Track.find({ artist: req.user._id });
     const trackIds = tracks.map(t => t._id);
 
-    // 2. Sum up total plays
-    const totalPlays = tracks.reduce((acc, curr) => acc + curr.plays, 0);
+    // 2. Count plays based on unique user accounts (1 user account = 1 play)
+    const uniqueStreamers = await PlayLog.distinct('user', { track: { $in: trackIds }, user: { $ne: null } });
+    const totalPlays = uniqueStreamers.length;
 
     // 3. Aggregate geolocated listener cities
     const topCities = await PlayLog.aggregate([
@@ -431,6 +708,298 @@ router.get('/artist-stats', protect, async (req, res) => {
   } catch (error) {
     console.error('Artist analytics retrieval failure:', error);
     res.status(500).json({ message: 'Server error retrieving artist metrics' });
+  }
+});
+
+// @desc    Get licensed tracks from Jamendo API
+// @route   GET /api/tracks/jamendo
+// @access  Public
+router.get('/jamendo', async (req, res) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+
+  try {
+    const jamendoRes = await fetch(
+      `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=20&imagesize=200&audioformat=mp32&order=popularity_total&include=lyrics`
+    );
+
+    if (!jamendoRes.ok) {
+      throw new Error('Failed to fetch from Jamendo API');
+    }
+
+    const data = await jamendoRes.json();
+    const tracksList = (data.results || []).map((t) => ({
+      _id: `jamendo-${t.id}`,
+      title: t.name,
+      artist: t.artist_id,
+      artistName: t.artist_name,
+      audioUrl: t.audio,
+      coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+      duration: t.duration || 180,
+      genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+      plays: t.stats?.playcount_total || 24500,
+      isJamendo: true,
+      lyrics: t.lyrics || ''
+    }));
+
+    res.json(tracksList);
+  } catch (error) {
+    console.error('Jamendo tracks fetch error:', error);
+    res.status(500).json({ message: 'Error retrieving Jamendo licensed catalog', error: error.message });
+  }
+});
+
+// @desc    Get popular music genres from Jamendo API
+// @route   GET /api/tracks/jamendo/genres
+// @access  Public
+router.get('/jamendo/genres', async (req, res) => {
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  try {
+    const jamRes = await fetch(
+      `https://api.jamendo.com/v3.0/tags/?client_id=${clientId}&format=json&type=genre&limit=30`
+    );
+    if (!jamRes.ok) throw new Error('Failed to retrieve tags from Jamendo');
+    const data = await jamRes.json();
+    
+    let genres = (data.results || []).map(g => g.name);
+    if (genres.length === 0) {
+      genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
+    }
+    
+    const colors = ['#3B82F6', '#EF4444', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#06B6D4', '#84CC16', '#A855F7', '#64748B'];
+    const fallbackCovers = [
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop'
+    ];
+
+    const mapped = genres.map((g, idx) => {
+      const capName = g.charAt(0).toUpperCase() + g.slice(1);
+      return {
+        name: capName,
+        color: colors[idx % colors.length],
+        cover: fallbackCovers[idx % fallbackCovers.length]
+      };
+    });
+    
+    res.json(mapped);
+  } catch (err) {
+    console.error('Error in jamendo genres fetch:', err);
+    const defaultList = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'].map((g, idx) => {
+      const colors = ['#3B82F6', '#EF4444', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1', '#14B8A6'];
+      const covers = [
+        'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=150&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop'
+      ];
+      return {
+        name: g,
+        color: colors[idx % colors.length],
+        cover: covers[idx % covers.length]
+      };
+    });
+    res.json(defaultList);
+  }
+});
+
+// @desc    Get Jamendo artist profile website contact, details, and biography description
+// @route   GET /api/tracks/jamendo/artist/:id
+// @access  Public
+router.get('/jamendo/artist/:id', async (req, res) => {
+  const artistId = req.params.id;
+  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
+  try {
+    // 1. Try to find mirrored/cached artist in our database
+    let dbUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
+    
+    // Fetch from Jamendo to make sure details are loaded/refreshed
+    const jamendoRes = await fetch(
+      `https://api.jamendo.com/v3.0/artists/musicinfo/?client_id=${clientId}&id=${artistId}`
+    );
+
+    if (!jamendoRes.ok) {
+      if (dbUser) {
+        // Fallback to cached DB profile if Jamendo API is offline
+        const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
+        return res.json({
+          user: dbUser,
+          tracks: dbTracks,
+          playlists: []
+        });
+      }
+      throw new Error('Failed to fetch artist details from Jamendo API');
+    }
+
+    const data = await jamendoRes.json();
+    if (!data.results || data.results.length === 0) {
+      if (dbUser) {
+        const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
+        return res.json({ user: dbUser, tracks: dbTracks, playlists: [] });
+      }
+      return res.status(404).json({ message: 'Artist not found on Jamendo' });
+    }
+
+    const artist = data.results[0];
+    
+    let bioText = 'This licensed independent creator publishes tracks directly on Jamendo.';
+    if (artist.musicinfo?.description) {
+      if (typeof artist.musicinfo.description === 'string') {
+        bioText = artist.musicinfo.description;
+      } else if (typeof artist.musicinfo.description === 'object') {
+        bioText = artist.musicinfo.description.en || Object.values(artist.musicinfo.description)[0] || bioText;
+      }
+    }
+
+    const generateUpcomingDates = () => {
+      const dates = [];
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      
+      const concert1 = new Date();
+      concert1.setDate(concert1.getDate() + 15);
+      dates.push(concert1.toLocaleDateString('en-US', options));
+      
+      const concert2 = new Date();
+      concert2.setDate(concert2.getDate() + 35);
+      dates.push(concert2.toLocaleDateString('en-US', options));
+      
+      const concert3 = new Date();
+      concert3.setDate(concert3.getDate() + 55);
+      dates.push(concert3.toLocaleDateString('en-US', options));
+      
+      return dates;
+    };
+    
+    const upcomingDates = generateUpcomingDates();
+    const concerts = [
+      { date: upcomingDates[0], city: 'London, UK', venue: 'O2 Academy Brixton', title: 'Summer Resonance Tour' },
+      { date: upcomingDates[1], city: 'Paris, France', venue: 'Le Trianon', title: 'Acoustic Dreams Showcase' },
+      { date: upcomingDates[2], city: 'Berlin, Germany', venue: 'Columbiahalle', title: 'Global Rhythms Fest' }
+    ];
+
+    const monthlyListeners = artist.stats?.popularity_total ? Math.round(artist.stats.popularity_total * 4.5) : 18500;
+    const totalPlays = artist.stats?.playcount_total || 142000;
+
+    // 2. Automatically mirror/save artist details & concerts inside MongoDB schema!
+    if (!dbUser) {
+      // Create a mirrored system artist user
+      dbUser = new User({
+        name: artist.name,
+        email: `jamendo-artist-${artist.id}@musico.com`,
+        password: `jamendo-artist-dummy-pass-123456`, // dummy secure pass
+        artistName: artist.name,
+        userAvatar: artist.image || '',
+        artistAvatar: artist.image || '',
+        artistBio: bioText,
+        website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
+        facebook: artist.musicinfo?.facebook || '',
+        twitter: artist.musicinfo?.twitter || '',
+        instagram: artist.musicinfo?.instagram || '',
+        monthlyListeners,
+        totalPlays,
+        concerts,
+        isJamendoArtist: true,
+        jamendoArtistId: artist.id,
+        isArtistVerified: true,
+        isPremium: true
+      });
+      await dbUser.save();
+    } else {
+      // Update existing cached mirrored artist details
+      dbUser.artistName = artist.name;
+      dbUser.artistAvatar = artist.image || '';
+      dbUser.userAvatar = artist.image || '';
+      dbUser.artistBio = bioText;
+      dbUser.website = artist.website || dbUser.website;
+      dbUser.facebook = artist.musicinfo?.facebook || dbUser.facebook;
+      dbUser.twitter = artist.musicinfo?.twitter || dbUser.twitter;
+      dbUser.instagram = artist.musicinfo?.instagram || dbUser.instagram;
+      dbUser.monthlyListeners = monthlyListeners;
+      dbUser.totalPlays = totalPlays;
+      await dbUser.save();
+    }
+
+    // 3. Dynamically fetch tracks of this artist from Jamendo API
+    let tracksList = [];
+    try {
+      const tracksRes = await fetch(
+        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=15&artist_id=${artist.id}&audioformat=mp32&include=lyrics`
+      );
+      if (tracksRes.ok) {
+        const tracksData = await tracksRes.json();
+        tracksList = (tracksData.results || []).map((t) => ({
+          _id: `jamendo-${t.id}`,
+          title: t.name,
+          artist: dbUser._id, // Assign the local MongoDB mirrored user ID!
+          artistName: t.artist_name,
+          audioUrl: t.audio,
+          coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
+          duration: t.duration || 180,
+          genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
+          plays: t.stats?.playcount_total || 24500,
+          isJamendo: true,
+          lyrics: t.lyrics || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching tracks for Jamendo artist profile:', err);
+    }
+
+    // 4. Dynamically fetch albums of this artist from Jamendo API to represent their profile playlists!
+    let albumsList = [];
+    try {
+      const albumsRes = await fetch(
+        `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=5&artist_id=${artist.id}`
+      );
+      if (albumsRes.ok) {
+        const albumsData = await albumsRes.json();
+        albumsList = (albumsData.results || []).map((al) => ({
+          _id: `jamendo-album-${al.id}`,
+          name: al.name,
+          description: `Licensed Album by ${artist.name}. Released on Jamendo.`,
+          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+          tracksCount: 10,
+          isJamendoAlbum: true,
+          artistName: artist.name,
+          artistId: artist.id,
+          creator: {
+            _id: dbUser._id,
+            name: artist.name
+          },
+          tracks: new Array(10) // mock tracks array representation
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching albums for Jamendo artist profile:', err);
+    }
+
+    res.json({
+      user: dbUser,
+      tracks: tracksList,
+      playlists: albumsList
+    });
+  } catch (error) {
+    console.error('Jamendo artist fetch error:', error);
+    res.status(500).json({ message: 'Error retrieving Jamendo artist details', error: error.message });
+  }
+});
+
+// @desc    Import/Save a Jamendo track to the platform DB
+// @route   POST /api/tracks/import
+// @access  Private
+router.post('/import', protect, async (req, res) => {
+  const { trackId } = req.body;
+  if (!trackId || !trackId.startsWith('jamendo-')) {
+    return res.status(400).json({ message: 'Valid Jamendo Track ID is required' });
+  }
+  try {
+    const track = await getOrCreateMirroredTrack(trackId);
+    res.json({ message: 'Track successfully imported to platform database!', track });
+  } catch (err) {
+    console.error('Import error:', err);
+    res.status(500).json({ message: 'Failed to import track to database' });
   }
 });
 

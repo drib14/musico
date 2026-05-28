@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
+import ArtistProfileWizard from '../components/ArtistProfileWizard';
 import { 
   UploadCloud, 
   Music, 
@@ -26,7 +27,7 @@ const UploadView = () => {
   const [dragActiveAudio, setDragActiveAudio] = useState(false);
   const [dragActiveCover, setDragActiveCover] = useState(false);
 
-  const genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'R&B', 'Country'];
+  const genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
   // Check upload count constraints for Free users on render
   useEffect(() => {
@@ -43,11 +44,7 @@ const UploadView = () => {
       if (res.ok) {
         const data = await res.json();
         setUploadsCount(data.length);
-        if (!user?.isPremium && data.length >= 3) {
-          setLimitReached(true);
-        } else {
-          setLimitReached(false);
-        }
+        setLimitReached(false); // Platform is 100% free!
       }
     } catch (err) {
       console.error(err);
@@ -160,9 +157,6 @@ const UploadView = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 403 && data.limitReached) {
-          setLimitReached(true);
-        }
         throw new Error(data.message || 'Direct upload failed');
       }
 
@@ -183,6 +177,21 @@ const UploadView = () => {
       setLoading(false);
     }
   };
+
+  // RENDER: REQUIRED ARTIST PROFILE SEED
+  if (!user?.artistName) {
+    return (
+      <div style={{ maxWidth: '650px', margin: '40px auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Direct Song Distribution</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+            Before you can distribute original tracks on the Musico network, you must establish your Artist Profile.
+          </p>
+        </div>
+        <ArtistProfileWizard onComplete={checkUploadLimit} />
+      </div>
+    );
+  }
 
   // RENDER: UPGRADE WARNING CARD IF TIER CONSTRAINT HIT
   if (limitReached) {
@@ -265,6 +274,66 @@ const UploadView = () => {
         <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
           Distribute your tracks directly on Musico. Files are uploaded directly to our cloud network and made instantly streamable.
         </p>
+
+        {/* Dynamic Artist Persona Indicator */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '10px 16px',
+          marginTop: '16px',
+          width: 'fit-content',
+          boxShadow: 'var(--glass-shadow)',
+          animation: 'fadeIn 0.3s ease'
+        }}>
+          {user?.artistAvatar ? (
+            <img 
+              src={user.artistAvatar} 
+              alt={user.artistName} 
+              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+            />
+          ) : (
+            <div style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '12px'
+            }}>
+              {user?.artistName?.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Publishing under official artist identity: <strong style={{ color: 'var(--text-primary)' }}>{user?.artistName}</strong>
+          </span>
+          {user?.isArtistVerified && (
+            <span 
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '15px',
+                height: '15px',
+                borderRadius: '50%',
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                fontSize: '8px',
+                fontWeight: 'bold'
+              }}
+              title="Verified check badge"
+            >
+              ✓
+            </span>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

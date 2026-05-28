@@ -1,48 +1,93 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Search, Music, Play, Star, Users, Disc3 } from 'lucide-react';
+import { Search, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
+import TrackCard from '../components/TrackCard';
 
 const SearchView = () => {
-  const { API_URL, playTrack, triggerProfileView, token, userPlaylists, showToast } = useContext(AppContext);
-  const [search, setSearch] = useState('');
-  const [genre, setGenre] = useState('All');
+  const { 
+    API_URL, 
+    triggerProfileView, 
+    token, 
+    userPlaylists, 
+    showToast,
+    setActiveView,
+    setActivePlaylistId,
+    searchGenre: genre,
+    setSearchGenre: setGenre
+  } = useContext(AppContext);
   
-  // Local direct uploads matches state
-  const [localTracks, setLocalTracks] = useState([]);
+  const [search, setSearch] = useState('');
+  
+  // Categorized search results state
+  const [searchResults, setSearchResults] = useState({
+    tracks: [],
+    artists: [],
+    albums: []
+  });
   
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const limit = 20;
 
-  const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'R&B'];
+  const genres = ['All', 'Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
-  // Trigger parallel local and Spotify searches on input query changes
+  // Trigger search on query/genre changes (resets pagination offset)
   useEffect(() => {
+    setOffset(0);
     const delayDebounce = setTimeout(() => {
-      fetchFilteredTracks();
+      fetchFilteredTracks(0, false);
     }, 450);
 
     return () => clearTimeout(delayDebounce);
   }, [search, genre]);
 
-  const fetchFilteredTracks = async () => {
-    setLoading(true);
+  const fetchFilteredTracks = async (currentOffset, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    
     try {
-      // 1. Fetch Local Direct Uploads
-      let localQueryParams = [];
-      if (search) localQueryParams.push(`search=${encodeURIComponent(search)}`);
-      if (genre && genre !== 'All') localQueryParams.push(`genre=${encodeURIComponent(genre)}`);
+      let queryParams = [`limit=${limit}`, `offset=${currentOffset}`];
+      if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
+      if (genre && genre !== 'All') queryParams.push(`genre=${encodeURIComponent(genre)}`);
 
-      const localQueryString = localQueryParams.length > 0 ? `?${localQueryParams.join('&')}` : '';
-      const localRes = await fetch(`${API_URL}/tracks${localQueryString}`);
-      if (localRes.ok) {
-        const localData = await localRes.json();
-        setLocalTracks(localData);
+      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      const res = await fetch(`${API_URL}/tracks/search${queryString}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (append) {
+          setSearchResults(prev => ({
+            tracks: [...prev.tracks, ...(data.tracks || [])],
+            artists: [...prev.artists, ...(data.artists || [])],
+            albums: [...prev.albums, ...(data.albums || [])]
+          }));
+        } else {
+          setSearchResults({
+            tracks: data.tracks || [],
+            artists: data.artists || [],
+            albums: data.albums || []
+          });
+        }
       }
     } catch (error) {
-      console.error('Local search indexing failed:', error);
+      console.error('Unified search index load failed:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleLoadMore = () => {
+    const nextOffset = offset + limit;
+    setOffset(nextOffset);
+    fetchFilteredTracks(nextOffset, true);
+  };
+
+  const hasAnyResults = searchResults.tracks.length > 0 || searchResults.artists.length > 0 || searchResults.albums.length > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -54,7 +99,7 @@ const SearchView = () => {
           <Search className="w-5 h-5 text-text-secondary" />
           <input
             type="text"
-            placeholder="Search songs, artists, albums..."
+            placeholder="Search songs, artists, playlists, albums..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -85,102 +130,197 @@ const SearchView = () => {
           <div className="spinner"></div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
           
-          {/* SECTION A: DIRECT UPLOADS (LOCAL DATABASE) */}
-          <section>
-            <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)' }}>
-              Musico Direct Uploads
-            </h2>
-            
-            {localTracks.length === 0 ? (
-              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <p style={{ fontSize: '14px' }}>No local user uploads found matching criteria.</p>
+          {/* SECTION 1: SONGS (TRACKS) */}
+          {searchResults.tracks.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Music className="w-5 h-5 text-accent" /> Songs
+              </h2>
+              <div className="grid-container carousel-desktop">
+                {searchResults.tracks.map((track) => (
+                  <TrackCard key={track._id} track={track} trackList={searchResults.tracks} />
+                ))}
               </div>
-            ) : (
-              <div className="grid-container">
-                  {localTracks.map((track) => (
-                    <div 
-                      key={track._id} 
-                      className="song-card"
-                      onClick={() => playTrack(track, localTracks)}
-                    >
-                      <div className="song-card-cover-wrapper">
-                        <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
-                        <div className="song-card-play-hover">
-                          <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
-                        </div>
-                      </div>
-                      <div className="song-card-title">{track.title}</div>
-                      
-                      {/* Clickable Artist link */}
-                      <div 
-                        className="song-card-artist"
-                        style={{ textDecoration: 'underline', color: 'var(--accent)', cursor: 'pointer' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerProfileView(track.artist);
-                        }}
-                      >
-                        {track.artistName}
-                      </div>
-                      <div className="song-card-genre" style={{ marginBottom: '4px' }}>{track.genre}</div>
+            </section>
+          )}
 
-                      {/* Inline Dropdown menu to add to custom playlists */}
-                      {token && userPlaylists && userPlaylists.length > 0 && (
-                        <div 
-                          style={{ width: '100%', marginTop: '6px' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <select 
-                            defaultValue=""
-                            onChange={async (e) => {
-                              const playlistId = e.target.value;
-                              if (!playlistId) return;
-                              try {
-                                const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                    Authorization: `Bearer ${token}`
-                                  },
-                                  body: JSON.stringify({ trackId: track._id })
-                                });
-                                const data = await res.json();
-                                if (res.ok) {
-                                  showToast('Added to playlist successfully!');
-                                } else {
-                                  showToast(data.message || 'Error adding to playlist', 'error');
-                                }
-                              } catch (err) {
-                                showToast('Failed to add track', 'error');
-                              }
-                              e.target.value = ""; // Reset select
-                            }}
-                            style={{
-                              background: 'rgba(255,255,255,0.05)',
-                              color: 'var(--text-secondary)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              borderRadius: '8px',
-                              fontSize: '11px',
-                              padding: '4px 6px',
-                              cursor: 'pointer',
-                              width: '100%',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="" disabled>+ Add to Playlist</option>
-                            {userPlaylists.map(pl => (
-                              <option key={pl._id} value={pl._id}>{pl.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+          {/* SECTION 2: ARTISTS */}
+          {searchResults.artists.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users className="w-5 h-5 text-accent" /> Artists
+              </h2>
+              <div className="artist-grid-container carousel-desktop">
+                {searchResults.artists.map((artist) => (
+                  <div
+                    key={artist._id}
+                    className="artist-card"
+                    onClick={() => triggerProfileView(artist._id, artist.isJamendo, artist._id)}
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '20px 16px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '12px',
+                      transition: 'all 0.25s ease',
+                      boxShadow: 'var(--glass-shadow)'
+                    }}
+                  >
+                    {artist.artistAvatar || artist.userAvatar ? (
+                      <img
+                        src={artist.artistAvatar || artist.userAvatar}
+                        alt={artist.artistName || artist.name}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid var(--accent)',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        background: 'var(--accent-gradient)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '28px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Outfit'
+                      }}>
+                        {(artist.artistName || artist.name).charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                      <div style={{
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '120px'
+                      }}>
+                        {artist.artistName || artist.name}
+                        {artist.isArtistVerified && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            backgroundColor: '#3b82f6',
+                            color: '#fff',
+                            fontSize: '7px',
+                            fontWeight: 'bold'
+                          }}>
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {artist.isJamendo ? 'Licensed Artist' : 'Musico Creator'}
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
               </div>
-            )}
-          </section>
+            </section>
+          )}
+
+          {/* SECTION 3: PLAYLISTS & ALBUMS */}
+          {searchResults.albums.length > 0 && (
+            <section>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Disc3 className="w-5 h-5 text-accent" /> Playlists & Albums
+              </h2>
+              <div className="grid-container carousel-desktop">
+                {searchResults.albums.map((pl) => (
+                  <div
+                    key={pl._id}
+                    className="song-card"
+                    onClick={() => {
+                      setActivePlaylistId(pl._id);
+                      setActiveView('playlist-details');
+                    }}
+                  >
+                    <div className="song-card-cover-wrapper">
+                      <PlaylistCover playlist={pl} className="song-card-cover" />
+                    </div>
+                    <div className="song-card-title">{pl.name}</div>
+                    <div className="song-card-artist" style={{ color: 'var(--text-muted)' }}>
+                      {pl.isJamendoAlbum 
+                        ? `Album by ${pl.artistName}` 
+                        : `Playlist • ${pl.creator?.name || 'Musico User'}`
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Fallback empty view */}
+          {!hasAnyResults && (
+            <div style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '16px',
+              padding: '60px 40px',
+              textAlign: 'center',
+              color: 'var(--text-secondary)'
+            }}>
+              <Music className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.5 }} />
+              <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No matches found</h3>
+              <p style={{ fontSize: '14px' }}>Try exploring other genres or check spelling for songs or artists.</p>
+            </div>
+          )}
+
+          {/* Paging controls */}
+          {hasAnyResults && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="spinner" style={{ width: '12px', height: '12px' }}></div>
+                    Loading...
+                  </>
+                ) : (
+                  'Load More Results'
+                )}
+              </button>
+            </div>
+          )}
+
         </div>
       )}
 

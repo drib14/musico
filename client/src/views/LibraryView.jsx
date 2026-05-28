@@ -2,9 +2,11 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Play, Music, Heart, UploadCloud, FolderHeart, Plus, Folder, Trash2, Edit2 } from 'lucide-react';
 import Modal from '../components/Modal';
+import ArtistProfileWizard from '../components/ArtistProfileWizard';
+import PlaylistCover from '../components/PlaylistCover';
 
 const LibraryView = () => {
-  const { API_URL, token, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
+  const { API_URL, token, user, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('liked'); // 'liked', 'uploads', 'playlists'
   
   // Data lists states
@@ -18,6 +20,7 @@ const LibraryView = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDesc, setNewPlaylistDesc] = useState('');
+  const [newPlaylistCover, setNewPlaylistCover] = useState('');
 
   // Track Edit States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -30,7 +33,7 @@ const LibraryView = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null); // { id: string, type: 'track' | 'playlist', name: string }
 
-  const genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'R&B', 'Country'];
+  const genres = ['Pop', 'Rock', 'Hip Hop', 'Lo-Fi', 'Electronic', 'Jazz', 'Classical', 'Acoustic', 'Folk', 'Metal', 'Ambient', 'Reggae', 'R&B', 'Soundtrack', 'Country'];
 
   useEffect(() => {
     if (token) {
@@ -98,7 +101,7 @@ const LibraryView = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name: newPlaylistName, description: newPlaylistDesc })
+        body: JSON.stringify({ name: newPlaylistName, description: newPlaylistDesc, coverUrl: newPlaylistCover })
       });
 
       if (!res.ok) throw new Error('Failed to create playlist');
@@ -106,6 +109,7 @@ const LibraryView = () => {
       showToast('Playlist created successfully!');
       setNewPlaylistName('');
       setNewPlaylistDesc('');
+      setNewPlaylistCover('');
       setShowCreateForm(false);
       loadLibraryData();
     } catch (error) {
@@ -276,6 +280,16 @@ const LibraryView = () => {
                 onChange={(e) => setNewPlaylistDesc(e.target.value)}
               />
             </div>
+            <div className="form-group">
+              <input
+                type="text"
+                className="form-input"
+                style={{ paddingLeft: '12px' }}
+                placeholder="Cover Image URL (Optional)"
+                value={newPlaylistCover}
+                onChange={(e) => setNewPlaylistCover(e.target.value)}
+              />
+            </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setShowCreateForm(false)}>
                 Cancel
@@ -348,120 +362,132 @@ const LibraryView = () => {
 
           {/* TAB: MY UPLOADS */}
           {activeTab === 'uploads' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Sleek Artist Analytics Performance and LocationIQ Geolocated Streams Panels */}
-              {artistStats && (
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05), rgba(7, 10, 19, 0.02))',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  gap: '24px',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
-                      Creator Performance Dashboard
-                    </span>
-                    <div style={{ display: 'flex', gap: '40px', marginTop: '8px' }}>
-                      <div>
-                        <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent)' }}>{artistStats.totalPlays}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Total Stream Plays</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>{artistStats.tracksCount}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Distributed Tracks</div>
+            !user?.artistName ? (
+              <div style={{ maxWidth: '650px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <h3 style={{ fontSize: '22px', marginBottom: '8px' }}>Setup Artist Profile</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    Before you can manage original direct uploads, you must set up your Artist Profile.
+                  </p>
+                </div>
+                <ArtistProfileWizard onComplete={loadLibraryData} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Sleek Artist Analytics Performance and LocationIQ Geolocated Streams Panels */}
+                {artistStats && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.05), rgba(7, 10, 19, 0.02))',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    gap: '24px',
+                    flexWrap: 'wrap',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
+                        Creator Performance Dashboard
+                      </span>
+                      <div style={{ display: 'flex', gap: '40px', marginTop: '8px' }}>
+                        <div>
+                          <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent)' }}>{artistStats.totalPlays}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Total Stream Plays</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)' }}>{artistStats.tracksCount}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>Distributed Tracks</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '240px' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
-                      Top Geolocation Audiences
-                    </span>
-                    {artistStats.topCities && artistStats.topCities.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
-                        {artistStats.topCities.map((geo, idx) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{geo.city}, {geo.country}</span>
-                            <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{geo.count} plays</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
-                        No geographic stream records tracked yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {myUploads.length === 0 ? (
-                <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  <UploadCloud className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
-                  <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No direct uploads found</h3>
-                  <p style={{ fontSize: '14px' }}>Got audio tracks ready to stream? Distribute them instantly in the Upload center!</p>
-                </div>
-              ) : (
-                <table className="track-table">
-                  <thead>
-                    <tr>
-                      <th className="table-index">#</th>
-                      <th>Title</th>
-                      <th>Genre</th>
-                      <th>Plays</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {myUploads.map((track, idx) => (
-                      <tr key={track._id} onClick={() => playTrack(track, myUploads)} style={{ cursor: 'pointer' }}>
-                        <td className="table-index">{idx + 1}</td>
-                        <td>
-                          <div className="table-track-info">
-                            {track.coverUrl ? (
-                              <img className="table-cover" src={track.coverUrl} alt={track.title} />
-                            ) : (
-                              <div className="table-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
-                                <Music className="w-5 h-5 text-accent" />
-                              </div>
-                            )}
-                            <div>
-                              <div className="table-title">{track.title}</div>
-                              <div className="table-artist">{track.artistName}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '240px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
+                        Top Geolocation Audiences
+                      </span>
+                      {artistStats.topCities && artistStats.topCities.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                          {artistStats.topCities.map((geo, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{geo.city}, {geo.country}</span>
+                              <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>{geo.count} plays</span>
                             </div>
-                          </div>
-                        </td>
-                        <td className="table-genre">{track.genre}</td>
-                        <td className="table-plays">{track.plays} streams</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              className="btn-icon"
-                              onClick={(e) => openEditModal(track, e)}
-                              title="Edit Track"
-                            >
-                              <Edit2 className="w-4 h-4 text-text-secondary" />
-                            </button>
-                            <button
-                              className="btn-icon"
-                              onClick={(e) => requestDelete(track._id, 'track', track.title, e)}
-                              title="Delete Track"
-                            >
-                              <Trash2 className="w-4 h-4 text-danger" />
-                            </button>
-                          </div>
-                        </td>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
+                          No geographic stream records tracked yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {myUploads.length === 0 ? (
+                  <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    <UploadCloud className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
+                    <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No direct uploads found</h3>
+                    <p style={{ fontSize: '14px' }}>Got audio tracks ready to stream? Distribute them instantly in the Upload center!</p>
+                  </div>
+                ) : (
+                  <table className="track-table">
+                    <thead>
+                      <tr>
+                        <th className="table-index">#</th>
+                        <th>Title</th>
+                        <th>Genre</th>
+                        <th>Plays</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                    </thead>
+                    <tbody>
+                      {myUploads.map((track, idx) => (
+                        <tr key={track._id} onClick={() => playTrack(track, myUploads)} style={{ cursor: 'pointer' }}>
+                          <td className="table-index">{idx + 1}</td>
+                          <td>
+                            <div className="table-track-info">
+                              {track.coverUrl ? (
+                                <img className="table-cover" src={track.coverUrl} alt={track.title} />
+                              ) : (
+                                <div className="table-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+                                  <Music className="w-5 h-5 text-accent" />
+                                </div>
+                              )}
+                              <div>
+                                <div className="table-title">{track.title}</div>
+                                <div className="table-artist">{track.artistName}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="table-genre">{track.genre}</td>
+                          <td className="table-plays">{track.plays} streams</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                className="btn-icon"
+                                onClick={(e) => openEditModal(track, e)}
+                                title="Edit Track"
+                              >
+                                <Edit2 className="w-4 h-4 text-text-secondary" />
+                              </button>
+                              <button
+                                className="btn-icon"
+                                onClick={(e) => requestDelete(track._id, 'track', track.title, e)}
+                                title="Delete Track"
+                              >
+                                <Trash2 className="w-4 h-4 text-danger" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
           )}
 
           {/* TAB: PLAYLISTS INDEX */}
@@ -488,13 +514,7 @@ const LibraryView = () => {
                     }}
                   >
                     <div className="song-card-cover-wrapper">
-                      {pl.coverUrl ? (
-                        <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                      ) : (
-                        <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                          <Folder className="w-12 h-12 text-accent" />
-                        </div>
-                      )}
+                      <PlaylistCover playlist={pl} className="song-card-cover" />
                     </div>
                     <div className="song-card-title">{pl.name}</div>
                     <div className="song-card-artist" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

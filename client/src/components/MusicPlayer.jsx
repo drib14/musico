@@ -11,7 +11,9 @@ import {
   VolumeX, 
   Heart,
   Music,
-  Mic
+  Mic,
+  Plus,
+  ListPlus
 } from 'lucide-react';
 
 const MusicPlayer = () => {
@@ -36,19 +38,79 @@ const MusicPlayer = () => {
     adCountdown,
     setActiveView,
     showLyrics,
-    setShowLyrics
+    setShowLyrics,
+    token,
+    userPlaylists,
+    loadUserPlaylists,
+    showToast,
+    API_URL,
+    triggerProfileView
   } = useContext(AppContext);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowPlaylistDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleAddToPlaylist = async (playlistId, playlistName) => {
+    if (!token) return showToast('Please log in first', 'error');
+    try {
+      const res = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId: currentTrack._id })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to add song to playlist');
+      }
+      showToast(`Added "${currentTrack.title}" to "${playlistName}"!`);
+      setShowPlaylistDropdown(false);
+      loadUserPlaylists();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
   
   const progressInterval = useRef(null);
 
-  // Sync liked state with user's likedTracks array
+  // Sync liked state with user's likedTracks array supporting Jamendo mirrored track ObjectIds
   useEffect(() => {
     if (user && currentTrack) {
-      setIsLiked(user.likedTracks?.includes(currentTrack._id) || false);
+      const liked = user.likedTracks?.some(t => {
+        if (!t) return false;
+        const tId = typeof t === 'object' ? t._id : t;
+        if (tId === currentTrack._id) return true;
+        
+        if (currentTrack.isJamendo && t.isJamendo) {
+          const jamId1 = currentTrack._id.startsWith('jamendo-') ? currentTrack._id.replace('jamendo-', '') : (currentTrack.jamendoTrackId || '');
+          const jamId2 = t._id.startsWith('jamendo-') ? t._id.replace('jamendo-', '') : (t.jamendoTrackId || '');
+          if (jamId1 && jamId1 === jamId2) return true;
+        }
+        
+        if (currentTrack._id.startsWith('jamendo-') && t.isJamendo) {
+          if (currentTrack._id.replace('jamendo-', '') === t.jamendoTrackId) return true;
+        }
+        
+        return false;
+      }) || false;
+      setIsLiked(liked);
     } else {
       setIsLiked(false);
     }
@@ -178,15 +240,48 @@ const MusicPlayer = () => {
             className={`player-cover ${isPlaying ? 'playing' : ''}`} 
             src={currentTrack.coverUrl} 
             alt={currentTrack.title} 
+            onClick={() => {
+              setActiveView('song-details');
+            }}
+            style={{ 
+              cursor: 'pointer',
+              transition: 'transform var(--transition-fast)'
+            }}
+            title="Click to view song details"
           />
         ) : (
-          <div className="player-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+          <div 
+            className="player-cover" 
+            style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', cursor: 'pointer' }}
+            onClick={() => {
+              setActiveView('song-details');
+            }}
+            title="Click to view song details"
+          >
             <Music className="w-6 h-6 text-accent" />
           </div>
         )}
         <div className="player-track-info">
-          <div className="player-title">{currentTrack.title}</div>
-          <div className="player-artist">{currentTrack.artistName}</div>
+          <div 
+            className="player-title" 
+            onClick={() => setActiveView('song-details')}
+            style={{ cursor: 'pointer', textDecoration: 'none' }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            title="Click to view song details"
+          >
+            {currentTrack.title}
+          </div>
+          <div 
+            className="player-artist"
+            onClick={() => triggerProfileView(currentTrack.artist, currentTrack.isJamendo, currentTrack.jamendoArtistId || currentTrack.artist)}
+            style={{ cursor: 'pointer', textDecoration: 'none', color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+            title="Click to view artist profile"
+          >
+            {currentTrack.artistName}
+          </div>
         </div>
         
         {/* Like/Heart Action */}
@@ -206,21 +301,77 @@ const MusicPlayer = () => {
           </button>
         )}
 
-        {/* Lyrics/Mic Toggle Button */}
-        {currentTrack && (
-          <button 
-            className={`control-btn ${showLyrics ? 'active' : ''}`}
-            style={{ marginLeft: '10px' }}
-            onClick={() => setShowLyrics(!showLyrics)}
-            title={showLyrics ? 'Hide Lyrics' : 'Show Lyrics'}
-          >
-            <Mic 
-              className="w-4 h-4" 
-              style={{
-                color: showLyrics ? 'var(--accent)' : 'var(--text-secondary)'
-              }}
-            />
-          </button>
+        {/* Add to Playlist Action (Spotify UX Plus Trigger) */}
+        {user && (
+          <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <button 
+              className="control-btn"
+              style={{ marginLeft: '10px' }}
+              onClick={() => setShowPlaylistDropdown(!showPlaylistDropdown)}
+              title="Add to Playlist"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {showPlaylistDropdown && (
+              <div style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: '10px',
+                marginBottom: '10px',
+                backgroundColor: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+                zIndex: '200',
+                minWidth: '180px',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                boxShadow: 'var(--glass-shadow)'
+              }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '6px 8px', borderBottom: '1px solid var(--border-color)', fontWeight: 'bold' }}>
+                  Add to playlist
+                </div>
+                {userPlaylists.length === 0 ? (
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', padding: '8px', textAlign: 'center' }}>
+                    No playlists created
+                  </div>
+                ) : (
+                  userPlaylists.map(pl => (
+                    <button
+                      key={pl._id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        width: '100%',
+                        padding: '8px',
+                        border: 'none',
+                        background: 'none',
+                        color: 'var(--text-primary)',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        textAlign: 'left',
+                        transition: 'background var(--transition-fast)'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'none'}
+                      onClick={() => handleAddToPlaylist(pl._id, pl.name)}
+                    >
+                      <ListPlus className="w-3.5 h-3.5" style={{ marginRight: '8px', color: 'var(--accent)' }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {pl.name}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -292,6 +443,16 @@ const MusicPlayer = () => {
       {/* 3. PLAYER RIGHT: VOLUME & VISUALIZER */}
       <div className="player-right">
         
+        {/* Desktop Timed Lyrics Toggle Action */}
+        <button 
+          className={`control-btn ${showLyrics ? 'active' : ''}`}
+          style={{ marginRight: '16px' }}
+          onClick={() => setShowLyrics(!showLyrics)}
+          title="Lyrics"
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+
         {/* Animated dynamic waveform equalizer */}
         <div className="player-visualizer">
           {[0.2, 0.5, 0.8, 0.4, 0.7, 0.3].map((delay, idx) => (

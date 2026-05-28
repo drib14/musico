@@ -36,6 +36,13 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
   }, [mode]);
 
+  useEffect(() => {
+    // If modal is opened, sync internal mode with prop
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
+
   if (!isOpen) return null;
 
   // --- 6-Digit input event handlers ---
@@ -280,8 +287,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="modal-overlay" style={{ opacity: 1, pointerEvents: 'auto' }}>
+      <div className="modal-content" style={{ transform: 'scale(1)', translateY: '0' }}>
         <button className="modal-close" onClick={onClose}>
           <X className="w-5 h-5" />
         </button>

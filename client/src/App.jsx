@@ -1,9 +1,10 @@
 import React, { useContext, useState } from 'react';
 import { AppProvider, AppContext } from './context/AppContext';
 import Sidebar from './components/Sidebar';
+import RightSidebar from './components/RightSidebar';
 import MusicPlayer from './components/MusicPlayer';
 import AuthModal from './components/AuthModal';
-import { User, Settings, Crown } from 'lucide-react';
+import { User, Settings, Crown, LogOut } from 'lucide-react';
 
 // Views
 import HomeView from './views/HomeView';
@@ -14,6 +15,7 @@ import BillingView from './views/BillingView';
 import SettingsView from './views/SettingsView';
 import ProfileView from './views/ProfileView';
 import PlaylistDetailsView from './views/PlaylistDetailsView';
+import ChartDetailsView from './views/ChartDetailsView';
 import LyricsView from './views/LyricsView';
 import EventsView from './views/EventsView';
 
@@ -25,7 +27,8 @@ const MainAppContent = () => {
     setShowLyrics, 
     currentTrack, 
     user, 
-    setActiveView 
+    setActiveView,
+    logoutUser
   } = useContext(AppContext);
   
   // Auth modal management state
@@ -54,21 +57,23 @@ const MainAppContent = () => {
         return <LibraryView />;
       case 'upload':
         return <UploadView />;
-      case 'billing':
-        return <BillingView />;
       case 'settings':
         return <SettingsView />;
       case 'profile':
         return <ProfileView />;
       case 'playlist-details':
         return <PlaylistDetailsView />;
+      case 'chart-details':
+        return <ChartDetailsView />;
+      case 'song-details':
+        return <SongDetailsView />;
       default:
         return <HomeView />;
     }
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
       {/* Sidebar navigation */}
       <Sidebar onOpenAuth={openAuthModal} />
 
@@ -81,9 +86,17 @@ const MainAppContent = () => {
               <div 
                 className="mobile-avatar-circle" 
                 onClick={() => setActiveView('settings')}
-                style={{ cursor: 'pointer', position: 'relative' }}
+                style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
               >
-                {user.name.charAt(0).toUpperCase()}
+                {user.userAvatar ? (
+                  <img 
+                    src={user.userAvatar} 
+                    alt={user.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
                 {user.isPremium && (
                   <div className="mobile-avatar-crown-indicator">
                     <Crown className="w-2.5 h-2.5" />
@@ -107,16 +120,6 @@ const MainAppContent = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {user ? (
               <>
-                {!user.isPremium && (
-                  <button 
-                    className="btn btn-primary"
-                    style={{ padding: '6px 12px', fontSize: '12px', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: 'none' }}
-                    onClick={() => setActiveView('billing')}
-                  >
-                    <Crown className="w-3.5 h-3.5 text-white" />
-                    <span style={{ color: 'white' }}>Go Premium</span>
-                  </button>
-                )}
                 <button 
                   className="btn-icon" 
                   style={{ width: '32px', height: '32px', border: 'none', background: 'var(--bg-tertiary)' }}
@@ -124,6 +127,16 @@ const MainAppContent = () => {
                   title="Profile Settings"
                 >
                   <Settings className="w-4 h-4" />
+                </button>
+                <button 
+                  className="btn-icon" 
+                  style={{ width: '32px', height: '32px', border: 'none', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}
+                  onClick={() => {
+                    logoutUser();
+                  }}
+                  title="Log Out"
+                >
+                  <LogOut className="w-4 h-4" />
                 </button>
               </>
             ) : (
@@ -140,6 +153,9 @@ const MainAppContent = () => {
 
         {renderView()}
       </main>
+
+      {/* Right side panel */}
+      {currentTrack && currentTrack._id && <RightSidebar />}
 
       {/* Bottom persistent playback controller */}
       <MusicPlayer />

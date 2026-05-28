@@ -1,11 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Music, Play, Crown, Calendar, Sparkles, CheckCircle } from 'lucide-react';
+import { Music, Play, Crown, Calendar, Sparkles, CheckCircle, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
 
 const ProfileView = () => {
-  const { API_URL, activeProfileId, playTrack, showToast } = useContext(AppContext);
+  const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, "");
+  };
 
   useEffect(() => {
     if (activeProfileId) {
@@ -16,7 +22,12 @@ const ProfileView = () => {
   const fetchProfileDetails = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/users/${activeProfileId}`);
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(activeProfileId);
+      const endpoint = isMongoId
+        ? `${API_URL}/auth/users/${activeProfileId}`
+        : `${API_URL}/tracks/jamendo/artist/${activeProfileId}`;
+        
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error('Failed to load profile details');
       const data = await res.json();
       setProfileData(data);
@@ -231,7 +242,7 @@ const ProfileView = () => {
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  Official Verified Check Badge
+                  Official Verified
                 </span>
               )}
             </div>
@@ -247,31 +258,51 @@ const ProfileView = () => {
               margin: 0,
               whiteSpace: 'pre-wrap'
             }}>
-              {user.artistBio}
+              {stripHtml(user.artistBio)}
             </p>
+
+            {/* Dynamic Clickable Social Icons shortcut */}
+            {(user.facebook || user.twitter || user.instagram || user.website) && (
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', alignItems: 'center' }}>
+                {user.website && (
+                  <a href={user.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Website">
+                    <Globe style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.facebook && (
+                  <a href={user.facebook.startsWith('http') ? user.facebook : `https://facebook.com/${user.facebook}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Facebook">
+                    <Facebook style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.twitter && (
+                  <a href={user.twitter.startsWith('http') ? user.twitter : `https://twitter.com/${user.twitter}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Twitter">
+                    <Twitter style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+                {user.instagram && (
+                  <a href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Instagram">
+                    <Instagram style={{ width: '16px', height: '16px' }} />
+                  </a>
+                )}
+              </div>
+            )}
             
             {/* Spotify Monthly Listeners stats */}
-            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
-              <span><strong>149,308</strong> Monthly Listeners</span>
+            <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px', flexWrap: 'wrap' }}>
+              <span><strong>{user.monthlyListeners?.toLocaleString() || 0}</strong> Monthly Listeners</span>
               <span>•</span>
-              <span><strong>{tracks.length}</strong> Direct Upload Streams</span>
+              <span><strong>{user.totalPlays?.toLocaleString() || 0}</strong> Lifetime Streams</span>
             </div>
           </div>
         </section>
       )}
 
       {/* 2. UPLOADED TRACKS LIST */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          Uploaded Songs
-        </h2>
-        
-        {tracks.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <Music className="w-10 h-10 text-muted" style={{ margin: '0 auto 12px auto' }} />
-            <p>This creator has not uploaded any tracks yet.</p>
-          </div>
-        ) : (
+      {tracks.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Uploaded Songs
+          </h2>
           <table className="track-table">
             <thead>
               <tr>
@@ -303,47 +334,110 @@ const ProfileView = () => {
                   <td className="table-genre">{track.genre}</td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="btn-icon" onClick={(e) => { e.stopPropagation(); playTrack(track, tracks); }}>
-                      <Play fill="currentColor" className="w-3 h-3" />
+                      <Play fill="currentColor" className="w-3 h-3" style={{ transform: 'translateX(1px)' }} />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 3. PUBLIC PLAYLISTS */}
-      <section>
-        <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Public Playlists</h2>
-        
-        {playlists.length === 0 ? (
-          <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <p>This user has no public playlists.</p>
-          </div>
-        ) : (
-          <div className="grid-container">
+      {playlists.length > 0 && (
+        <section>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px' }}>Public Playlists</h2>
+          <div className="grid-container carousel-desktop">
             {playlists.map((pl) => (
               <div
                 key={pl._id}
                 className="song-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
               >
                 <div className="song-card-cover-wrapper">
-                  {pl.coverUrl ? (
-                    <img className="song-card-cover" src={pl.coverUrl} alt={pl.name} />
-                  ) : (
-                    <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '100%', height: '100%' }}>
-                      <Music className="w-12 h-12 text-accent" />
-                    </div>
-                  )}
+                  <PlaylistCover playlist={pl} className="song-card-cover" />
                 </div>
                 <div className="song-card-title">{pl.name}</div>
-                <div className="song-card-artist">{pl.tracks.length} songs</div>
+                <div className="song-card-artist">{pl.tracks?.length || 0} songs</div>
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
+
+      {/* 4. UPCOMING CONCERTS */}
+      {user.concerts && user.concerts.length > 0 && (
+        <section style={{ animation: 'fadeIn 0.3s ease' }}>
+          <h2 style={{ fontSize: '22px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar className="w-6 h-6 text-accent" /> Upcoming Concerts & Events
+          </h2>
+          <div className="concert-grid-container">
+            {user.concerts.map((c, idx) => (
+              <div 
+                key={idx}
+                className="concert-card"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: 'var(--glass-shadow)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    textTransform: 'uppercase',
+                    color: 'var(--accent)',
+                    backgroundColor: 'var(--accent-light)',
+                    padding: '4px 10px',
+                    borderRadius: '20px'
+                  }}>
+                    Live Show
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'bold' }}>{c.date}</span>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>{c.title}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>{c.venue}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{c.city}</p>
+                </div>
+                <a 
+                  href={`https://www.ticketmaster.com/search?q=${encodeURIComponent(user.artistName || user.name)}`}
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="btn btn-primary"
+                  style={{
+                    marginTop: '8px',
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    borderRadius: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Get Tickets
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );

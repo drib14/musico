@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Trash2, ArrowLeft, FolderHeart } from 'lucide-react';
+import { Play, Music, Trash2, ArrowLeft, FolderHeart, Edit2 } from 'lucide-react';
+import PlaylistCover from '../components/PlaylistCover';
+import Modal from '../components/Modal';
 
 const PlaylistDetailsView = () => {
   const { 
@@ -12,11 +14,58 @@ const PlaylistDetailsView = () => {
     currentTrack, 
     isPlaying, 
     showToast,
-    loadUserPlaylists 
+    loadUserPlaylists,
+    triggerProfileView,
+    user
   } = useContext(AppContext);
 
   const [playlist, setPlaylist] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
+
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, "");
+  };
+
+  const handleSaveToDb = async (e, trackId) => {
+    e.stopPropagation();
+    if (!token) {
+      showToast('Please log in to save tracks to the database!', 'error');
+      return;
+    }
+    setSavingId(trackId);
+    try {
+      const res = await fetch(`${API_URL}/tracks/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ trackId })
+      });
+      if (res.ok) {
+        showToast('Track imported to Musico DB successfully!');
+        setPlaylist(prev => ({
+          ...prev,
+          tracks: prev.tracks.map(t => t._id === trackId ? { ...t, isJamendo: false } : t)
+        }));
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Failed to save track');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // Edit details states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editCoverUrl, setEditCoverUrl] = useState('');
 
   useEffect(() => {
     if (activePlaylistId) {
@@ -31,11 +80,42 @@ const PlaylistDetailsView = () => {
       if (!res.ok) throw new Error('Failed to load playlist details');
       const data = await res.json();
       setPlaylist(data);
+      setEditName(data.name || '');
+      setEditDesc(data.description || '');
+      setEditCoverUrl(data.coverUrl || '');
     } catch (err) {
       console.error(err);
       showToast(err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePlaylist = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) return showToast('Playlist name is required', 'error');
+
+    try {
+      const res = await fetch(`${API_URL}/playlists/${activePlaylistId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: editName,
+          description: editDesc,
+          coverUrl: editCoverUrl
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update playlist details');
+      showToast('Playlist updated successfully!');
+      setIsEditModalOpen(false);
+      fetchPlaylistDetails();
+      loadUserPlaylists();
+    } catch (err) {
+      showToast(err.message, 'error');
     }
   };
 
@@ -134,20 +214,7 @@ const PlaylistDetailsView = () => {
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           flexShrink: 0
         }}>
-          {playlist.coverUrl ? (
-            <img src={playlist.coverUrl} alt={playlist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'var(--bg-tertiary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Music className="w-16 h-16 text-accent" />
-            </div>
-          )}
+          <PlaylistCover playlist={playlist} />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -158,7 +225,7 @@ const PlaylistDetailsView = () => {
             {playlist.name}
           </h1>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            {playlist.description || 'No description provided.'}
+            {stripHtml(playlist.description) || 'No description provided.'}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}>
             <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{playlist.creator?.name || 'Musico User'}</span>
@@ -185,6 +252,17 @@ const PlaylistDetailsView = () => {
           <Play className="w-5 h-5" fill="#070a13" />
           Play Playlist
         </button>
+
+        {user && playlist.creator?._id === user._id && (
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="btn btn-secondary btn-icon"
+            style={{ borderRadius: '50%', width: '48px', height: '48px' }}
+            title="Edit Playlist Details"
+          >
+            <Edit2 className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Playlist Tracks Table */}
@@ -244,10 +322,37 @@ const PlaylistDetailsView = () => {
                         </div>
                       )}
                       <div>
-                        <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)' }}>
-                          {track.title}
+                        <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{track.title}</span>
+                          {track.isJamendo && (
+                            <button
+                              onClick={(e) => handleSaveToDb(e, track._id)}
+                              disabled={savingId === track._id}
+                              style={{
+                                padding: '2px 8px',
+                                fontSize: '10px',
+                                borderRadius: '4px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-tertiary)',
+                                color: 'var(--accent)',
+                                cursor: 'pointer',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {savingId === track._id ? 'Saving...' : 'Save to DB'}
+                            </button>
+                          )}
                         </div>
-                        <div className="table-artist">{track.artistName}</div>
+                        <div 
+                          className="table-artist" 
+                          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId);
+                          }}
+                        >
+                          {track.artistName}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -269,6 +374,49 @@ const PlaylistDetailsView = () => {
           </tbody>
         </table>
       )}
+
+      {/* Edit Playlist Details Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Playlist Details"
+      >
+        <form onSubmit={handleUpdatePlaylist} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">Playlist Name</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description (Optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Cover Image URL (Optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              value={editCoverUrl}
+              onChange={(e) => setEditCoverUrl(e.target.value)}
+              placeholder="Paste image link here"
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
