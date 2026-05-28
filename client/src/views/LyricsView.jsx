@@ -201,11 +201,12 @@ const LyricsView = () => {
           <div className="lyrics-lines-wrapper">
             {visibleLines.map((line, idx) => {
               const isActive = idx === activeIndex;
+              const isPast = idx < activeIndex;
               return (
                 <p 
                   key={idx} 
                   ref={isActive ? activeLineRef : null}
-                  className={`lyrics-text-line ${isActive ? 'active' : ''} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
+                  className={`lyrics-text-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
                   onClick={() => handleLineClick(line.time)}
                   style={line.isInstrumental ? {
                     color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',
@@ -216,10 +217,14 @@ const LyricsView = () => {
                     gap: '12px'
                   } : {}}
                 >
-                  {line.isInstrumental && isActive && (
-                    <span className="spinning-music-note">🎵</span>
+                  {line.isInstrumental ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px' }}>
+                      {isActive && <span className="spinning-music-note">🎵</span>}
+                      🎵
+                    </span>
+                  ) : (
+                    line.text.length === 0 ? '\u00A0' : line.text
                   )}
-                  {line.text.length === 0 ? '\u00A0' : line.text}
                 </p>
               );
             })}

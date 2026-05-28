@@ -472,7 +472,7 @@ router.get('/users/:id', async (req, res) => {
     userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
     const fetchTicketmasterConcerts = async (artistName) => {
-      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY || '7LGhPfAELOYcjncZRjvvt1hcddOld0hw';
+      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY;
       if (!apiKey || !artistName) return [];
       try {
         const response = await fetch(

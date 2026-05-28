@@ -364,18 +364,6 @@ const SongDetailsView = () => {
                   <div 
                     key={idx}
                     className="concert-card"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px',
-                      boxShadow: 'var(--glass-shadow)',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span style={{

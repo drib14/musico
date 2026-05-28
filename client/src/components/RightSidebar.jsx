@@ -544,17 +544,22 @@ const RightSidebar = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {parsedLines.map((line, idx) => {
                     const isActive = idx === activeIndex;
+                    const isPast = idx < activeIndex;
                     return (
                       <p
                         key={idx}
                         ref={isActive ? activeLineRef : null}
                         onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : ''} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
+                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${line.isInstrumental ? 'instrumental-solo' : ''}`}
                       >
-                        {line.isInstrumental && isActive && (
-                          <span className="spinning-music-note">🎵</span>
+                        {line.isInstrumental ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '18px' }}>
+                            {isActive && <span className="spinning-music-note">🎵</span>}
+                            🎵
+                          </span>
+                        ) : (
+                          line.text.length === 0 ? '\u00A0' : line.text
                         )}
-                        {line.text.length === 0 ? '\u00A0' : line.text}
                       </p>
                     );
                   })}

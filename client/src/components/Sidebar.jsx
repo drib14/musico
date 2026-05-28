@@ -30,7 +30,6 @@ const Sidebar = ({ onOpenAuth }) => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'search', label: 'Search', icon: Search },
-    { id: 'events', label: 'Events', icon: Ticket },
     { id: 'library', label: 'Your Library', icon: Library },
     { id: 'upload', label: 'Upload Track', icon: UploadCloud },
     ...(user ? [{ id: 'settings', label: 'Settings', icon: Settings }] : []),

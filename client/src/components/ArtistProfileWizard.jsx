@@ -8,7 +8,11 @@ import {
   Image as ImageIcon, 
   Check, 
   ArrowRight,
-  HelpCircle
+  HelpCircle,
+  Globe,
+  Facebook,
+  Twitter,
+  Instagram
 } from 'lucide-react';
 
 const ArtistProfileWizard = ({ onComplete }) => {
@@ -18,6 +22,10 @@ const ArtistProfileWizard = ({ onComplete }) => {
   // Profile fields state
   const [artistName, setArtistName] = useState('');
   const [artistBio, setArtistBio] = useState('');
+  const [website, setWebsite] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [twitter, setTwitter] = useState('');
+  const [instagram, setInstagram] = useState('');
   
   // File upload state
   const [avatarFile, setAvatarFile] = useState(null);
@@ -59,6 +67,10 @@ const ArtistProfileWizard = ({ onComplete }) => {
     const formData = new FormData();
     formData.append('artistName', artistName.trim());
     formData.append('artistBio', artistBio.trim());
+    formData.append('website', website.trim());
+    formData.append('facebook', facebook.trim());
+    formData.append('twitter', twitter.trim());
+    formData.append('instagram', instagram.trim());
 
     if (avatarFile) formData.append('artistAvatar', avatarFile);
     if (bannerFile) formData.append('artistBanner', bannerFile);
@@ -256,6 +268,75 @@ const ArtistProfileWizard = ({ onComplete }) => {
               value={artistBio}
               onChange={(e) => setArtistBio(e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* Social & Web Links section */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px 0' }}>
+            Social & Web Links (Optional)
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+            {/* Website input */}
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 'bold' }}>Website Link</label>
+              <div className="form-input-wrapper">
+                <Globe className="form-input-icon w-4 h-4 text-muted" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }} />
+                <input
+                  type="url"
+                  className="form-input"
+                  style={{ paddingLeft: '42px', fontSize: '13px' }}
+                  placeholder="https://mywebsite.com"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Facebook input */}
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 'bold' }}>Facebook Username / URL</label>
+              <div className="form-input-wrapper">
+                <Facebook className="form-input-icon w-4 h-4 text-muted" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '42px', fontSize: '13px' }}
+                  placeholder="facebook.com/username"
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Twitter input */}
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 'bold' }}>Twitter / X Username / URL</label>
+              <div className="form-input-wrapper">
+                <Twitter className="form-input-icon w-4 h-4 text-muted" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '42px', fontSize: '13px' }}
+                  placeholder="twitter.com/username"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Instagram input */}
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '12px', fontWeight: 'bold' }}>Instagram Username / URL</label>
+              <div className="form-input-wrapper">
+                <Instagram className="form-input-icon w-4 h-4 text-muted" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.6 }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: '42px', fontSize: '13px' }}
+                  placeholder="instagram.com/username"
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

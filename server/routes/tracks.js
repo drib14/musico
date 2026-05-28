@@ -854,7 +854,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     }
 
     const fetchTicketmasterConcerts = async (artistName) => {
-      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY || '7LGhPfAELOYcjncZRjvvt1hcddOld0hw';
+      const apiKey = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY;
       if (!apiKey || !artistName) return [];
       try {
         const response = await fetch(

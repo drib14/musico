@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const TICKETMASTER_API_KEY = process.env.TICKETMASTER_API_KEY;
+const TICKETMASTER_API_KEY = process.env.TICKET_MASTER_API_KEY || process.env.TICKETMASTER_API_KEY;
 const TICKETMASTER_BASE_URL = 'https://app.ticketmaster.com/discovery/v2';
 
 /**
@@ -22,7 +22,7 @@ const searchEvents = async (keyword, params = {}) => {
     return response.data._embedded?.events || [];
   } catch (error) {
     console.error('Ticketmaster search error:', error.message);
-    throw new Error(`Failed to fetch events: ${error.message}`);
+    return [];
   }
 };
 
@@ -46,7 +46,7 @@ const getEventsByArtist = async (artistName, params = {}) => {
     return response.data._embedded?.events || [];
   } catch (error) {
     console.error('Ticketmaster artist search error:', error.message);
-    throw new Error(`Failed to fetch artist events: ${error.message}`);
+    return [];
   }
 };
 
@@ -68,7 +68,7 @@ const getEventsByVenue = async (venueId, params = {}) => {
     return response.data._embedded?.events || [];
   } catch (error) {
     console.error('Ticketmaster venue search error:', error.message);
-    throw new Error(`Failed to fetch venue events: ${error.message}`);
+    return [];
   }
 };
 
@@ -91,7 +91,7 @@ const getTrendingEvents = async (params = {}) => {
     return response.data._embedded?.events || [];
   } catch (error) {
     console.error('Ticketmaster trending search error:', error.message);
-    throw new Error(`Failed to fetch trending events: ${error.message}`);
+    return [];
   }
 };
 
@@ -114,7 +114,7 @@ const getEventsByGenre = async (genre, params = {}) => {
     return response.data._embedded?.events || [];
   } catch (error) {
     console.error('Ticketmaster genre search error:', error.message);
-    throw new Error(`Failed to fetch genre events: ${error.message}`);
+    return [];
   }
 };
 

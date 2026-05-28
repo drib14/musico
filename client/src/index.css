@@ -664,6 +664,8 @@ h1, h2, h3, h4, h5, h6 {
   transition: all var(--transition-normal);
   display: flex;
   flex-direction: column;
+  height: 320px;
+  justify-content: space-between;
 }
 
 .song-card:hover {
@@ -672,6 +674,63 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--glass-border);
   box-shadow: 0 12px 24px rgba(0,0,0,0.25);
 }
+
+.artist-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 20px 16px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.25s ease;
+  box-shadow: var(--glass-shadow);
+  height: 200px;
+  justify-content: center;
+}
+
+.concert-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+  height: 220px;
+  justify-content: space-between;
+  transition: all var(--transition-normal);
+}
+
+.concert-card:hover {
+  background-color: var(--bg-tertiary);
+  transform: translateY(-6px);
+  border-color: var(--glass-border);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+}
+
+/* Spotify-style Lyrics State Coloring overrides */
+.lyrics-text-line.past {
+  opacity: 0.7;
+  filter: none;
+}
+.lyrics-text-line.future {
+  opacity: 0.2;
+  filter: blur(0.5px);
+}
+.sidebar-lyric-line.past {
+  opacity: 0.65;
+}
+.sidebar-lyric-line.future {
+  opacity: 0.22;
+}
+
 
 .song-card-cover-wrapper {
   position: relative;
