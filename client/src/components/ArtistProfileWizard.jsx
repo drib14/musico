@@ -76,8 +76,8 @@ const ArtistProfileWizard = ({ onComplete }) => {
     if (bannerFile) formData.append('artistBanner', bannerFile);
 
     try {
-      const res = await fetch(`${API_URL}/auth/profile`, {
-        method: 'PUT',
+      const res = await fetch(`${API_URL}/artists`, {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -87,7 +87,12 @@ const ArtistProfileWizard = ({ onComplete }) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to initialize Artist Profile');
 
-      loginUser(data.user, data.token);
+      // Fetch fresh user state
+      const meRes = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const meData = await meRes.json();
+      loginUser(meData, token);
       showToast('Artist Profile initialized! Welcome to the Musico distribution network.');
       
       if (onComplete) {

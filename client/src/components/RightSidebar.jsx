@@ -257,8 +257,8 @@ const RightSidebar = () => {
 
   return (
     <aside className="right-sidebar" style={{
-      width: '400px',
-      minWidth: '400px',
+      width: '500px',
+      minWidth: '500px',
       flexShrink: 0,
       backgroundColor: 'var(--bg-secondary)',
       borderLeft: '1px solid var(--border-color)',
@@ -541,7 +541,7 @@ const RightSidebar = () => {
                         onClick={() => handleLineClick(line.time)}
                         className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')}`}
                         style={{
-                          fontSize: isActive ? '32px' : '24px',
+                          fontSize: isActive ? '28px' : '18px',
                           fontWeight: '800',
                           lineHeight: '1.5',
                           cursor: 'pointer',

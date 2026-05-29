@@ -327,7 +327,7 @@ const PlaylistDetails = () => {
                         </div>
                         <div 
                           className="table-artist" 
-                          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }}
+                          style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--text-secondary)' }}
                           onClick={(e) => {
                             e.stopPropagation();
                             triggerProfileView(track.artist, track.isJamendo, track.jamendoArtistId);

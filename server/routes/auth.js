@@ -132,6 +132,7 @@ router.post('/verify-email', async (req, res) => {
     user.verificationCodeExpires = null;
     await user.save();
     await user.populate('likedTracks');
+    await user.populate('artistProfile');
 
     res.json({
       _id: user._id,
@@ -140,6 +141,7 @@ router.post('/verify-email', async (req, res) => {
       isVerified: user.isVerified,
       isPremium: user.isPremium,
       likedTracks: user.likedTracks,
+      artistProfile: user.artistProfile,
       token: generateToken(user._id),
       message: 'Account successfully verified!',
     });
@@ -220,7 +222,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const populatedUser = await User.findById(user._id).populate('likedTracks');
+    const populatedUser = await User.findById(user._id).populate('likedTracks').populate('artistProfile');
 
     res.json({
       _id: populatedUser._id,
@@ -229,6 +231,7 @@ router.post('/login', async (req, res) => {
       isVerified: populatedUser.isVerified,
       isPremium: populatedUser.isPremium,
       likedTracks: populatedUser.likedTracks,
+      artistProfile: populatedUser.artistProfile,
       token: generateToken(populatedUser._id),
     });
   } catch (error) {
@@ -330,7 +333,7 @@ router.post('/reset-password', async (req, res) => {
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password').populate('likedTracks');
+    const user = await User.findById(req.user._id).select('-password').populate('likedTracks').populate('artistProfile');
     res.json(user);
   } catch (error) {
     console.error(error);
@@ -370,27 +373,11 @@ router.put(
       if (name) user.name = name;
       if (password) user.password = password; // pre-save will automatically hash it!
 
-      // Update Artist Fields
-      if (artistName !== undefined) user.artistName = artistName;
-      if (artistBio !== undefined) user.artistBio = artistBio;
-      if (isArtistVerified !== undefined) {
-        user.isArtistVerified = isArtistVerified === 'true' || isArtistVerified === true;
-      }
-      if (website !== undefined) user.website = website;
-      if (facebook !== undefined) user.facebook = facebook;
-      if (twitter !== undefined) user.twitter = twitter;
-      if (instagram !== undefined) user.instagram = instagram;
-      if (req.body.artistAvatar !== undefined) user.artistAvatar = req.body.artistAvatar;
-      if (req.body.artistBanner !== undefined) user.artistBanner = req.body.artistBanner;
+      // Update Artist Fields are now handled by /api/artists
       if (req.body.userAvatar !== undefined) user.userAvatar = req.body.userAvatar;
-      if (req.body.concerts !== undefined) {
-        user.concerts = typeof req.body.concerts === 'string' ? JSON.parse(req.body.concerts) : req.body.concerts;
-      }
-
 
       // Handle Image uploads to Cloudinary
-      if (req.files) {
-        if (req.files.userAvatar) {
+      if (req.files && req.files.userAvatar) {
           console.log('Uploading user avatar to Cloudinary...');
           const result = await uploadStreamToCloudinary(
             req.files.userAvatar[0].buffer,
@@ -400,31 +387,10 @@ router.put(
           user.userAvatar = result.secure_url;
         }
 
-        if (req.files.artistAvatar) {
-          console.log('Uploading artist avatar to Cloudinary...');
-          const result = await uploadStreamToCloudinary(
-            req.files.artistAvatar[0].buffer,
-            'image',
-            'musico/artists'
-          );
-          user.artistAvatar = result.secure_url;
-        }
-
-        if (req.files.artistBanner) {
-          console.log('Uploading artist banner to Cloudinary...');
-          const result = await uploadStreamToCloudinary(
-            req.files.artistBanner[0].buffer,
-            'image',
-            'musico/banners'
-          );
-          user.artistBanner = result.secure_url;
-        }
-      }
-
       await user.save();
 
       // Refetch without password
-      const updatedUser = await User.findById(user._id).select('-password').populate('likedTracks');
+      const updatedUser = await User.findById(user._id).select('-password').populate('likedTracks').populate('artistProfile');
       res.json({
         message: 'Profile updated successfully!',
         user: updatedUser,
@@ -472,13 +438,22 @@ router.get('/users/:id', async (req, res) => {
     const totalPlays = allPlays;
 
     const userObj = user.toObject();
-    userObj.monthlyListeners = monthlyListeners || 0;
-    userObj.totalPlays = totalPlays || 0;
-    userObj.website = userObj.website || `https://www.musico.com/artist/${userObj._id}`;
-    userObj.facebook = userObj.facebook || `https://facebook.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
-    userObj.twitter = userObj.twitter || `https://twitter.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
-    userObj.instagram = userObj.instagram || `https://instagram.com/${(userObj.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
-    userObj.concerts = userObj.concerts || [];
+    if (user.artistProfile) {
+      await user.populate('artistProfile');
+      const artist = user.artistProfile;
+      userObj.monthlyListeners = monthlyListeners || 0;
+      userObj.totalPlays = totalPlays || 0;
+      userObj.website = artist.website || `https://www.musico.com/artist/${userObj._id}`;
+      userObj.facebook = artist.facebook || `https://facebook.com/${(artist.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+      userObj.twitter = artist.twitter || `https://twitter.com/${(artist.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+      userObj.instagram = artist.instagram || `https://instagram.com/${(artist.artistName || userObj.name).replace(/\s+/g, '').toLowerCase()}`;
+      userObj.concerts = artist.concerts || [];
+      userObj.artistName = artist.artistName;
+      userObj.artistAvatar = artist.artistAvatar;
+      userObj.artistBanner = artist.artistBanner;
+      userObj.artistBio = artist.artistBio;
+      userObj.isArtistVerified = artist.isArtistVerified;
+    }
 
 
     // Fetch public playlists created by this user
@@ -507,7 +482,7 @@ router.get('/artists/top', async (req, res) => {
     const Track = require('../models/Track');
 
     // Find all users who have set up an artist profile
-    const artists = await User.find({ artistName: { $ne: '' } }).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
+    const artists = await User.find({ artistProfile: { $ne: null } }).populate('artistProfile').select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
 
     // Aggregate streams dynamically for each artist
     const localWithStats = await Promise.all(artists.map(async (art) => {
@@ -518,6 +493,9 @@ router.get('/artists/top', async (req, res) => {
         track: { $in: trackIds }
       });
       const artObj = art.toObject();
+      artObj.artistName = art.artistProfile.artistName;
+      artObj.artistAvatar = art.artistProfile.artistAvatar;
+      artObj.isArtistVerified = art.artistProfile.isArtistVerified;
       artObj.totalPlays = totalPlays;
       artObj.tracksCount = tracks.length;
       return artObj;
@@ -574,18 +552,25 @@ router.post('/users/:id/follow', protect, async (req, res) => {
       targetUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: targetUserId });
       if (!targetUser) {
         // Automatically mirror/seed the Jamendo artist inside MongoDB!
+        const Artist = require('../models/Artist');
         targetUser = new User({
           name: `Jamendo Artist ${targetUserId}`,
           email: `jamendo-artist-${targetUserId}@musico.com`,
           password: `jamendo-artist-dummy-pass-123456`,
-          artistName: `Jamendo Artist ${targetUserId}`,
-          isJamendoArtist: true,
-          jamendoArtistId: targetUserId,
-          isArtistVerified: true,
           isPremium: true,
           followers: [],
           following: []
         });
+        await targetUser.save();
+
+        const artistProf = await Artist.create({
+            owner: targetUser._id,
+            artistName: `Jamendo Artist ${targetUserId}`,
+            isJamendoArtist: true,
+            jamendoArtistId: targetUserId,
+            isArtistVerified: true,
+        });
+        targetUser.artistProfile = artistProf._id;
         await targetUser.save();
       }
       targetUserId = targetUser._id.toString();

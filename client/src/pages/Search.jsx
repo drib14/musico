@@ -144,6 +144,7 @@ const Search = () => {
   };
 
   const showBrowseCategories = search.trim() === '' && genre === 'All';
+  const hasAnyResults = searchResults.tracks.length > 0 || searchResults.artists.length > 0 || searchResults.albums.length > 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -160,24 +161,6 @@ const Search = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-      </div>
-
-      {/* Genre Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
-        {genres.map((g) => (
-          <button
-            key={g}
-            className={`btn ${genre === g ? 'btn-primary' : 'btn-secondary'}`}
-            style={{
-              padding: '6px 16px',
-              borderRadius: '99px',
-              fontSize: '13px'
-            }}
-            onClick={() => setGenre(g)}
-          >
-            {g}
-          </button>
-        ))}
       </div>
 
       {/* Results division or Browse Categories */}

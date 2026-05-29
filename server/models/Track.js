@@ -59,6 +59,24 @@ const trackSchema = new mongoose.Schema(
       lyricist: { type: String, default: '' },
       producer: { type: String, default: '' },
     },
+    musicinfo: {
+      vocalinstrumental: { type: String, default: '' },
+      lang: { type: String, default: '' },
+      gender: { type: String, default: '' },
+      acousticelectric: { type: String, default: '' },
+      speed: { type: String, default: '' },
+      tags: {
+        genres: [String],
+        instruments: [String],
+        vartags: [String],
+      }
+    },
+    stats: {
+      playcount_total: { type: Number, default: 0 },
+      downloadcount_total: { type: Number, default: 0 },
+      popularity_total: { type: Number, default: 0 }
+    },
+    audiodownload: { type: String, default: '' }
   },
   {
     timestamps: true,

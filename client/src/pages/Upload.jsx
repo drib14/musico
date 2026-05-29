@@ -423,7 +423,7 @@ const Upload = () => {
   };
 
   // RENDER: REQUIRED ARTIST PROFILE SEED
-  if (!user?.artistName) {
+  if (!user?.artistProfile) {
     return (
       <div style={{ maxWidth: '650px', margin: '40px auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ textAlign: 'center' }}>
@@ -462,10 +462,10 @@ const Upload = () => {
           boxShadow: 'var(--glass-shadow)',
           animation: 'fadeIn 0.3s ease'
         }}>
-          {user?.artistAvatar ? (
+          {user?.artistProfile?.artistAvatar ? (
             <img 
-              src={user.artistAvatar} 
-              alt={user.artistName} 
+              src={user.artistProfile.artistAvatar}
+              alt={user.artistProfile.artistName}
               style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
             />
           ) : (
@@ -481,13 +481,13 @@ const Upload = () => {
               fontWeight: 'bold',
               fontSize: '12px'
             }}>
-              {user?.artistName?.charAt(0).toUpperCase()}
+              {user?.artistProfile?.artistName?.charAt(0).toUpperCase()}
             </div>
           )}
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Publishing under official artist identity: <strong style={{ color: 'var(--text-primary)' }}>{user?.artistName}</strong>
+            Publishing under official artist identity: <strong style={{ color: 'var(--text-primary)' }}>{user?.artistProfile?.artistName}</strong>
           </span>
-          {user?.isArtistVerified && (
+          {user?.artistProfile?.isArtistVerified && (
             <span 
               style={{
                 display: 'inline-flex',

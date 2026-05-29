@@ -252,7 +252,8 @@ router.post(
       }
 
       // Validate presence of Artist Profile
-      if (!req.user.artistName) {
+      await req.user.populate('artistProfile');
+      if (!req.user.artistProfile) {
         return res.status(400).json({ message: 'You must set up your Artist Profile before distributing tracks on Musico.' });
       }
 
@@ -304,7 +305,7 @@ router.post(
       const track = await Track.create({
         title,
         artist: req.user._id,
-        artistName: req.user.artistName,
+        artistName: req.user.artistProfile.artistName,
         audioUrl: audioResult.secure_url,
         coverUrl,
         duration: audioResult.duration || 0,
@@ -836,7 +837,9 @@ router.get('/jamendo/artist/:id', async (req, res) => {
   const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
   try {
     // 1. Try to find mirrored/cached artist in our database
-    let dbUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
+    const Artist = require('../models/Artist');
+    let artistProfile = await Artist.findOne({ isJamendoArtist: true, jamendoArtistId: artistId });
+    let dbUser = artistProfile ? await User.findById(artistProfile.owner).populate('artistProfile') : null;
     
     // Fetch from Jamendo to make sure details are loaded/refreshed
     const jamendoRes = await fetch(
@@ -847,8 +850,19 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       if (dbUser) {
         // Fallback to cached DB profile if Jamendo API is offline
         const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
+        const userObj = dbUser.toObject();
+        userObj.artistName = dbUser.artistProfile.artistName;
+        userObj.artistAvatar = dbUser.artistProfile.artistAvatar;
+        userObj.artistBanner = dbUser.artistProfile.artistBanner;
+        userObj.artistBio = dbUser.artistProfile.artistBio;
+        userObj.isArtistVerified = dbUser.artistProfile.isArtistVerified;
+        userObj.website = dbUser.artistProfile.website;
+        userObj.facebook = dbUser.artistProfile.facebook;
+        userObj.twitter = dbUser.artistProfile.twitter;
+        userObj.instagram = dbUser.artistProfile.instagram;
+        userObj.concerts = dbUser.artistProfile.concerts;
         return res.json({
-          user: dbUser,
+          user: userObj,
           tracks: dbTracks,
           playlists: []
         });
@@ -860,7 +874,18 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     if (!data.results || data.results.length === 0) {
       if (dbUser) {
         const dbTracks = await Track.find({ artist: dbUser._id }).sort({ plays: -1 });
-        return res.json({ user: dbUser, tracks: dbTracks, playlists: [] });
+        const userObj = dbUser.toObject();
+        userObj.artistName = dbUser.artistProfile.artistName;
+        userObj.artistAvatar = dbUser.artistProfile.artistAvatar;
+        userObj.artistBanner = dbUser.artistProfile.artistBanner;
+        userObj.artistBio = dbUser.artistProfile.artistBio;
+        userObj.isArtistVerified = dbUser.artistProfile.isArtistVerified;
+        userObj.website = dbUser.artistProfile.website;
+        userObj.facebook = dbUser.artistProfile.facebook;
+        userObj.twitter = dbUser.artistProfile.twitter;
+        userObj.instagram = dbUser.artistProfile.instagram;
+        userObj.concerts = dbUser.artistProfile.concerts;
+        return res.json({ user: userObj, tracks: dbTracks, playlists: [] });
       }
       return res.status(404).json({ message: 'Artist not found on Jamendo' });
     }
@@ -888,36 +913,47 @@ router.get('/jamendo/artist/:id', async (req, res) => {
         name: artist.name,
         email: `jamendo-artist-${artist.id}@musico.com`,
         password: `jamendo-artist-dummy-pass-123456`, // dummy secure pass
-        artistName: artist.name,
         userAvatar: artist.image || '',
-        artistAvatar: artist.image || '',
-        artistBio: bioText,
-        website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
-        facebook: artist.musicinfo?.facebook || '',
-        twitter: artist.musicinfo?.twitter || '',
-        instagram: artist.musicinfo?.instagram || '',
         monthlyListeners,
         totalPlays,
-        concerts,
-        isJamendoArtist: true,
-        jamendoArtistId: artist.id,
-        isArtistVerified: true,
         isPremium: true
       });
       await dbUser.save();
+
+      const artistProf = await Artist.create({
+          owner: dbUser._id,
+          artistName: artist.name,
+          artistAvatar: artist.image || '',
+          artistBio: bioText,
+          website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
+          facebook: artist.musicinfo?.facebook || '',
+          twitter: artist.musicinfo?.twitter || '',
+          instagram: artist.musicinfo?.instagram || '',
+          concerts,
+          isJamendoArtist: true,
+          jamendoArtistId: artist.id,
+          isArtistVerified: true,
+          stats: { playcount_total: totalPlays, popularity_total: artist.stats?.popularity_total || 0 }
+      });
+      dbUser.artistProfile = artistProf._id;
+      await dbUser.save();
+      dbUser.artistProfile = artistProf;
     } else {
       // Update existing cached mirrored artist details
-      dbUser.artistName = artist.name;
-      dbUser.artistAvatar = artist.image || '';
-      dbUser.userAvatar = artist.image || '';
-      dbUser.artistBio = bioText;
-      dbUser.website = artist.website || dbUser.website;
-      dbUser.facebook = artist.musicinfo?.facebook || dbUser.facebook;
-      dbUser.twitter = artist.musicinfo?.twitter || dbUser.twitter;
-      dbUser.instagram = artist.musicinfo?.instagram || dbUser.instagram;
+      dbUser.userAvatar = artist.image || dbUser.userAvatar;
       dbUser.monthlyListeners = monthlyListeners;
       dbUser.totalPlays = totalPlays;
       await dbUser.save();
+
+      dbUser.artistProfile.artistName = artist.name;
+      dbUser.artistProfile.artistAvatar = artist.image || dbUser.artistProfile.artistAvatar;
+      dbUser.artistProfile.artistBio = bioText;
+      dbUser.artistProfile.website = artist.website || dbUser.artistProfile.website;
+      dbUser.artistProfile.facebook = artist.musicinfo?.facebook || dbUser.artistProfile.facebook;
+      dbUser.artistProfile.twitter = artist.musicinfo?.twitter || dbUser.artistProfile.twitter;
+      dbUser.artistProfile.instagram = artist.musicinfo?.instagram || dbUser.artistProfile.instagram;
+      dbUser.artistProfile.stats = { playcount_total: totalPlays, popularity_total: artist.stats?.popularity_total || 0 };
+      await dbUser.artistProfile.save();
     }
 
     // 3. Dynamically fetch tracks of this artist from Jamendo API
@@ -974,8 +1010,19 @@ router.get('/jamendo/artist/:id', async (req, res) => {
       console.error('Error fetching albums for Jamendo artist profile:', err);
     }
 
+    const userObj = dbUser.toObject();
+    userObj.artistName = dbUser.artistProfile.artistName;
+    userObj.artistAvatar = dbUser.artistProfile.artistAvatar;
+    userObj.artistBanner = dbUser.artistProfile.artistBanner;
+    userObj.artistBio = dbUser.artistProfile.artistBio;
+    userObj.isArtistVerified = dbUser.artistProfile.isArtistVerified;
+    userObj.website = dbUser.artistProfile.website;
+    userObj.facebook = dbUser.artistProfile.facebook;
+    userObj.twitter = dbUser.artistProfile.twitter;
+    userObj.instagram = dbUser.artistProfile.instagram;
+    userObj.concerts = dbUser.artistProfile.concerts;
     res.json({
-      user: dbUser,
+      user: userObj,
       tracks: tracksList,
       playlists: albumsList
     });
@@ -1018,7 +1065,8 @@ router.post(
       }
 
       // Validate presence of Artist Profile
-      if (!req.user.artistName) {
+      await req.user.populate('artistProfile');
+      if (!req.user.artistProfile) {
         return res.status(400).json({ message: 'You must set up your Artist Profile before distributing albums on Musico.' });
       }
 
@@ -1048,7 +1096,7 @@ router.post(
         description: description || '',
         coverUrl,
         artist: req.user._id,
-        artistName: req.user.artistName,
+        artistName: req.user.artistProfile.artistName,
         tracks: parsedTracks,
         genre: genre || 'Pop'
       });

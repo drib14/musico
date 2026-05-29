@@ -31,17 +31,17 @@ const Settings = () => {
   const [userAvatarPreview, setUserAvatarPreview] = useState(user?.userAvatar || '');
 
   // Artist Settings state
-  const [artistName, setArtistName] = useState(user?.artistName || '');
-  const [artistBio, setArtistBio] = useState(user?.artistBio || '');
-  const [isArtistVerified, setIsArtistVerified] = useState(user?.isArtistVerified || false);
+  const [artistName, setArtistName] = useState(user?.artistProfile?.artistName || '');
+  const [artistBio, setArtistBio] = useState(user?.artistProfile?.artistBio || '');
+  const [isArtistVerified, setIsArtistVerified] = useState(user?.artistProfile?.isArtistVerified || false);
   const [artistAvatarFile, setArtistAvatarFile] = useState(null);
-  const [artistAvatarPreview, setArtistAvatarPreview] = useState(user?.artistAvatar || '');
+  const [artistAvatarPreview, setArtistAvatarPreview] = useState(user?.artistProfile?.artistAvatar || '');
   const [artistBannerFile, setArtistBannerFile] = useState(null);
-  const [artistBannerPreview, setArtistBannerPreview] = useState(user?.artistBanner || '');
-  const [website, setWebsite] = useState(user?.website || '');
-  const [facebook, setFacebook] = useState(user?.facebook || '');
-  const [twitter, setTwitter] = useState(user?.twitter || '');
-  const [instagram, setInstagram] = useState(user?.instagram || '');
+  const [artistBannerPreview, setArtistBannerPreview] = useState(user?.artistProfile?.artistBanner || '');
+  const [website, setWebsite] = useState(user?.artistProfile?.website || '');
+  const [facebook, setFacebook] = useState(user?.artistProfile?.facebook || '');
+  const [twitter, setTwitter] = useState(user?.artistProfile?.twitter || '');
+  const [instagram, setInstagram] = useState(user?.artistProfile?.instagram || '');
 
   // Sync state with user data changes (e.g. after login/re-fetch)
   useEffect(() => {
@@ -49,15 +49,17 @@ const Settings = () => {
       setName(user.name);
       setEmail(user.email);
       setUserAvatarPreview(user.userAvatar || '');
-      setArtistName(user.artistName || '');
-      setArtistBio(user.artistBio || '');
-      setIsArtistVerified(user.isArtistVerified || false);
-      setArtistAvatarPreview(user.artistAvatar || '');
-      setArtistBannerPreview(user.artistBanner || '');
-      setWebsite(user.website || '');
-      setFacebook(user.facebook || '');
-      setTwitter(user.twitter || '');
-      setInstagram(user.instagram || '');
+      if (user.artistProfile) {
+        setArtistName(user.artistProfile.artistName || '');
+        setArtistBio(user.artistProfile.artistBio || '');
+        setIsArtistVerified(user.artistProfile.isArtistVerified || false);
+        setArtistAvatarPreview(user.artistProfile.artistAvatar || '');
+        setArtistBannerPreview(user.artistProfile.artistBanner || '');
+        setWebsite(user.artistProfile.website || '');
+        setFacebook(user.artistProfile.facebook || '');
+        setTwitter(user.artistProfile.twitter || '');
+        setInstagram(user.artistProfile.instagram || '');
+      }
     }
   }, [user]);
 
@@ -129,36 +131,57 @@ const Settings = () => {
     formData.append('email', email);
     if (password) formData.append('password', password);
 
-    // Append Artist profile data
-    formData.append('artistName', artistName.trim());
-    formData.append('artistBio', artistBio.trim());
-    formData.append('isArtistVerified', isArtistVerified);
-    formData.append('website', website.trim());
-    formData.append('facebook', facebook.trim());
-    formData.append('twitter', twitter.trim());
-    formData.append('instagram', instagram.trim());
-
-    // Append image files if selected
-    if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
-    if (artistAvatarFile) formData.append('artistAvatar', artistAvatarFile);
-    if (artistBannerFile) formData.append('artistBanner', artistBannerFile);
-
     try {
-      const res = await fetch(`${API_URL}/auth/profile`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`
-          // CONTENT-TYPE IS AUTO DETECTED BY FETCH TO MULTIPART/FORM-DATA WITH BOUNDARY
-        },
-        body: formData
-      });
+      let message = 'Profile settings saved successfully!';
+      let tokenToSave = token;
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Profile update failed');
+      if (activeTab === 'user') {
+        if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
+        const res = await fetch(`${API_URL}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Profile update failed');
+        tokenToSave = data.token;
+      } else {
+        const artistFormData = new FormData();
+        artistFormData.append('artistName', artistName.trim());
+        artistFormData.append('artistBio', artistBio.trim());
+        artistFormData.append('isArtistVerified', isArtistVerified);
+        artistFormData.append('website', website.trim());
+        artistFormData.append('facebook', facebook.trim());
+        artistFormData.append('twitter', twitter.trim());
+        artistFormData.append('instagram', instagram.trim());
+
+        if (artistAvatarFile) artistFormData.append('artistAvatar', artistAvatarFile);
+        if (artistBannerFile) artistFormData.append('artistBanner', artistBannerFile);
+
+        const res = await fetch(`${API_URL}/artists`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: artistFormData
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Artist profile update failed');
+        message = 'Artist profile settings saved successfully!';
+      }
+
+      const meRes = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${tokenToSave}` }
+      });
+      const meData = await meRes.json();
 
       // Update local storage and context state
-      loginUser(data.user, data.token);
-      showToast('Profile settings saved successfully!');
+      loginUser(meData, tokenToSave);
+      showToast(message);
       
       // Reset password fields
       setPassword('');

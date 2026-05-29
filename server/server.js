@@ -59,6 +59,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tracks', require('./routes/tracks'));
 app.use('/api/playlists', require('./routes/playlists'));
+app.use('/api/artists', require('./routes/artists'));
 
 // Root Status Check Route
 app.get('/status', (req, res) => {

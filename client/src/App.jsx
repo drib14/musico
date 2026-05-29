@@ -63,7 +63,8 @@ const MainAppContent = () => {
   useEffect(() => {
     const expectedPath = `/pages/${activeView}`;
     if (location.pathname !== expectedPath && location.pathname !== '/') {
-      navigate(expectedPath);
+      // Use replace to prevent overwhelming the browser history
+      navigate(expectedPath, { replace: true });
     }
   }, [activeView, navigate, location.pathname]);
 
