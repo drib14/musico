@@ -91,30 +91,25 @@ const RightSidebar = () => {
     }
   };
 
-  // Sync playback elapsed time via timeupdate event listener for highly reliable precision sync
+  // Sync playback elapsed time via timeupdate event listener and requestAnimationFrame for highly reliable precision sync
   useEffect(() => {
+    let animationFrameId;
     const audio = audioRef?.current;
-    if (!audio) {
-      // Setup interval check if audio changes or is dynamically added
-      const interval = setInterval(() => {
-        if (audioRef?.current) {
-          setCurrentTime(audioRef.current.currentTime || 0);
-        }
-      }, 500);
-      return () => clearInterval(interval);
-    }
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime || 0);
+    const checkTime = () => {
+      if (audioRef?.current) {
+        setCurrentTime(audioRef.current.currentTime || 0);
+      }
+      animationFrameId = requestAnimationFrame(checkTime);
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    
-    // Initial sync
-    setCurrentTime(audio.currentTime || 0);
+    // Start high-precision polling loop
+    animationFrameId = requestAnimationFrame(checkTime);
 
     return () => {
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [audioRef?.current, currentTrack]);
 

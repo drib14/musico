@@ -7,6 +7,14 @@ const { protect } = require('../middleware/authMiddleware');
 const { sendVerificationEmail, sendResetPasswordEmail } = require('../utils/mailer');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const rateLimit = require('express-rate-limit');
+
+// Stricter rate limiter for auth routes (e.g., login, register) to prevent brute-force
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // limit each IP to 15 auth requests per windowMs
+  message: { message: 'Too many authentication attempts from this IP, please try again after 15 minutes.' }
+});
 
 // Configure Cloudinary
 cloudinary.config({
@@ -60,7 +68,7 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
@@ -185,7 +193,7 @@ router.post('/resend-verification', async (req, res) => {
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -243,7 +251,7 @@ router.post('/login', async (req, res) => {
 // @desc    Forgot password trigger
 // @route   POST /api/auth/forgot-password
 // @access  Public
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', authLimiter, async (req, res) => {
   const { email } = req.body;
 
   try {

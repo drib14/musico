@@ -24,6 +24,8 @@ app.use(cors({
   credentials: true
 }));
 
+const mongoSanitize = require('express-mongo-sanitize');
+
 // 2. Secure HTTP response headers with Helmet (configured to allow dynamic media assets streams)
 app.use(helmet({
   contentSecurityPolicy: {
@@ -32,13 +34,16 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com", "*.cloudinary.com"],
-      mediaSrc: ["'self'", "https://res.cloudinary.com", "*.cloudinary.com", "https://www.soundhelix.com"],
-      connectSrc: ["'self'", "https://us1.locationiq.com", "https://api.cloudinary.com", "https://app.ticketmaster.com"]
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com", "*.cloudinary.com", "https://*.jamendo.com", "https://jamendo.com"],
+      mediaSrc: ["'self'", "https://res.cloudinary.com", "*.cloudinary.com", "https://www.soundhelix.com", "https://*.jamendo.com", "https://jamendo.com"],
+      connectSrc: ["'self'", "https://us1.locationiq.com", "https://api.cloudinary.com", "https://app.ticketmaster.com", "https://*.jamendo.com", "https://jamendo.com"]
     }
   },
   crossOriginEmbedderPolicy: false
 }));
+
+// Sanitize data to prevent NoSQL Injection Attacks
+app.use(mongoSanitize());
 
 // 3. Protect backend API paths from high-frequency floodings (generous limit in dev to allow hot reloading)
 const apiLimiter = rateLimit({
