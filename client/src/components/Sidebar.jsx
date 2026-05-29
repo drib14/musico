@@ -13,6 +13,7 @@ import {
   Moon,
   Laptop,
   Settings,
+  Mic,
   Ticket
 } from 'lucide-react';
 
@@ -34,6 +35,7 @@ const Sidebar = ({ onOpenAuth }) => {
     { id: 'search', label: 'Search', icon: Search },
     { id: 'library', label: 'Your Library', icon: Library },
     { id: 'upload', label: 'Upload Track', icon: UploadCloud },
+    ...(user && user.artistProfile ? [{ id: 'artist-dashboard', label: 'Artist Dashboard', icon: Mic }] : []),
     ...(user ? [{ id: 'settings', label: 'Settings', icon: Settings }] : []),
   ];
 
@@ -163,7 +165,7 @@ const Sidebar = ({ onOpenAuth }) => {
         {user ? (
           <div 
             className="user-sidebar-card"
-            onClick={() => triggerProfileView(user._id, false)}
+            onClick={() => handleNavClick('profile')}
             style={{ cursor: 'pointer' }}
           >
             {user.userAvatar ? (

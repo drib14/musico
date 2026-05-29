@@ -47,6 +47,36 @@ const upload = multer({
   },
 });
 
+// Helper: Distribute timestamps linearly for raw Jamendo lyrics
+const generateSyncedLyrics = (lyrics, duration) => {
+  if (!lyrics || typeof lyrics !== 'string') return lyrics;
+
+  // If it already contains LRC timestamps, return it as is
+  if (/\[\d{2}:\d{2}\]/.test(lyrics)) return lyrics;
+
+  const lines = lyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) return lyrics;
+
+  const startBuffer = Math.min(10, duration * 0.1);
+  const endBuffer = Math.min(10, duration * 0.1);
+
+  let usableTime = duration - startBuffer - endBuffer;
+  if (usableTime < 10) usableTime = duration;
+
+  const timePerLine = usableTime / lines.length;
+
+  const syncedLines = lines.map((line, index) => {
+    let seconds = startBuffer + (index * timePerLine);
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const formattedMins = mins.toString().padStart(2, '0');
+    const formattedSecs = secs.toString().padStart(2, '0');
+    return `[${formattedMins}:${formattedSecs}.00] ${line}`;
+  });
+
+  return syncedLines.join('\n');
+};
+
 // Helper stream uploader for Cloudinary
 const uploadStreamToCloudinary = (fileBuffer, resourceType, folderName) => {
   return new Promise((resolve, reject) => {
@@ -106,7 +136,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+      lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180), contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
     return track;
@@ -200,7 +230,8 @@ router.get('/trending', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+          lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180),
+          contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -379,7 +410,8 @@ router.get('/', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || genre || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+          lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180),
+          contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -454,7 +486,8 @@ router.get('/search', async (req, res) => {
           isJamendo: true,
           jamendoArtistId: t.artist_id,
           jamendoTrackId: t.id,
-          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+          lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180),
+          contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {
@@ -773,7 +806,7 @@ router.get('/jamendo', async (req, res) => {
       genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
       plays: t.stats?.playcount_total || 24500,
       isJamendo: true,
-      lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+      lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180), contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     }));
 
     res.json(tracksList);
@@ -971,7 +1004,7 @@ router.get('/jamendo/artist/:id', async (req, res) => {
           genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
           plays: t.stats?.playcount_total || 24500,
           isJamendo: true,
-          lyrics: t.lyrics || '', contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+          lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180), contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
         }));
       }
     } catch (err) {

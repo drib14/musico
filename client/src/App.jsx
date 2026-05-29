@@ -21,6 +21,8 @@ import SongDetails from './pages/SongDetails';
 import AllArtists from './pages/AllArtists';
 import AllPlaylists from './pages/AllPlaylists';
 import AllTracks from './pages/AllTracks';
+import ArtistDashboard from './pages/ArtistDashboard';
+import LoadingScreen from './components/LoadingScreen';
 
 const MainAppContent = () => {
   const { 
@@ -29,7 +31,8 @@ const MainAppContent = () => {
     showLyrics, 
     setShowLyrics, 
     currentTrack, 
-    user, 
+    user,
+    isInitializingAuth,
     setActiveView,
     logoutUser
   } = useContext(AppContext);
@@ -86,10 +89,15 @@ const MainAppContent = () => {
         <Route path="/pages/all-playlists" element={<AllPlaylists />} />
         <Route path="/pages/all-tracks" element={<AllTracks />} />
         <Route path="/pages/lyrics" element={<Lyrics />} />
+        <Route path="/pages/artist-dashboard" element={<ArtistDashboard />} />
         <Route path="*" element={<Navigate to="/pages/home" replace />} />
       </Routes>
     );
   };
+
+  if (isInitializingAuth) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>

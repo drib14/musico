@@ -91,25 +91,28 @@ const RightSidebar = () => {
     }
   };
 
-  // Sync playback elapsed time via timeupdate event listener and requestAnimationFrame for highly reliable precision sync
+  // Throttle state updates using standard timeupdate with an interval fallback to save CPU
+  // and prevent 60FPS React state dispatching which causes severe performance degradation
   useEffect(() => {
-    let animationFrameId;
     const audio = audioRef?.current;
+    if (!audio) {
+      const interval = setInterval(() => {
+        if (audioRef?.current) {
+          setCurrentTime(audioRef.current.currentTime || 0);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
 
-    const checkTime = () => {
-      if (audioRef?.current) {
-        setCurrentTime(audioRef.current.currentTime || 0);
-      }
-      animationFrameId = requestAnimationFrame(checkTime);
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime || 0);
     };
 
-    // Start high-precision polling loop
-    animationFrameId = requestAnimationFrame(checkTime);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    setCurrentTime(audio.currentTime || 0);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
   }, [audioRef?.current, currentTrack]);
 

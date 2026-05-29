@@ -4,6 +4,7 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // --- Auth State ---
+  const [isInitializingAuth, setIsInitializingAuth] = useState(true);
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('musico_user');
     if (saved) {
@@ -63,6 +64,35 @@ export const AppProvider = ({ children }) => {
 
   // API base path
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+  // --- Initialization & Sync ---
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (token) {
+        try {
+          const res = await fetch(`${API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const fetchedUser = await res.json();
+            setUser({ ...fetchedUser, isPremium: true });
+            localStorage.setItem('musico_user', JSON.stringify(fetchedUser));
+          } else {
+            // Token is invalid or expired
+            setToken('');
+            setUser(null);
+            localStorage.removeItem('musico_token');
+            localStorage.removeItem('musico_user');
+          }
+        } catch (err) {
+          console.error('Initial auth check failed', err);
+        }
+      }
+      setIsInitializingAuth(false);
+    };
+
+    initializeAuth();
+  }, []);
 
   // --- Geolocation Loader (LocationIQ Reverse Geocoder) ---
   useEffect(() => {
@@ -466,7 +496,10 @@ export const AppProvider = ({ children }) => {
       value={{
         API_URL,
         user,
+        setUser,
         token,
+        setToken,
+        isInitializingAuth,
         activeView,
         setActiveView,
         activeProfileId,
