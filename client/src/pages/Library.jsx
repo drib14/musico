@@ -362,7 +362,7 @@ const Library = () => {
 
           {/* TAB: MY UPLOADS */}
           {activeTab === 'uploads' && (
-            !user?.artistName ? (
+            !user?.artistProfile ? (
               <div style={{ maxWidth: '650px', margin: '20px auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ textAlign: 'center' }}>
                   <h3 style={{ fontSize: '22px', marginBottom: '8px' }}>Setup Artist Profile</h3>
