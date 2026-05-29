@@ -1,14 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Pause, Disc, Calendar, MoreVertical, Edit2 } from 'lucide-react';
+import { Play, Pause, Disc, Calendar, MoreVertical, Edit2, UploadCloud, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import TrackCard from '../components/TrackCard';
 
 const ArtistDashboard = () => {
-  const { user, API_URL, token, currentTrack, isPlaying, togglePlay, showToast } = useContext(AppContext);
+  const { user, API_URL, token, currentTrack, isPlaying, togglePlay, showToast, setActiveView } = useContext(AppContext);
   const [tracks, setTracks] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [concerts, setConcerts] = useState(user?.artistProfile?.concerts || []);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -30,10 +32,10 @@ const ArtistDashboard = () => {
 
   const fetchArtistContent = async () => {
     try {
-      // Use user._id because this is their own artist profile
+      // Fetch authenticated user's tracks and playlists
       const [tracksRes, albumsRes] = await Promise.all([
-        fetch(`${API_URL}/tracks?artist=${user._id}`),
-        fetch(`${API_URL}/playlists?creator=${user._id}`)
+        fetch(`${API_URL}/tracks/my-uploads`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/playlists/my-playlists`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       if (tracksRes.ok) {
@@ -42,7 +44,7 @@ const ArtistDashboard = () => {
       }
       if (albumsRes.ok) {
         const data = await albumsRes.json();
-        // Filter out actual albums (isJamendoAlbum = false implies user created, but we could also check if it's an album type if available. For now just use user playlists)
+        // Filter for albums/playlists created by the user (the API already filters, but double check it)
         setAlbums(data);
       }
     } catch (err) {
@@ -167,8 +169,15 @@ const ArtistDashboard = () => {
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
-                You haven't uploaded any tracks yet.
+              <div style={{ padding: '40px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                <UploadCloud className="w-12 h-12 text-muted" />
+                <div>
+                  <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No Tracks Uploaded</h3>
+                  <p style={{ fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>Start building your catalog by uploading your first track.</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
+                  <Plus className="w-4 h-4" /> Upload New Track
+                </button>
               </div>
             )}
           </div>
@@ -199,8 +208,15 @@ const ArtistDashboard = () => {
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
-                You haven't created any albums yet.
+              <div style={{ padding: '40px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                <Disc className="w-12 h-12 text-muted" />
+                <div>
+                  <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No Albums Created</h3>
+                  <p style={{ fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>Group your uploaded tracks into albums to share with fans.</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
+                  <Plus className="w-4 h-4" /> Create New Album
+                </button>
               </div>
             )}
           </div>
@@ -245,7 +261,13 @@ const ArtistDashboard = () => {
                  ))}
                </div>
             ) : (
-               <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No upcoming concerts added.</p>
+               <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                 <Calendar className="w-8 h-8 text-muted" />
+                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No upcoming concerts added.</div>
+                 <button className="btn btn-secondary btn-sm" onClick={() => { setActiveView('profile'); navigate('/pages/profile'); }}>
+                   Add Event via Profile
+                 </button>
+               </div>
             )}
           </div>
         </div>
