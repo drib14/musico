@@ -257,8 +257,8 @@ const RightSidebar = () => {
 
   return (
     <aside className="right-sidebar" style={{
-      width: '500px',
-      minWidth: '500px',
+      width: '600px',
+      minWidth: '600px',
       flexShrink: 0,
       backgroundColor: 'var(--bg-secondary)',
       borderLeft: '1px solid var(--border-color)',
@@ -522,8 +522,8 @@ const RightSidebar = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '16px',
-                  maxHeight: '800px',
-                  height: '85vh',
+                  flex: 1,
+                  height: '100%',
                   overflowY: 'auto',
                   scrollBehavior: 'smooth'
                 }}
@@ -541,12 +541,16 @@ const RightSidebar = () => {
                         onClick={() => handleLineClick(line.time)}
                         className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')}`}
                         style={{
-                          fontSize: isActive ? '28px' : '18px',
-                          fontWeight: '800',
+                          fontSize: isActive ? '28px' : '20px',
+                          fontWeight: 'bold',
                           lineHeight: '1.5',
                           cursor: 'pointer',
                           margin: 0,
-                          transition: 'all 0.2s ease'
+                          color: isActive ? 'var(--accent)' : 'inherit',
+                          opacity: isActive ? 1 : 0.4,
+                          transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                          transformOrigin: 'left center',
+                          transition: 'all 0.3s ease'
                         }}
                       >
                         {isInstrumental ? (
