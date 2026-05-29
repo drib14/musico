@@ -65,9 +65,11 @@ const MainAppContent = () => {
   // Sync browser URL path with activeView context state changes (two-way binding)
   useEffect(() => {
     const expectedPath = `/pages/${activeView}`;
-    if (location.pathname !== expectedPath && location.pathname !== '/') {
-      // Use replace to prevent overwhelming the browser history
-      navigate(expectedPath, { replace: true });
+    if (location.pathname !== expectedPath && !location.pathname.startsWith(expectedPath)) {
+      // Prevent unnecessary redirect loops if location is already on a sub-path of expected
+      if (location.pathname !== '/') {
+        navigate(expectedPath, { replace: true });
+      }
     }
   }, [activeView, navigate, location.pathname]);
 

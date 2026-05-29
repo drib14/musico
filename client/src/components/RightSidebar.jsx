@@ -201,38 +201,34 @@ const RightSidebar = () => {
 
   const parsedLines = parseLyrics();
 
-  // Find active line index based on playback time (exact vocal synchronization matching Spotify)
+  // Only auto-scroll if it's NOT a jamendo track (meaning it has real time sync)
+  const isJamendoTrack = currentTrack.isJamendo || false;
+
+  // Find active line index based on playback time
   let activeIndex = -1;
-  for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].time !== null) {
-      if (
-        currentTime >= parsedLines[i].time &&
-        (!parsedLines[i + 1] || currentTime < parsedLines[i + 1].time)
-      ) {
-        activeIndex = i;
-        break;
+  if (!isJamendoTrack) {
+    for (let i = 0; i < parsedLines.length; i++) {
+      if (parsedLines[i].time !== null) {
+        if (
+          currentTime >= parsedLines[i].time &&
+          (!parsedLines[i + 1] || currentTime < parsedLines[i + 1].time)
+        ) {
+          activeIndex = i;
+          break;
+        }
       }
     }
   }
 
   // Smooth auto-scroll the active line to the center
   useEffect(() => {
-    if (activeLineRef.current) {
+    if (activeLineRef.current && !isJamendoTrack) {
       activeLineRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
       });
     }
-  }, [activeIndex]);
-
-  const handleLineClick = (time) => {
-    if (time === null) return;
-    const audio = audioRef?.current;
-    if (audio) {
-      audio.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
+  }, [activeIndex, isJamendoTrack]);
 
   // Submit/Add Lyrics Handler
   const handleSaveLyrics = async (e) => {
@@ -268,9 +264,6 @@ const RightSidebar = () => {
 
   return (
     <aside className="right-sidebar" style={{
-      width: '400px',
-      minWidth: '350px',
-      maxWidth: '400px',
       flexShrink: 0,
       backgroundColor: 'var(--bg-secondary)',
       borderLeft: '1px solid var(--border-color)',
@@ -526,6 +519,7 @@ const RightSidebar = () => {
             
             {hasLyrics ? (
               <div 
+                className="lyrics-container"
                 style={{
                   backgroundColor: '#121212',
                   borderRadius: '12px',
@@ -542,21 +536,21 @@ const RightSidebar = () => {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '30px', paddingTop: '10px' }}>
                   {parsedLines.map((line, idx) => {
-                    const isActive = idx === activeIndex;
-                    const isPast = idx < activeIndex;
+                    const isActive = isJamendoTrack ? true : idx === activeIndex;
                     const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
                     
+                    const stylingClass = isJamendoTrack ? 'sidebar-lyric-line active display-only' : `sidebar-lyric-line ${isActive ? 'active' : (idx < activeIndex ? 'past' : 'future')}`;
+
                     return (
                       <p
                         key={idx}
-                        ref={isActive ? activeLineRef : null}
-                        onClick={() => handleLineClick(line.time)}
-                        className={`sidebar-lyric-line ${isActive ? 'active' : (isPast ? 'past' : 'future')}`}
+                        ref={isActive && !isJamendoTrack ? activeLineRef : null}
+                        className={stylingClass}
                         style={{
                           fontSize: isActive ? '28px' : '20px',
                           fontWeight: 'bold',
                           lineHeight: '1.5',
-                          cursor: 'pointer',
+                          cursor: 'default',
                           margin: 0,
                           color: isActive ? 'var(--accent)' : 'inherit',
                           opacity: isActive ? 1 : 0.4,
@@ -567,7 +561,7 @@ const RightSidebar = () => {
                       >
                         {isInstrumental ? (
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            {isActive && <span className="spinning-music-note">🎵</span>}
+                            {isActive && !isJamendoTrack && <span className="spinning-music-note">🎵</span>}
                             🎵 Instrumental 🎵
                           </span>
                         ) : (

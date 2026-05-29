@@ -31,10 +31,19 @@ const ArtistDashboard = () => {
   const fetchArtistContent = async () => {
     try {
       // Use user._id because this is their own artist profile
-      const res = await fetch(`${API_URL}/tracks?artist=${user._id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [tracksRes, albumsRes] = await Promise.all([
+        fetch(`${API_URL}/tracks?artist=${user._id}`),
+        fetch(`${API_URL}/playlists?creator=${user._id}`)
+      ]);
+
+      if (tracksRes.ok) {
+        const data = await tracksRes.json();
         setTracks(data);
+      }
+      if (albumsRes.ok) {
+        const data = await albumsRes.json();
+        // Filter out actual albums (isJamendoAlbum = false implies user created, but we could also check if it's an album type if available. For now just use user playlists)
+        setAlbums(data);
       }
     } catch (err) {
       console.error(err);
@@ -137,30 +146,64 @@ const ArtistDashboard = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
 
         {/* Left Column: Tracks */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Tracks</h2>
-          </div>
-          {loading ? (
-            <div>Loading tracks...</div>
-          ) : tracks.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {tracks.map((track, idx) => (
-                <div key={track._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s' }} className="hover:bg-tertiary cursor-pointer">
-                  <div style={{ width: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</div>
-                  <img src={track.coverUrl} alt={track.title} style={{ width: '40px', height: '40px', borderRadius: '4px' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{track.title}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{track.plays} plays</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Tracks</h2>
+            </div>
+            {loading ? (
+              <div>Loading tracks...</div>
+            ) : tracks.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {tracks.map((track, idx) => (
+                  <div key={track._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s' }} className="hover:bg-tertiary cursor-pointer">
+                    <div style={{ width: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</div>
+                    <img src={track.coverUrl} alt={track.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{track.title}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{track.plays} plays</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
+                You haven't uploaded any tracks yet.
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Albums</h2>
             </div>
-          ) : (
-            <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
-              You haven't uploaded any tracks yet.
-            </div>
-          )}
+            {loading ? (
+              <div>Loading albums...</div>
+            ) : albums.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {albums.map((album, idx) => (
+                  <div key={album._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s' }} className="hover:bg-tertiary cursor-pointer">
+                    <div style={{ width: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</div>
+                    {album.coverUrl ? (
+                      <img src={album.coverUrl} alt={album.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Disc className="w-5 h-5 text-muted" />
+                      </div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{album.name}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{album.tracks?.length || 0} tracks</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
+                You haven't created any albums yet.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column: Stats & Concerts */}
@@ -182,14 +225,22 @@ const ArtistDashboard = () => {
           <div style={{ background: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Upcoming Concerts</h3>
             {concerts && concerts.length > 0 ? (
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                  {concerts.map((c, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <Calendar className="w-5 h-5 text-accent" style={{ color: 'var(--accent)' }}/>
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{c.city}, {c.country}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(c.date).toLocaleDateString()}</div>
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                        <Calendar className="w-5 h-5 text-accent" style={{ color: 'var(--accent)' }}/>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{c.title}</div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{c.date}</div>
+                        </div>
                       </div>
+                      {c.url && (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', padding: '6px 12px', fontSize: '12px' }}>
+                          Get Tickets
+                        </a>
+                      )}
                     </div>
                  ))}
                </div>

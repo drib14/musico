@@ -297,6 +297,28 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
 }
 
+@media (min-width: 1600px) {
+  .right-sidebar {
+    width: 450px;
+    min-width: 450px;
+  }
+}
+
+@media (min-height: 900px) {
+  .right-sidebar {
+    gap: 32px;
+  }
+  .right-sidebar .lyrics-container {
+    min-height: 400px;
+  }
+}
+
+.right-sidebar section:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Top Navigation Bar inside Main Content */
 .top-nav {
   display: flex;

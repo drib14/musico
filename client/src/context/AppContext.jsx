@@ -18,7 +18,16 @@ export const AppProvider = ({ children }) => {
   });
 
   // --- UI Navigation State ---
-  const [activeView, setActiveView] = useState('home');
+  const [activeView, setActiveView] = useState(() => {
+    // Initialize activeView from the current URL to prevent flash/redirect on refresh
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/pages/')) {
+        return path.substring(7);
+      }
+    }
+    return 'home';
+  });
   const [activeProfileId, setActiveProfileId] = useState(null);
   const [toast, setToast] = useState(null);
   const [theme, setTheme] = useState(() => {

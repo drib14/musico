@@ -767,7 +767,28 @@ const Upload = () => {
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sync your lyrics as you listen</span>
                 </div>
                 
-                <audio ref={singleAudioRef} src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <audio ref={singleAudioRef} src={audioUrl} style={{ display: 'none' }} />
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (singleAudioRef.current) {
+                          if (singleAudioRef.current.paused) {
+                            singleAudioRef.current.play();
+                          } else {
+                            singleAudioRef.current.pause();
+                          }
+                        }
+                      }}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: '6px 12px', borderRadius: '4px', fontSize: '12px' }}
+                    >
+                      Play / Pause
+                    </button>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Use this player to sync lyrics</span>
+                  </div>
+                </div>
                 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
@@ -839,6 +860,26 @@ const Upload = () => {
                   >
                     🪄 Auto-Stamp Template
                   </button>
+
+                  <a
+                    href="https://github.com/m-bain/whisperX"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '12.5px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      textDecoration: 'none',
+                      color: 'inherit'
+                    }}
+                  >
+                    🤖 WhisperX AI Sync Tool
+                  </a>
                 </div>
                 <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                   💡 <strong>Tip:</strong> Play your song above. Click <strong>Stamp Current Time</strong> at the exact start of a line to insert the <code>[mm:ss]</code> timestamp. Timed lyrics let listeners scrub through your song by tapping lines!
@@ -1242,12 +1283,29 @@ const Upload = () => {
                           <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent)' }}>⏱️ Timed Lyrics Assistant (Track #{idx + 1})</span>
                         </div>
                         
-                        <audio 
-                          id={`album-preview-audio-${idx}`}
-                          src={URL.createObjectURL(track.audioFile)} 
-                          controls 
-                          style={{ width: '100%', height: '36px' }} 
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <audio
+                            id={`album-preview-audio-${idx}`}
+                            src={URL.createObjectURL(track.audioFile)}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '6px 10px', borderRadius: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const audioEl = document.getElementById(`album-preview-audio-${idx}`);
+                                if (audioEl) {
+                                  if (audioEl.paused) audioEl.play();
+                                  else audioEl.pause();
+                                }
+                              }}
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px' }}
+                            >
+                              Play / Pause
+                            </button>
+                          </div>
+                        </div>
                         
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
@@ -1305,6 +1363,24 @@ const Upload = () => {
                           >
                             🪄 Auto-Stamp Template
                           </button>
+
+                          <a
+                            href="https://github.com/m-bain/whisperX"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '11px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              textDecoration: 'none',
+                              color: 'inherit'
+                            }}
+                          >
+                            🤖 WhisperX AI Sync
+                          </a>
                         </div>
                       </div>
                     )}

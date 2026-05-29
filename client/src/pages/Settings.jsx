@@ -19,7 +19,6 @@ const Settings = () => {
   const { API_URL, token, user, loginUser, showToast, logoutUser, setActiveView } = useContext(AppContext);
   
   // Tab Management state
-  const [activeTab, setActiveTab] = useState('user'); // 'user' or 'artist'
   const [loading, setLoading] = useState(false);
 
   // User Settings state
@@ -30,18 +29,6 @@ const Settings = () => {
   const [userAvatarFile, setUserAvatarFile] = useState(null);
   const [userAvatarPreview, setUserAvatarPreview] = useState(user?.userAvatar || '');
 
-  // Artist Settings state
-  const [artistName, setArtistName] = useState(user?.artistProfile?.artistName || '');
-  const [artistBio, setArtistBio] = useState(user?.artistProfile?.artistBio || '');
-  const [isArtistVerified, setIsArtistVerified] = useState(user?.artistProfile?.isArtistVerified || false);
-  const [artistAvatarFile, setArtistAvatarFile] = useState(null);
-  const [artistAvatarPreview, setArtistAvatarPreview] = useState(user?.artistProfile?.artistAvatar || '');
-  const [artistBannerFile, setArtistBannerFile] = useState(null);
-  const [artistBannerPreview, setArtistBannerPreview] = useState(user?.artistProfile?.artistBanner || '');
-  const [website, setWebsite] = useState(user?.artistProfile?.website || '');
-  const [facebook, setFacebook] = useState(user?.artistProfile?.facebook || '');
-  const [twitter, setTwitter] = useState(user?.artistProfile?.twitter || '');
-  const [instagram, setInstagram] = useState(user?.artistProfile?.instagram || '');
 
   // Sync state with user data changes (e.g. after login/re-fetch)
   useEffect(() => {
@@ -49,17 +36,6 @@ const Settings = () => {
       setName(user.name);
       setEmail(user.email);
       setUserAvatarPreview(user.userAvatar || '');
-      if (user.artistProfile) {
-        setArtistName(user.artistProfile.artistName || '');
-        setArtistBio(user.artistProfile.artistBio || '');
-        setIsArtistVerified(user.artistProfile.isArtistVerified || false);
-        setArtistAvatarPreview(user.artistProfile.artistAvatar || '');
-        setArtistBannerPreview(user.artistProfile.artistBanner || '');
-        setWebsite(user.artistProfile.website || '');
-        setFacebook(user.artistProfile.facebook || '');
-        setTwitter(user.artistProfile.twitter || '');
-        setInstagram(user.artistProfile.instagram || '');
-      }
     }
   }, [user]);
 
@@ -76,50 +52,19 @@ const Settings = () => {
     }
   };
 
-  const handleArtistAvatarSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 3 * 1024 * 1024) {
-        return showToast('Avatar size exceeds 3MB limit', 'error');
-      }
-      setArtistAvatarFile(file);
-      setArtistAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleArtistBannerSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        return showToast('Banner size exceeds 5MB limit', 'error');
-      }
-      setArtistBannerFile(file);
-      setArtistBannerPreview(URL.createObjectURL(file));
-    }
-  };
-
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     
     // Core User Settings Validation
-    if (activeTab === 'user') {
-      if (!name || !email) {
-        return showToast('Name and email are required fields', 'error');
-      }
-      if (password) {
-        if (password.length < 6) {
-          return showToast('Password must be at least 6 characters', 'error');
-        }
-        if (password !== confirmPassword) {
-          return showToast('Passwords do not match', 'error');
-        }
-      }
+    if (!name || !email) {
+      return showToast('Name and email are required fields', 'error');
     }
-
-    // Artist Settings Validation
-    if (activeTab === 'artist') {
-      if (!artistName.trim()) {
-        return showToast('Artist Name is a required field', 'error');
+    if (password) {
+      if (password.length < 6) {
+        return showToast('Password must be at least 6 characters', 'error');
+      }
+      if (password !== confirmPassword) {
+        return showToast('Passwords do not match', 'error');
       }
     }
 
@@ -135,44 +80,18 @@ const Settings = () => {
       let message = 'Profile settings saved successfully!';
       let tokenToSave = token;
 
-      if (activeTab === 'user') {
-        if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
-        const res = await fetch(`${API_URL}/auth/profile`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: formData
-        });
+      if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Profile update failed');
-        tokenToSave = data.token;
-      } else {
-        const artistFormData = new FormData();
-        artistFormData.append('artistName', artistName.trim());
-        artistFormData.append('artistBio', artistBio.trim());
-        artistFormData.append('isArtistVerified', isArtistVerified);
-        artistFormData.append('website', website.trim());
-        artistFormData.append('facebook', facebook.trim());
-        artistFormData.append('twitter', twitter.trim());
-        artistFormData.append('instagram', instagram.trim());
-
-        if (artistAvatarFile) artistFormData.append('artistAvatar', artistAvatarFile);
-        if (artistBannerFile) artistFormData.append('artistBanner', artistBannerFile);
-
-        const res = await fetch(`${API_URL}/artists`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: artistFormData
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Artist profile update failed');
-        message = 'Artist profile settings saved successfully!';
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Profile update failed');
+      tokenToSave = data.token;
 
       const meRes = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${tokenToSave}` }
@@ -206,47 +125,20 @@ const Settings = () => {
         </p>
       </div>
 
-      {/* Spotify-styled Tabs */}
-      <div style={{ 
-        display: 'flex', 
-        borderBottom: '1px solid var(--border-color)',
-        gap: '4px',
-        margin: '-8px 0'
-      }}>
-        <button
-          className={`btn`}
-          onClick={() => setActiveTab('user')}
-          style={{
-            background: 'none',
-            color: activeTab === 'user' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'user' ? '3px solid var(--accent)' : '3px solid transparent',
-            borderRadius: '0',
-            fontWeight: '700',
-            fontSize: '15px',
-            padding: '12px 24px',
-            boxShadow: 'none'
-          }}
-        >
-          <User className="w-4 h-4" /> User Profile
-        </button>
-      </div>
-
       {/* Form Submission */}
       <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        {activeTab === 'user' && (
-          // ==================== TAB 1: USER SETTINGS ====================
-          <div style={{ 
-            backgroundColor: 'var(--bg-secondary)', 
-            border: '1px solid var(--border-color)', 
-            borderRadius: '20px', 
-            padding: '32px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '20px',
-            boxShadow: 'var(--glass-shadow)',
-            animation: 'fadeIn 0.3s ease'
-          }}>
+        <div style={{
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '20px',
+          padding: '32px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          boxShadow: 'var(--glass-shadow)',
+          animation: 'fadeIn 0.3s ease'
+        }}>
             
             {/* User Avatar Circle Dropzone */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -391,7 +283,6 @@ const Settings = () => {
             </div>
 
           </div>
-        )}
 
         {/* Global Save Button */}
         <button 

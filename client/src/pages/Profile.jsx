@@ -229,31 +229,55 @@ const Profile = () => {
             right: '20px',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            backgroundColor: 'rgba(7, 10, 19, 0.6)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            gap: '12px',
             zIndex: 10
           }}>
-            {saveStatus === 'idle' && (
-              <span style={{ color: 'var(--text-secondary)' }}>✏️ Own Profile (inline-editable)</span>
-            )}
-            {saveStatus === 'saving' && (
-              <span style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div className="spinner" style={{ width: '10px', height: '10px', margin: 0 }}></div>
-                Saving...
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span style={{ color: 'var(--success)' }}>✓ Profile Auto-saved</span>
-            )}
-            {saveStatus === 'error' && (
-              <span style={{ color: 'var(--danger)' }}>✗ Error auto-saving</span>
-            )}
+            <button
+              className="btn btn-secondary"
+              onClick={() => setActiveView('settings')}
+              style={{
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                borderColor: 'rgba(255,255,255,0.2)',
+                color: '#fff',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                fontSize: '13px',
+                borderRadius: '20px'
+              }}
+            >
+              Account Settings
+            </button>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              backgroundColor: 'rgba(7, 10, 19, 0.6)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            }}>
+              {saveStatus === 'idle' && (
+                <span style={{ color: 'var(--text-secondary)' }}>✏️ Own Profile (inline-editable)</span>
+              )}
+              {saveStatus === 'saving' && (
+                <span style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="spinner" style={{ width: '10px', height: '10px', margin: 0 }}></div>
+                  Saving...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span style={{ color: 'var(--success)' }}>✓ Profile Auto-saved</span>
+              )}
+              {saveStatus === 'error' && (
+                <span style={{ color: 'var(--danger)' }}>✗ Error auto-saving</span>
+              )}
+            </div>
           </div>
         )}
         {user.artistAvatar || user.userAvatar ? (
