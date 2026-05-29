@@ -549,27 +549,35 @@ router.post('/users/:id/follow', protect, async (req, res) => {
     // Check if targetUserId is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
       // Treat targetUserId as a Jamendo Artist ID!
-      targetUser = await User.findOne({ isJamendoArtist: true, jamendoArtistId: targetUserId });
-      if (!targetUser) {
-        // Automatically mirror/seed the Jamendo artist inside MongoDB!
-        const Artist = require('../models/Artist');
-        targetUser = new User({
-          name: `Jamendo Artist ${targetUserId}`,
-          email: `jamendo-artist-${targetUserId}@musico.com`,
-          password: `jamendo-artist-dummy-pass-123456`,
-          isPremium: true,
-          followers: [],
-          following: []
-        });
-        await targetUser.save();
+      // Automatically mirror/seed the Jamendo artist inside MongoDB!
+      const Artist = require('../models/Artist');
+      targetUser = await User.findOneAndUpdate(
+        { email: `jamendo-artist-${targetUserId}@musico.com` },
+        {
+          $setOnInsert: {
+            name: `Jamendo Artist ${targetUserId}`,
+            password: `jamendo-artist-dummy-pass-123456`,
+            isPremium: true,
+            followers: [],
+            following: []
+          }
+        },
+        { upsert: true, new: true }
+      );
 
-        const artistProf = await Artist.create({
-            owner: targetUser._id,
-            artistName: `Jamendo Artist ${targetUserId}`,
-            isJamendoArtist: true,
-            jamendoArtistId: targetUserId,
-            isArtistVerified: true,
-        });
+      if (!targetUser.artistProfile) {
+        const artistProf = await Artist.findOneAndUpdate(
+          { owner: targetUser._id },
+          {
+            $setOnInsert: {
+              artistName: `Jamendo Artist ${targetUserId}`,
+              isJamendoArtist: true,
+              jamendoArtistId: targetUserId,
+              isArtistVerified: true,
+            }
+          },
+          { upsert: true, new: true }
+        );
         targetUser.artistProfile = artistProf._id;
         await targetUser.save();
       }

@@ -907,53 +907,49 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     const totalPlays = artist.stats?.playcount_total || 142000;
 
     // 2. Automatically mirror/save artist details & concerts inside MongoDB schema!
-    if (!dbUser) {
-      // Create a mirrored system artist user
-      dbUser = new User({
-        name: artist.name,
-        email: `jamendo-artist-${artist.id}@musico.com`,
-        password: `jamendo-artist-dummy-pass-123456`, // dummy secure pass
-        userAvatar: artist.image || '',
-        monthlyListeners,
-        totalPlays,
-        isPremium: true
-      });
-      await dbUser.save();
+    dbUser = await User.findOneAndUpdate(
+      { email: `jamendo-artist-${artist.id}@musico.com` },
+      {
+        $setOnInsert: {
+          name: artist.name,
+          password: `jamendo-artist-dummy-pass-123456`, // dummy secure pass
+          isPremium: true
+        },
+        $set: {
+          userAvatar: artist.image || '',
+          monthlyListeners,
+          totalPlays
+        }
+      },
+      { upsert: true, new: true }
+    );
 
-      const artistProf = await Artist.create({
-          owner: dbUser._id,
+    let artistProf = await Artist.findOneAndUpdate(
+      { owner: dbUser._id },
+      {
+        $setOnInsert: {
           artistName: artist.name,
-          artistAvatar: artist.image || '',
-          artistBio: bioText,
-          website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
-          facebook: artist.musicinfo?.facebook || '',
-          twitter: artist.musicinfo?.twitter || '',
-          instagram: artist.musicinfo?.instagram || '',
-          concerts,
           isJamendoArtist: true,
           jamendoArtistId: artist.id,
           isArtistVerified: true,
+          website: artist.website || `https://www.jamendo.com/artist/${artist.id}`,
+          facebook: artist.musicinfo?.facebook || '',
+          twitter: artist.musicinfo?.twitter || '',
+          instagram: artist.musicinfo?.instagram || ''
+        },
+        $set: {
+          artistAvatar: artist.image || '',
+          artistBio: bioText,
+          concerts,
           stats: { playcount_total: totalPlays, popularity_total: artist.stats?.popularity_total || 0 }
-      });
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    if (!dbUser.artistProfile || dbUser.artistProfile.toString() !== artistProf._id.toString()) {
       dbUser.artistProfile = artistProf._id;
       await dbUser.save();
-      dbUser.artistProfile = artistProf;
-    } else {
-      // Update existing cached mirrored artist details
-      dbUser.userAvatar = artist.image || dbUser.userAvatar;
-      dbUser.monthlyListeners = monthlyListeners;
-      dbUser.totalPlays = totalPlays;
-      await dbUser.save();
-
-      dbUser.artistProfile.artistName = artist.name;
-      dbUser.artistProfile.artistAvatar = artist.image || dbUser.artistProfile.artistAvatar;
-      dbUser.artistProfile.artistBio = bioText;
-      dbUser.artistProfile.website = artist.website || dbUser.artistProfile.website;
-      dbUser.artistProfile.facebook = artist.musicinfo?.facebook || dbUser.artistProfile.facebook;
-      dbUser.artistProfile.twitter = artist.musicinfo?.twitter || dbUser.artistProfile.twitter;
-      dbUser.artistProfile.instagram = artist.musicinfo?.instagram || dbUser.artistProfile.instagram;
-      dbUser.artistProfile.stats = { playcount_total: totalPlays, popularity_total: artist.stats?.popularity_total || 0 };
-      await dbUser.artistProfile.save();
     }
 
     // 3. Dynamically fetch tracks of this artist from Jamendo API
@@ -1011,16 +1007,17 @@ router.get('/jamendo/artist/:id', async (req, res) => {
     }
 
     const userObj = dbUser.toObject();
-    userObj.artistName = dbUser.artistProfile.artistName;
-    userObj.artistAvatar = dbUser.artistProfile.artistAvatar;
-    userObj.artistBanner = dbUser.artistProfile.artistBanner;
-    userObj.artistBio = dbUser.artistProfile.artistBio;
-    userObj.isArtistVerified = dbUser.artistProfile.isArtistVerified;
-    userObj.website = dbUser.artistProfile.website;
-    userObj.facebook = dbUser.artistProfile.facebook;
-    userObj.twitter = dbUser.artistProfile.twitter;
-    userObj.instagram = dbUser.artistProfile.instagram;
-    userObj.concerts = dbUser.artistProfile.concerts;
+    userObj.artistProfile = artistProf.toObject();
+    userObj.artistName = artistProf.artistName;
+    userObj.artistAvatar = artistProf.artistAvatar;
+    userObj.artistBanner = artistProf.artistBanner;
+    userObj.artistBio = artistProf.artistBio;
+    userObj.isArtistVerified = artistProf.isArtistVerified;
+    userObj.website = artistProf.website;
+    userObj.facebook = artistProf.facebook;
+    userObj.twitter = artistProf.twitter;
+    userObj.instagram = artistProf.instagram;
+    userObj.concerts = artistProf.concerts;
     res.json({
       user: userObj,
       tracks: tracksList,

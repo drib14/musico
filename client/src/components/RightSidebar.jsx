@@ -94,7 +94,15 @@ const RightSidebar = () => {
   // Sync playback elapsed time via timeupdate event listener for highly reliable precision sync
   useEffect(() => {
     const audio = audioRef?.current;
-    if (!audio) return;
+    if (!audio) {
+      // Setup interval check if audio changes or is dynamically added
+      const interval = setInterval(() => {
+        if (audioRef?.current) {
+          setCurrentTime(audioRef.current.currentTime || 0);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime || 0);
@@ -108,7 +116,7 @@ const RightSidebar = () => {
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
     };
-  }, [audioRef, currentTrack]);
+  }, [audioRef?.current, currentTrack]);
 
   if (!currentTrack) return null;
 
@@ -199,8 +207,13 @@ const RightSidebar = () => {
   let activeIndex = -1;
   for (let i = 0; i < parsedLines.length; i++) {
     if (parsedLines[i].time !== null) {
-      // Remove any + 0.2 advance offset to ensure exact vocal synchronization
-      if (currentTime >= parsedLines[i].time) activeIndex = i;
+      if (
+        currentTime >= parsedLines[i].time &&
+        (!parsedLines[i + 1] || currentTime < parsedLines[i + 1].time)
+      ) {
+        activeIndex = i;
+        break;
+      }
     }
   }
 
@@ -257,8 +270,9 @@ const RightSidebar = () => {
 
   return (
     <aside className="right-sidebar" style={{
-      width: '600px',
-      minWidth: '600px',
+      width: '400px',
+      minWidth: '350px',
+      maxWidth: '400px',
       flexShrink: 0,
       backgroundColor: 'var(--bg-secondary)',
       borderLeft: '1px solid var(--border-color)',
