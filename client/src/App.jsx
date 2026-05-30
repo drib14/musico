@@ -102,6 +102,7 @@ const MainAppContent = () => {
         <Route path="/pages/upload" element={<Upload />} />
         <Route path="/pages/settings" element={<SettingsView />} />
         <Route path="/pages/profile" element={<Profile />} />
+        <Route path="/pages/profile/:id" element={<Profile />} />
         <Route path="/pages/playlist-details" element={<PlaylistDetails />} />
         <Route path="/pages/chart-details" element={<ChartDetails />} />
         <Route path="/pages/song-details" element={<SongDetails />} />
@@ -110,6 +111,7 @@ const MainAppContent = () => {
         <Route path="/pages/all-tracks" element={<AllTracks />} />
         <Route path="/pages/lyrics" element={<Lyrics />} />
         <Route path="/pages/artist-dashboard" element={<ArtistDashboard />} />
+        <Route path="/pages/artist-dashboard/:id" element={<ArtistDashboard />} />
         <Route path="*" element={<Navigate to="/pages/home" replace />} />
       </Routes>
     );

@@ -48,7 +48,7 @@
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --sidebar-width: 260px;
+  --sidebar-width: 220px;
   --player-height: 90px;
 }
 
@@ -138,7 +138,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .app-container.has-right-panel.has-player {
-  grid-template-columns: var(--sidebar-width) 1fr 400px;
+  grid-template-columns: var(--sidebar-width) 1fr 340px;
   grid-template-areas: 
     "sidebar main rightpanel"
     "player player player";

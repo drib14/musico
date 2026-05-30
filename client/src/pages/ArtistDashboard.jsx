@@ -1,30 +1,40 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Pause, Disc, Calendar, MoreVertical, Edit2, UploadCloud, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Play, Pause, Disc, Calendar, Edit2, UploadCloud, Plus, Globe, Facebook, Twitter, Instagram, CheckCircle, Crown, Sparkles, User } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import TrackCard from '../components/TrackCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 
 const ArtistDashboard = () => {
-  const { user, API_URL, token, currentTrack, isPlaying, togglePlay, showToast, setActiveView } = useContext(AppContext);
-  const [tracks, setTracks] = useState([]);
-  const [albums, setAlbums] = useState([]);
-  const [concerts, setConcerts] = useState(user?.artistProfile?.concerts || []);
-  const [loading, setLoading] = useState(true);
+  const { user: currentUser, API_URL, token, currentTrack, isPlaying, togglePlay, playTrack, showToast, setActiveView } = useContext(AppContext);
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  // Modal State
+  const isOwnProfile = !id || (currentUser && id === currentUser._id);
+  const artistId = id || currentUser?._id;
+
+  const [tracks, setTracks] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [concerts, setConcerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [publicProfile, setPublicProfile] = useState(null);
+  
+  // Follow/unfollow states
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+
+  // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    artistBio: user?.artistProfile?.artistBio || '',
-    website: user?.artistProfile?.website || '',
-    instagram: user?.artistProfile?.instagram || '',
-    twitter: user?.artistProfile?.twitter || ''
+    artistBio: '',
+    website: '',
+    instagram: '',
+    twitter: ''
   });
   const [isSaving, setIsSaving] = useState(false);
 
   // Creator Onboarding State
-  const [onboardName, setOnboardName] = useState(user?.name || '');
+  const [onboardName, setOnboardName] = useState(currentUser?.name || '');
   const [onboardBio, setOnboardBio] = useState('');
   const [onboardWebsite, setOnboardWebsite] = useState('');
   const [onboardFacebook, setOnboardFacebook] = useState('');
@@ -37,32 +47,71 @@ const ArtistDashboard = () => {
   const [bannerPreview, setBannerPreview] = useState(null);
 
   useEffect(() => {
-    if (user && user.artistProfile) {
-      fetchArtistContent();
-    } else {
-      setLoading(false);
+    fetchArtistContent();
+  }, [id, currentUser]);
+
+  useEffect(() => {
+    const activeProfile = isOwnProfile ? currentUser?.artistProfile : publicProfile?.artistProfile;
+    if (activeProfile) {
+      setEditForm({
+        artistBio: activeProfile.artistBio || '',
+        website: activeProfile.website || '',
+        instagram: activeProfile.instagram || '',
+        twitter: activeProfile.twitter || ''
+      });
     }
-  }, [user]);
+  }, [publicProfile, currentUser, isOwnProfile]);
 
   const fetchArtistContent = async () => {
+    if (!artistId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
-      // Fetch authenticated user's tracks and playlists
-      const [tracksRes, albumsRes] = await Promise.all([
-        fetch(`${API_URL}/tracks/my-uploads`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/playlists/my-playlists`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+      if (isOwnProfile) {
+        // Fetch authenticated user's private creator content
+        const [tracksRes, albumsRes] = await Promise.all([
+          fetch(`${API_URL}/tracks/my-uploads`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/playlists/my-playlists`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
 
-      if (tracksRes.ok) {
-        const data = await tracksRes.json();
-        setTracks(data);
-      }
-      if (albumsRes.ok) {
-        const data = await albumsRes.json();
-        // Filter for albums/playlists created by the user (the API already filters, but double check it)
-        setAlbums(data);
+        if (tracksRes.ok) {
+          const data = await tracksRes.json();
+          setTracks(data);
+        }
+        if (albumsRes.ok) {
+          const data = await albumsRes.json();
+          setAlbums(data);
+        }
+        if (currentUser?.artistProfile) {
+          setConcerts(currentUser.artistProfile.concerts || []);
+        }
+      } else {
+        // Fetch public artist's profile details and content
+        const res = await fetch(`${API_URL}/auth/users/${artistId}`);
+        if (!res.ok) throw new Error('Failed to load artist details');
+        const data = await res.json();
+        
+        setPublicProfile(data.user);
+        setTracks(data.tracks || []);
+        setAlbums(data.playlists || []);
+        
+        if (data.user?.artistProfile) {
+          setConcerts(data.user.artistProfile.concerts || []);
+        }
+        
+        // Handle following state
+        const followersList = data.user?.followers || [];
+        setFollowersCount(followersList.length);
+        if (currentUser) {
+          const hasFollowed = followersList.some(f => (f._id || f) === currentUser._id);
+          setIsFollowing(hasFollowed);
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching artist content:', err);
+      showToast('Error loading creator content', 'error');
     } finally {
       setLoading(false);
     }
@@ -72,7 +121,6 @@ const ArtistDashboard = () => {
     e.preventDefault();
     setIsSaving(true);
 
-    // We send FormData so it's compatible with multer fields on the backend route /api/artists
     const formData = new FormData();
     formData.append('artistBio', editForm.artistBio);
     formData.append('website', editForm.website);
@@ -90,7 +138,6 @@ const ArtistDashboard = () => {
       if (res.ok) {
         showToast('Artist profile updated!');
         setIsEditModalOpen(false);
-        // Page reload will trigger AppContext to fetch fresh /me data
         setTimeout(() => window.location.reload(), 1000);
       } else {
         showToast('Failed to update profile', 'error');
@@ -145,7 +192,73 @@ const ArtistDashboard = () => {
     }
   };
 
-  if (!user || !user.artistProfile) {
+  const toggleFollow = async () => {
+    if (!token) {
+      return showToast('Please log in to follow creators.', 'error');
+    }
+    try {
+      const res = await fetch(`${API_URL}/auth/users/${artistId}/follow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to follow/unfollow');
+      const data = await res.json();
+      setIsFollowing(data.isFollowing);
+      setFollowersCount(data.followersCount);
+      showToast(data.message);
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px' }}>
+        <SkeletonLoader type="detail" count={5} />
+      </div>
+    );
+  }
+
+  // Handle case where we are viewing a standard user's profile at /artist-dashboard/:id
+  if (!isOwnProfile && publicProfile && !publicProfile.artistProfile) {
+    return (
+      <div style={{
+        maxWidth: '650px',
+        margin: '60px auto',
+        padding: '32px',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '20px',
+        border: '1px solid var(--border-color)',
+        textAlign: 'center',
+        color: 'var(--text-secondary)'
+      }}>
+        <User className="w-16 h-16 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
+        <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
+          Artist Profile Not Found
+        </h3>
+        <p style={{ fontSize: '14px', marginBottom: '24px' }}>
+          <strong>{publicProfile.name}</strong> is currently a Listener and does not have an active artist profile.
+        </p>
+        <button 
+          className="btn btn-primary"
+          onClick={() => {
+            setActiveView(`profile/${publicProfile._id}`);
+            navigate(`/pages/profile/${publicProfile._id}`);
+          }}
+          style={{ padding: '10px 24px', borderRadius: '24px' }}
+        >
+          View Standard Listener Profile
+        </button>
+      </div>
+    );
+  }
+
+  // Onboarding Wizard for logged-in users without active profiles
+  if (isOwnProfile && (!currentUser || !currentUser.artistProfile)) {
     return (
       <div style={{
         maxWidth: '800px',
@@ -444,7 +557,8 @@ const ArtistDashboard = () => {
     );
   }
 
-  const profile = user.artistProfile;
+  // Active Artist Profile View
+  const profile = isOwnProfile ? currentUser?.artistProfile : publicProfile?.artistProfile;
 
   return (
     <div className="artist-dashboard fade-in" style={{ padding: '32px' }}>
@@ -464,32 +578,51 @@ const ArtistDashboard = () => {
           borderRadius: '50%',
           overflow: 'hidden',
           boxShadow: 'var(--glass-shadow)',
-          border: '4px solid var(--bg-tertiary)'
+          border: '4px solid var(--bg-tertiary)',
+          flexShrink: 0
         }}>
           {profile.artistAvatar ? (
             <img src={profile.artistAvatar} alt={profile.artistName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', color: 'var(--text-muted)' }}>
-              {profile.artistName?.charAt(0)}
+              {profile.artistName?.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
         <div style={{ flex: 1 }}>
-          <span style={{ fontSize: '14px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
-            Artist Dashboard
-          </span>
-          <h1 style={{ fontSize: '48px', margin: '8px 0', fontWeight: '900' }}>{profile.artistName}</h1>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: '1.6' }}>
-            {profile.artistBio || 'Add a bio to tell fans about yourself.'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
+              {isOwnProfile ? 'Creator Dashboard' : 'Artist Profile'}
+            </span>
+            {profile.isArtistVerified && (
+              <span className="user-badge" style={{ fontSize: '10px', padding: '2px 8px', margin: 0, display: 'flex', alignItems: 'center', gap: '3px', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.4)' }}>
+                <CheckCircle className="w-3 h-3 fill-current" /> Verified Artist
+              </span>
+            )}
+          </div>
+          <h1 style={{ fontSize: '42px', margin: '8px 0', fontWeight: '900', color: '#fff', fontFamily: 'Outfit' }}>{profile.artistName}</h1>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
+            {profile.artistBio || 'Welcome to the artist catalog.'}
           </p>
         </div>
-        <button
-          className="btn btn-secondary"
-          onClick={() => setIsEditModalOpen(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '30px' }}
-        >
-          <Edit2 className="w-4 h-4" /> Edit Profile
-        </button>
+        
+        {isOwnProfile ? (
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsEditModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '30px', flexShrink: 0 }}
+          >
+            <Edit2 className="w-4 h-4" /> Edit Creator Profile
+          </button>
+        ) : (
+          <button
+            className="btn btn-primary"
+            onClick={toggleFollow}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '30px', flexShrink: 0 }}
+          >
+            {isFollowing ? 'Unfollow Creator' : 'Follow Creator'}
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
@@ -498,19 +631,28 @@ const ArtistDashboard = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Tracks</h2>
+              <h2 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0 }}>Discography</h2>
             </div>
-            {loading ? (
-              <SkeletonLoader type="table" count={3} />
-            ) : tracks.length > 0 ? (
+            {tracks.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {tracks.map((track, idx) => (
-                  <div key={track._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s' }} className="hover:bg-tertiary cursor-pointer">
+                  <div 
+                    key={track._id} 
+                    onClick={() => playTrack(track, tracks)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s', cursor: 'pointer' }} 
+                    className="hover-bg-tertiary"
+                  >
                     <div style={{ width: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</div>
-                    <img src={track.coverUrl} alt={track.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                    {track.coverUrl ? (
+                      <img src={track.coverUrl} alt={track.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '40px', height: '40px', borderRadius: '4px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Disc className="w-5 h-5 text-muted" />
+                      </div>
+                    )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{track.title}</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{track.plays} plays</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{track.title}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{track.plays?.toLocaleString() || 0} streams</div>
                     </div>
                   </div>
                 ))}
@@ -522,23 +664,32 @@ const ArtistDashboard = () => {
                   <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No Tracks Uploaded</h3>
                   <p style={{ fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>Start building your catalog by uploading your first track.</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
-                  <Plus className="w-4 h-4" /> Upload New Track
-                </button>
+                {isOwnProfile && (
+                  <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
+                    <Plus className="w-4 h-4" /> Upload New Track
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Albums</h2>
+              <h2 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0 }}>Albums & Compilations</h2>
             </div>
-            {loading ? (
-              <SkeletonLoader type="table" count={2} />
-            ) : albums.length > 0 ? (
+            {albums.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {albums.map((album, idx) => (
-                  <div key={album._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s' }} className="hover:bg-tertiary cursor-pointer">
+                  <div 
+                    key={album._id} 
+                    onClick={() => {
+                      setActivePlaylistId(album._id);
+                      setActiveView('playlist-details');
+                      navigate('/pages/playlist-details');
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px', borderRadius: '8px', background: 'var(--bg-secondary)', transition: 'background 0.2s', cursor: 'pointer' }} 
+                    className="hover-bg-tertiary"
+                  >
                     <div style={{ width: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>{idx + 1}</div>
                     {album.coverUrl ? (
                       <img src={album.coverUrl} alt={album.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
@@ -548,7 +699,7 @@ const ArtistDashboard = () => {
                       </div>
                     )}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{album.name}</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{album.name}</div>
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{album.tracks?.length || 0} tracks</div>
                     </div>
                   </div>
@@ -561,9 +712,11 @@ const ArtistDashboard = () => {
                   <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No Albums Created</h3>
                   <p style={{ fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>Group your uploaded tracks into albums to share with fans.</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
-                  <Plus className="w-4 h-4" /> Create New Album
-                </button>
+                {isOwnProfile && (
+                  <button className="btn btn-primary" onClick={() => { setActiveView('upload'); navigate('/pages/upload'); }}>
+                    <Plus className="w-4 h-4" /> Create New Album
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -571,36 +724,61 @@ const ArtistDashboard = () => {
 
         {/* Right Column: Stats & Concerts */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ background: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Artist Stats</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ background: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', textTransform: 'uppercase', color: 'var(--accent)' }}>Creator Statistics</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Followers</span>
+                <span style={{ fontWeight: 'bold', color: '#fff' }}>{followersCount?.toLocaleString() || 0}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Monthly Listeners</span>
-                <span style={{ fontWeight: 'bold' }}>{user.monthlyListeners || 0}</span>
+                <span style={{ fontWeight: 'bold', color: '#fff' }}>{(isOwnProfile ? currentUser?.monthlyListeners : publicProfile?.monthlyListeners)?.toLocaleString() || 0}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Total Plays</span>
-                <span style={{ fontWeight: 'bold' }}>{user.totalPlays || 0}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Lifetime Streams</span>
+                <span style={{ fontWeight: 'bold', color: '#fff' }}>{(isOwnProfile ? currentUser?.totalPlays : publicProfile?.totalPlays)?.toLocaleString() || 0}</span>
               </div>
             </div>
+            
+            {/* Social Website connection icons */}
+            {(profile.website || profile.instagram || profile.twitter) && (
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                {profile.website && (
+                  <a href={profile.website} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)' }} className="hover:text-accent" title="Website">
+                    <Globe className="w-5 h-5" />
+                  </a>
+                )}
+                {profile.instagram && (
+                  <a href={`https://instagram.com/${profile.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)' }} className="hover:text-accent" title="Instagram">
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                )}
+                {profile.twitter && (
+                  <a href={`https://twitter.com/${profile.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-secondary)' }} className="hover:text-accent" title="Twitter">
+                    <Twitter className="w-5 h-5" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
-          <div style={{ background: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Upcoming Concerts</h3>
+          <div style={{ background: 'var(--bg-secondary)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', textTransform: 'uppercase', color: 'var(--accent)' }}>Live Gigs & Tours</h3>
             {concerts && concerts.length > 0 ? (
                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                  {concerts.map((c, i) => (
-                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderBottom: i < concerts.length - 1 ? '1px solid var(--border-color)' : 'none', paddingBottom: i < concerts.length - 1 ? '12px' : 0 }}>
                       <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                        <Calendar className="w-5 h-5 text-accent" style={{ color: 'var(--accent)' }}/>
+                        <Calendar className="w-5 h-5 text-accent" style={{ color: 'var(--accent)', marginTop: '2px' }}/>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '15px', fontWeight: 'bold' }}>{c.title}</div>
+                          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff' }}>{c.title}</div>
                           <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{c.venue} • {c.city}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{c.date}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{c.date}</div>
                         </div>
                       </div>
                       {c.url && (
-                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', padding: '6px 12px', fontSize: '12px' }}>
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ alignSelf: 'flex-start', padding: '6px 12px', fontSize: '12px', borderRadius: '12px', marginTop: '4px', textDecoration: 'none' }}>
                           Get Tickets
                         </a>
                       )}
@@ -610,10 +788,19 @@ const ArtistDashboard = () => {
             ) : (
                <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                  <Calendar className="w-8 h-8 text-muted" />
-                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No upcoming concerts added.</div>
-                 <button className="btn btn-secondary btn-sm" onClick={() => { setActiveView('profile'); navigate('/pages/profile'); }}>
-                   Add Event via Profile
-                 </button>
+                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No upcoming live shows added.</div>
+                 {isOwnProfile && (
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     onClick={() => {
+                       setActiveView(`profile`);
+                       navigate(`/pages/profile`);
+                     }}
+                     style={{ padding: '6px 12px', borderRadius: '12px', fontSize: '12px' }}
+                   >
+                     Add Event via Profile
+                   </button>
+                 )}
                </div>
             )}
           </div>
@@ -622,7 +809,7 @@ const ArtistDashboard = () => {
       </div>
 
       {/* Edit Drawer / Modal */}
-      {isEditModalOpen && (
+      {isOwnProfile && isEditModalOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000,
@@ -642,7 +829,7 @@ const ArtistDashboard = () => {
                   value={editForm.artistBio}
                   onChange={(e) => setEditForm({...editForm, artistBio: e.target.value})}
                   className="input-field"
-                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)' }}
+                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
               </div>
               <div>
@@ -652,27 +839,27 @@ const ArtistDashboard = () => {
                   value={editForm.website}
                   onChange={(e) => setEditForm({...editForm, website: e.target.value})}
                   className="input-field"
-                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)' }}
+                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Instagram Link</label>
+                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Instagram Username / Link</label>
                 <input
-                  type="url"
+                  type="text"
                   value={editForm.instagram}
                   onChange={(e) => setEditForm({...editForm, instagram: e.target.value})}
                   className="input-field"
-                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)' }}
+                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Twitter Link</label>
+                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Twitter Username / Link</label>
                 <input
-                  type="url"
+                  type="text"
                   value={editForm.twitter}
                   onChange={(e) => setEditForm({...editForm, twitter: e.target.value})}
                   className="input-field"
-                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)' }}
+                  style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
               </div>
 

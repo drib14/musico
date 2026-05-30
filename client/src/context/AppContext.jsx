@@ -332,12 +332,10 @@ export const AppProvider = ({ children }) => {
 
   // Profile View Transition Trigger Helper
   const triggerProfileView = (profileId, isJamendo = false, jamendoArtistId = null) => {
-    if (isJamendo && jamendoArtistId) {
-      setActiveProfileId(jamendoArtistId);
-    } else {
-      setActiveProfileId(profileId);
+    const idToUse = (isJamendo && jamendoArtistId) ? jamendoArtistId : profileId;
+    if (idToUse) {
+      setActiveView(`artist-dashboard/${idToUse}`);
     }
-    setActiveView('profile');
   };
 
   // --- Audio Control Methods ---

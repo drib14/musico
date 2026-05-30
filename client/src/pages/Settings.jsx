@@ -14,7 +14,8 @@ import {
   Volume2,
   Globe,
   Eye,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Crown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
