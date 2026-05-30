@@ -80,6 +80,7 @@ const Lyrics = () => {
     for (let i = 0; i < parsed.length; i++) {
       if (parsed[i].time === null) {
         parsed[i].time = lastTime + 1.5;
+        lastTime = parsed[i].time;
       } else {
         lastTime = parsed[i].time;
       }

@@ -168,6 +168,7 @@ const RightSidebar = () => {
     for (let i = 0; i < parsed.length; i++) {
       if (parsed[i].time === null) {
         parsed[i].time = lastTime + 1.5;
+        lastTime = parsed[i].time;
       } else {
         lastTime = parsed[i].time;
       }
@@ -516,7 +517,7 @@ const RightSidebar = () => {
               <div 
                 className="lyrics-container"
                 style={{
-                  backgroundColor: '#121212',
+                  backgroundColor: 'var(--bg-primary)',
                   borderRadius: '12px',
                   border: '1px solid var(--border-color)',
                   padding: '20px 16px',

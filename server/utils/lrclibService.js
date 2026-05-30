@@ -58,10 +58,10 @@ const smartProportionalAlign = (lyrics, duration) => {
  * falling back to our Smart Time Aligner if not found or on network failure.
  */
 const generateLRCLibLyrics = async (audioSource, rawLyrics, duration, title, artist) => {
-  if (!rawLyrics || typeof rawLyrics !== 'string') return '';
+  const hasRaw = rawLyrics && typeof rawLyrics === 'string' && rawLyrics.trim().length > 0;
   
   // If it already has timestamps, don't modify it
-  if (/\[\d{2}:\d{2}\]/.test(rawLyrics)) {
+  if (hasRaw && /\[\d{2}:\d{2}\]/.test(rawLyrics)) {
     return rawLyrics;
   }
 
@@ -70,7 +70,7 @@ const generateLRCLibLyrics = async (audioSource, rawLyrics, duration, title, art
 
   if (!cleanTitle.trim() || !cleanArtist.trim()) {
     console.log('[LRCLIB] Missing title or artist. Using voice-onset Smart Aligner...');
-    return smartProportionalAlign(rawLyrics, duration);
+    return hasRaw ? smartProportionalAlign(rawLyrics, duration) : '';
   }
 
   try {
@@ -102,7 +102,7 @@ const generateLRCLibLyrics = async (audioSource, rawLyrics, duration, title, art
   }
 
   // Fallback to Smart Time Aligner
-  return smartProportionalAlign(rawLyrics, duration);
+  return hasRaw ? smartProportionalAlign(rawLyrics, duration) : '';
 };
 
 module.exports = {

@@ -112,7 +112,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: t.lyrics ? await generateLRCLibLyrics(t.audio, t.lyrics, t.duration || 180, t.name, t.artist_name) : '',
+      lyrics: await generateLRCLibLyrics(t.audio, t.lyrics || '', t.duration || 180, t.name, t.artist_name),
       contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 

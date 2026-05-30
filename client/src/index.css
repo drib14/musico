@@ -53,6 +53,11 @@
   
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  
+  --sidebar-lyric-active: #ffffff;
+  --sidebar-lyric-past: rgba(255, 255, 255, 0.25);
+  --sidebar-lyric-future: rgba(255, 255, 255, 0.45);
+  --sidebar-lyric-shadow: rgba(255, 255, 255, 0.4);
 }
 
 /* Explicit Light Mode Override */
@@ -77,6 +82,26 @@ body.theme-light {
   
   --scrollbar-thumb: rgba(15, 23, 42, 0.15);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.3);
+  
+  --sidebar-lyric-active: var(--accent);
+  --sidebar-lyric-past: var(--text-muted);
+  --sidebar-lyric-future: var(--text-secondary);
+  --sidebar-lyric-shadow: rgba(2, 132, 199, 0.2);
+}
+
+/* Explicit Light Mode Overrides for Sidebar Navigation Items */
+body.theme-light .nav-item.active {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(3, 105, 161, 0.03) 100%) !important;
+  color: var(--accent) !important;
+  border: 1px solid var(--accent) !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.12) !important;
+}
+
+body.theme-light .nav-item:hover {
+  background-color: var(--accent-light) !important;
+  color: var(--accent) !important;
+  border-color: rgba(2, 132, 199, 0.2) !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08) !important;
 }
 
 /* Explicit Dark Mode Override */
@@ -96,6 +121,11 @@ body.theme-dark {
   
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  
+  --sidebar-lyric-active: #ffffff;
+  --sidebar-lyric-past: rgba(255, 255, 255, 0.25);
+  --sidebar-lyric-future: rgba(255, 255, 255, 0.45);
+  --sidebar-lyric-shadow: rgba(255, 255, 255, 0.4);
 }
 
 /* Global Reset & Base Setup */
@@ -781,15 +811,15 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: 0 0 15px rgba(255, 255, 255, 0.35);
 }
 .sidebar-lyric-line.past {
-  color: rgba(255, 255, 255, 0.25) !important;
+  color: var(--sidebar-lyric-past) !important;
   opacity: 0.6 !important;
 }
 .sidebar-lyric-line.future {
-  color: rgba(255, 255, 255, 0.45) !important;
+  color: var(--sidebar-lyric-future) !important;
   opacity: 0.8 !important;
 }
 .sidebar-lyric-line.active {
-  color: #ffffff !important;
+  color: var(--sidebar-lyric-active) !important;
   opacity: 1 !important;
 }
 
@@ -2525,19 +2555,19 @@ body.theme-light .hero-desc {
 
 /* Sidebar Lyrics Sync Styles */
 .sidebar-lyric-line {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: var(--sidebar-lyric-future) !important;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .sidebar-lyric-line.past {
-  color: rgba(255, 255, 255, 0.18) !important;
+  color: var(--sidebar-lyric-past) !important;
 }
 
 .sidebar-lyric-line.active {
-  color: #ffffff !important;
+  color: var(--sidebar-lyric-active) !important;
   opacity: 1 !important;
   transform: scale(1.02);
-  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4) !important;
+  text-shadow: 0 0 12px var(--sidebar-lyric-shadow) !important;
 }
 
 /* Mobile Bottom Navigation Bar Styles */
