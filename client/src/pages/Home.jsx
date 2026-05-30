@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
+import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight, Bot } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -188,19 +188,24 @@ const Home = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
       
       {/* 1. HERO BANNER */}
-      <div className="hero-banner">
-        <span className="hero-subtitle">Musico Self-Distribution</span>
-        <h1 className="hero-title">Skip the Middleman. Upload Direct.</h1>
-        <p className="hero-desc">
-          Tired of third-party distributors? At Musico, creators upload files directly to our platform, getting immediate streaming metrics and feedback.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => setActiveView('upload')}
-          >
-            Upload Song Now
-          </button>
+      <div className="hero-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+        <div style={{ flex: 1 }}>
+          <span className="hero-subtitle">Musico Self-Distribution</span>
+          <h1 className="hero-title">Skip the Middleman. Upload Direct.</h1>
+          <p className="hero-desc">
+            Tired of third-party distributors? At Musico, creators upload files directly to our platform, getting immediate streaming metrics and feedback.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setActiveView('upload')}
+            >
+              Upload Song Now
+            </button>
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, padding: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0, 242, 254, 0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid rgba(0,242,254,0.3)' }}>
+          <Bot className="w-24 h-24 text-accent" />
         </div>
       </div>
 
