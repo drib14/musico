@@ -34,6 +34,7 @@ const Upload = () => {
   });
 
   const [audioUrl, setAudioUrl] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const singleAudioRef = React.useRef(null);
   
   useEffect(() => {
@@ -208,12 +209,13 @@ const Upload = () => {
   };
 
   // Form submission for Single Song
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!audioFile) return showToast('Please select an audio track', 'error');
     if (!title) return showToast('Please enter a track title', 'error');
 
     setLoading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('title', title);
     formData.append('genre', genre);
@@ -222,43 +224,59 @@ const Upload = () => {
     formData.append('contributors', JSON.stringify(contributors));
     if (coverFile) formData.append('cover', coverFile);
 
-    try {
-      console.log('Sending direct upload files directly to Cloudinary via server middleware...');
-      const res = await fetch(`${API_URL}/tracks/upload`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
+    console.log('Sending direct upload files directly to Cloudinary via server middleware with XHR progress monitoring...');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/tracks/upload`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Direct upload failed');
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      setLoading(false);
+      setUploadProgress(0);
+      
+      let data = {};
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {
+        data = { message: 'Upload parsing error' };
       }
 
-      showToast('Track published and streaming live inside Musico!');
-      // Clear forms
-      setAudioFile(null);
-      setCoverFile(null);
-      setTitle('');
-      setGenre('Pop');
-      setLyrics('');
-      setContributors({
-        mainVocalist: '',
-        composer: '',
-        lyricist: '',
-        producer: ''
-      });
-      
-      // Update upload limits check and go to Libraryuploads list
-      await checkUploadLimit();
-      setActiveView('library');
-    } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        showToast('Track published and streaming live inside Musico!');
+        // Clear forms
+        setAudioFile(null);
+        setCoverFile(null);
+        setTitle('');
+        setGenre('Pop');
+        setLyrics('');
+        setContributors({
+          mainVocalist: '',
+          composer: '',
+          lyricist: '',
+          producer: ''
+        });
+        
+        checkUploadLimit();
+        setActiveView('library');
+      } else {
+        showToast(data.message || 'Direct upload failed', 'error');
+      }
+    };
+
+    xhr.onerror = () => {
       setLoading(false);
-    }
+      setUploadProgress(0);
+      showToast('Network error during upload', 'error');
+    };
+
+    xhr.send(formData);
   };
 
   // Dynamic Album list rows management
@@ -839,6 +857,27 @@ const Upload = () => {
               </div>
             )}
           </div>
+
+          {/* Real-time Upload Progress Bar */}
+          {loading && uploadProgress > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span>Uploading track elements...</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{uploadProgress}%</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div 
+                  style={{ 
+                    width: `${uploadProgress}%`, 
+                    height: '100%', 
+                    background: 'var(--accent-gradient)', 
+                    borderRadius: '4px',
+                    transition: 'width 0.1s linear'
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Action Publish Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>

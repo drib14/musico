@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Music, Play, Crown, Calendar, Sparkles, CheckCircle, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const Profile = () => {
   const { API_URL, activeProfileId, playTrack, showToast, setActivePlaylistId, setActiveView, user: currentUser, token, updateUser } = useContext(AppContext);
@@ -24,7 +25,14 @@ const Profile = () => {
   const [newEventVenue, setNewEventVenue] = useState('');
   const [newEventCity, setNewEventCity] = useState('');
   const [newEventUrl, setNewEventUrl] = useState('');
-  const [activeTab, setActiveTab] = useState('tracks'); // 'tracks', 'playlists', 'followers', 'following'
+  const [activeTab, setActiveTab] = useState('tracks'); // 'tracks', 'playlists', 'followers', 'following', 'edit-profile'
+
+  // Standard User Profile Edit States
+  const [editedName, setEditedName] = useState('');
+  const [editedEmail, setEditedEmail] = useState('');
+  const [editedUserAvatar, setEditedUserAvatar] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const stripHtml = (html) => {
     if (!html) return '';
@@ -32,10 +40,13 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (activeProfileId) {
-      fetchProfileDetails();
+    const idToFetch = activeProfileId || currentUser?._id;
+    if (idToFetch) {
+      fetchProfileDetails(idToFetch);
+    } else {
+      setLoading(false);
     }
-  }, [activeProfileId]);
+  }, [activeProfileId, currentUser]);
 
   useEffect(() => {
     if (profileData && profileData.user) {
@@ -47,6 +58,10 @@ const Profile = () => {
       setEditedInstagram(profileData.user.instagram || '');
       setEditedArtistAvatar(profileData.user.artistAvatar || profileData.user.userAvatar || '');
       setEditedArtistBanner(profileData.user.artistBanner || '');
+
+      setEditedName(profileData.user.name || '');
+      setEditedEmail(profileData.user.email || '');
+      setEditedUserAvatar(profileData.user.userAvatar || '');
     }
   }, [profileData]);
 
@@ -102,13 +117,18 @@ const Profile = () => {
     }
   };
 
-  const fetchProfileDetails = async () => {
+  const fetchProfileDetails = async (targetId = activeProfileId) => {
+    const idToFetch = targetId || currentUser?._id;
+    if (!idToFetch) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const isMongoId = /^[0-9a-fA-F]{24}$/.test(activeProfileId);
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(idToFetch);
       const endpoint = isMongoId
-        ? `${API_URL}/auth/users/${activeProfileId}`
-        : `${API_URL}/tracks/jamendo/artist/${activeProfileId}`;
+        ? `${API_URL}/auth/users/${idToFetch}`
+        : `${API_URL}/tracks/jamendo/artist/${idToFetch}`;
         
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error('Failed to load profile details');
@@ -124,6 +144,51 @@ const Profile = () => {
       showToast(error.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateUserProfile = async (e) => {
+    e.preventDefault();
+    if (!editedName.trim()) return showToast('Name is required', 'error');
+
+    setProfileSaving(true);
+    const formData = new FormData();
+    formData.append('name', editedName.trim());
+    if (editedEmail.trim()) formData.append('email', editedEmail.trim());
+    if (editedUserAvatar.trim()) formData.append('userAvatar', editedUserAvatar.trim());
+    if (avatarFile) formData.append('userAvatar', avatarFile);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Profile update failed');
+      }
+
+      const data = await res.json();
+      updateUser(data.user);
+      setProfileData(prev => prev ? {
+        ...prev,
+        user: {
+          ...prev.user,
+          name: data.user.name,
+          email: data.user.email,
+          userAvatar: data.user.userAvatar
+        }
+      } : prev);
+      showToast('Profile updated successfully!');
+      setActiveTab('tracks');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -151,8 +216,8 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}>
-        <div className="spinner"></div>
+      <div style={{ padding: '32px' }}>
+        <SkeletonLoader type="detail" count={5} />
       </div>
     );
   }
@@ -614,140 +679,306 @@ const Profile = () => {
       )}
 
       {/* Tabs Menu */}
-      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px' }}>
-        <button
-          onClick={() => setActiveTab('tracks')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 'bold',
-            color: activeTab === 'tracks' ? 'var(--accent)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'tracks' ? '3px solid var(--accent)' : '3px solid transparent'
-          }}
-        >
-          Tracks
-        </button>
-        <button
-          onClick={() => setActiveTab('playlists')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 'bold',
-            color: activeTab === 'playlists' ? 'var(--accent)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'playlists' ? '3px solid var(--accent)' : '3px solid transparent'
-          }}
-        >
-          Playlists
-        </button>
-        <button
-          onClick={() => setActiveTab('followers')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 'bold',
-            color: activeTab === 'followers' ? 'var(--accent)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'followers' ? '3px solid var(--accent)' : '3px solid transparent'
-          }}
-        >
-          Followers
-        </button>
-        <button
-          onClick={() => setActiveTab('following')}
-          style={{
-            background: 'none',
-            border: 'none',
-            padding: '8px 4px',
-            cursor: 'pointer',
-            fontSize: '15px',
-            fontWeight: 'bold',
-            color: activeTab === 'following' ? 'var(--accent)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'following' ? '3px solid var(--accent)' : '3px solid transparent'
-          }}
-        >
-          Following
-        </button>
+      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
+        {[
+          { id: 'tracks', label: 'Tracks' },
+          { id: 'playlists', label: 'Playlists' },
+          { id: 'followers', label: `Followers (${followersCount})` },
+          { id: 'following', label: `Following (${user.following?.length || 0})` },
+          ...(isOwnProfile ? [{ id: 'edit-profile', label: 'Edit User Profile' }] : [])
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '8px 4px',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
+              borderBottom: activeTab === tab.id ? '3px solid var(--accent)' : '3px solid transparent',
+              transition: 'all var(--transition-fast)'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* 2. UPLOADED TRACKS LIST */}
-      {activeTab === 'tracks' && tracks.length > 0 && (
-        <section>
-          <table className="track-table">
-            <thead>
-              <tr>
-                <th className="table-index">#</th>
-                <th>Title</th>
-                <th>Genre</th>
-                <th style={{ textAlign: 'right' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tracks.map((track, idx) => (
-                <tr key={track._id} onClick={() => playTrack(track, tracks)} style={{ cursor: 'pointer' }}>
-                  <td className="table-index">{idx + 1}</td>
-                  <td>
-                    <div className="table-track-info">
-                      {track.coverUrl ? (
-                        <img className="table-cover" src={track.coverUrl} alt={track.title} />
-                      ) : (
-                        <div className="table-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
-                          <Music className="w-5 h-5 text-accent" />
-                        </div>
-                      )}
-                      <div>
-                        <div className="table-title">{track.title}</div>
-                        <div className="table-artist" style={{ color: 'var(--text-muted)' }}>{track.artistName}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="table-genre">{track.genre}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button className="btn-icon" onClick={(e) => { e.stopPropagation(); playTrack(track, tracks); }}>
-                      <Play fill="currentColor" className="w-3 h-3" style={{ transform: 'translateX(1px)' }} />
-                    </button>
-                  </td>
+      {/* 2. TAB RENDERING BLOCKS */}
+      
+      {/* TAB: UPLOADED TRACKS LIST */}
+      {activeTab === 'tracks' && (
+        tracks.length > 0 ? (
+          <section>
+            <table className="track-table">
+              <thead>
+                <tr>
+                  <th className="table-index">#</th>
+                  <th>Title</th>
+                  <th>Genre</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
+              </thead>
+              <tbody>
+                {tracks.map((track, idx) => (
+                  <tr key={track._id} onClick={() => playTrack(track, tracks)} style={{ cursor: 'pointer' }}>
+                    <td className="table-index">{idx + 1}</td>
+                    <td>
+                      <div className="table-track-info">
+                        {track.coverUrl ? (
+                          <img className="table-cover" src={track.coverUrl} alt={track.title} />
+                        ) : (
+                          <div className="table-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center' }}>
+                            <Music className="w-5 h-5 text-accent" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="table-title">{track.title}</div>
+                          <div className="table-artist" style={{ color: 'var(--text-secondary)' }}>{track.artistName}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="table-genre">{track.genre}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button className="btn-icon" onClick={(e) => { e.stopPropagation(); playTrack(track, tracks); }}>
+                        <Play fill="currentColor" className="w-3 h-3" style={{ transform: 'translateX(1px)' }} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            No tracks available on this profile.
+          </div>
+        )
+      )}
+
+      {/* TAB: PUBLIC PLAYLISTS */}
+      {activeTab === 'playlists' && (
+        playlists.length > 0 ? (
+          <section>
+            <div className="grid-container carousel-desktop">
+              {playlists.map((pl) => (
+                <div
+                  key={pl._id}
+                  className="song-card"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    setActivePlaylistId(pl._id);
+                    setActiveView('playlist-details');
+                  }}
+                >
+                  <div className="song-card-cover-wrapper">
+                    <PlaylistCover playlist={pl} className="song-card-cover" />
+                  </div>
+                  <div className="song-card-title">{pl.name}</div>
+                  <div className="song-card-artist">{pl.tracks?.length || 0} songs</div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </section>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            No playlists found on this profile.
+          </div>
+        )
+      )}
+
+      {/* TAB: FOLLOWERS */}
+      {activeTab === 'followers' && (
+        <section>
+          {user.followers && user.followers.length > 0 ? (
+            <div className="artist-grid-container carousel-desktop" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '20px' }}>
+              {user.followers.map((f) => (
+                <div 
+                  key={f._id}
+                  className="artist-card"
+                  onClick={() => triggerProfileView(f._id, false, f._id)}
+                  style={{ height: '160px', padding: '16px' }}
+                >
+                  {f.userAvatar ? (
+                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+                      {f.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{f.name}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+              No followers yet.
+            </div>
+          )}
         </section>
       )}
 
-      {activeTab === 'tracks' && tracks.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-          No uploaded songs available.
-        </div>
+      {/* TAB: FOLLOWING */}
+      {activeTab === 'following' && (
+        <section>
+          {user.following && user.following.length > 0 ? (
+            <div className="artist-grid-container carousel-desktop" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '20px' }}>
+              {user.following.map((f) => (
+                <div 
+                  key={f._id}
+                  className="artist-card"
+                  onClick={() => triggerProfileView(f._id, false, f._id)}
+                  style={{ height: '160px', padding: '16px' }}
+                >
+                  {f.userAvatar ? (
+                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+                      {f.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>{f.name}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+              Not following anyone yet.
+            </div>
+          )}
+        </section>
       )}
 
-      {/* 3. PUBLIC PLAYLISTS */}
-      {activeTab === 'playlists' && playlists.length > 0 && (
-        <section>
-          <div className="grid-container carousel-desktop">
-            {playlists.map((pl) => (
-              <div
-                key={pl._id}
-                className="song-card"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  setActivePlaylistId(pl._id);
-                  setActiveView('playlist-details');
-                }}
-              >
-                <div className="song-card-cover-wrapper">
-                  <PlaylistCover playlist={pl} className="song-card-cover" />
+      {/* TAB: EDIT PROFILE */}
+      {activeTab === 'edit-profile' && isOwnProfile && (
+        <section style={{ animation: 'fadeIn 0.3s ease' }}>
+          <div style={{
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '20px',
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+            boxShadow: 'var(--glass-shadow)',
+            maxWidth: '650px',
+            margin: '0 auto'
+          }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>Manage Your Profile</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>
+              Update your public display name, email, and upload a profile picture.
+            </p>
+            
+            <form onSubmit={handleUpdateUserProfile} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Profile Avatar Upload */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                {avatarFile ? (
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', border: '2px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: 'var(--accent)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', padding: '4px', textAlign: 'center' }}>
+                    New File Selected
+                  </div>
+                ) : editedUserAvatar ? (
+                  <img src={editedUserAvatar} alt={editedName} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
+                ) : (
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '28px', fontWeight: 'bold' }}>
+                    {editedName?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Profile Avatar Picture</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      id="profile-avatar-upload" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setAvatarFile(e.target.files[0]);
+                          setEditedUserAvatar('');
+                        }
+                      }}
+                    />
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={() => document.getElementById('profile-avatar-upload').click()}
+                      style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '6px' }}
+                    >
+                      Choose Image File
+                    </button>
+                    {avatarFile && (
+                      <button 
+                        type="button" 
+                        className="btn btn-secondary btn-sm" 
+                        style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                        onClick={() => setAvatarFile(null)}
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="song-card-title">{pl.name}</div>
-                <div className="song-card-artist">{pl.tracks?.length || 0} songs</div>
               </div>
-            ))}
+
+              {/* Avatar URL alternative */}
+              {!avatarFile && (
+                <div className="form-group">
+                  <label className="form-label">Avatar Image URL (Alternative)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="https://images.unsplash.com/... or upload a file above"
+                    value={editedUserAvatar}
+                    onChange={(e) => setEditedUserAvatar(e.target.value)}
+                    style={{ paddingLeft: '14px', fontSize: '13px' }}
+                  />
+                </div>
+              )}
+
+              {/* Name */}
+              <div className="form-group">
+                <label className="form-label">Display Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Your display name"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  style={{ paddingLeft: '14px', fontSize: '13px' }}
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  placeholder="Your email address"
+                  value={editedEmail}
+                  onChange={(e) => setEditedEmail(e.target.value)}
+                  style={{ paddingLeft: '14px', fontSize: '13px' }}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ padding: '10px 24px', fontSize: '13px', borderRadius: '24px', alignSelf: 'flex-start', marginTop: '10px' }}
+                disabled={profileSaving}
+              >
+                {profileSaving ? 'Saving profile changes...' : 'Save Profile Changes'}
+              </button>
+
+            </form>
           </div>
         </section>
       )}

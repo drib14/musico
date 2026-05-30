@@ -4,6 +4,7 @@ import { Play, Music, Heart, UploadCloud, FolderHeart, Plus, Folder, Trash2, Edi
 import Modal from '../components/Modal';
 import ArtistProfileWizard from '../components/ArtistProfileWizard';
 import PlaylistCover from '../components/PlaylistCover';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const Library = () => {
   const { API_URL, token, user, playTrack, toggleLike, showToast, setActivePlaylistId, setActiveView } = useContext(AppContext);
@@ -305,9 +306,11 @@ const Library = () => {
       {/* 2. DYNAMIC CONTENT RENDERING */}
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <div className="spinner"></div>
-        </div>
+        activeTab === 'playlists' ? (
+          <SkeletonLoader type="grid" count={6} />
+        ) : (
+          <SkeletonLoader type="table" count={6} />
+        )
       ) : (
         <>
           {/* TAB: LIKED SONGS */}

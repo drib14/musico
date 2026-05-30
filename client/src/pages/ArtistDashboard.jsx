@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Play, Pause, Disc, Calendar, MoreVertical, Edit2, UploadCloud, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TrackCard from '../components/TrackCard';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const ArtistDashboard = () => {
   const { user, API_URL, token, currentTrack, isPlaying, togglePlay, showToast, setActiveView } = useContext(AppContext);
@@ -21,6 +22,19 @@ const ArtistDashboard = () => {
     twitter: user?.artistProfile?.twitter || ''
   });
   const [isSaving, setIsSaving] = useState(false);
+
+  // Creator Onboarding State
+  const [onboardName, setOnboardName] = useState(user?.name || '');
+  const [onboardBio, setOnboardBio] = useState('');
+  const [onboardWebsite, setOnboardWebsite] = useState('');
+  const [onboardFacebook, setOnboardFacebook] = useState('');
+  const [onboardTwitter, setOnboardTwitter] = useState('');
+  const [onboardInstagram, setOnboardInstagram] = useState('');
+  const [onboardAvatar, setOnboardAvatar] = useState(null);
+  const [onboardBanner, setOnboardBanner] = useState(null);
+  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
 
   useEffect(() => {
     if (user && user.artistProfile) {
@@ -88,11 +102,344 @@ const ArtistDashboard = () => {
     }
   };
 
+  const handleOnboardSubmit = async (e) => {
+    e.preventDefault();
+    if (!onboardName.trim()) {
+      return showToast('Artist Name is required', 'error');
+    }
+    setIsOnboarding(true);
+    const formData = new FormData();
+    formData.append('artistName', onboardName.trim());
+    formData.append('artistBio', onboardBio.trim());
+    formData.append('website', onboardWebsite.trim());
+    formData.append('facebook', onboardFacebook.trim());
+    formData.append('twitter', onboardTwitter.trim());
+    formData.append('instagram', onboardInstagram.trim());
+    if (onboardAvatar) {
+      formData.append('artistAvatar', onboardAvatar);
+    }
+    if (onboardBanner) {
+      formData.append('artistBanner', onboardBanner);
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/artists`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Congratulations! Artist profile created successfully.');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast(data.message || 'Failed to create artist profile', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error creating artist profile', 'error');
+    } finally {
+      setIsOnboarding(false);
+    }
+  };
+
   if (!user || !user.artistProfile) {
     return (
-      <div className="p-8 text-center" style={{ color: 'var(--text-secondary)' }}>
-        <h2>You do not have an active artist profile.</h2>
-        <p>Please update your settings to become an artist.</p>
+      <div style={{
+        maxWidth: '800px',
+        margin: '40px auto',
+        padding: '32px',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '24px',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--glass-shadow)',
+        color: 'var(--text-primary)',
+        animation: 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            background: 'var(--accent-gradient)',
+            color: '#fff',
+            marginBottom: '16px',
+            boxShadow: '0 8px 24px rgba(108, 92, 231, 0.3)'
+          }}>
+            <Disc className="w-8 h-8 animate-spin-slow" />
+          </div>
+          <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Claim Your Artist Identity
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '500px', margin: '0 auto' }}>
+            Join the Musico creator community. Share your music, build an audience, and track real-time analytics.
+          </p>
+        </div>
+
+        <form onSubmit={handleOnboardSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Avatar and Banner Upload Fields */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            
+            {/* Avatar Dropzone */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Artist Profile Avatar</label>
+              <div 
+                style={{
+                  height: '160px',
+                  borderRadius: '16px',
+                  border: '2px dashed var(--border-color)',
+                  background: avatarPreview ? `url(${avatarPreview}) center/cover no-repeat` : 'var(--bg-secondary)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s'
+                }}
+                onClick={() => document.getElementById('onboard-avatar-input').click()}
+              >
+                {!avatarPreview && (
+                  <>
+                    <UploadCloud className="w-8 h-8" style={{ color: 'var(--text-muted)', marginBottom: '8px' }} />
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Upload Avatar (Square)</span>
+                  </>
+                )}
+                {avatarPreview && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                    fontSize: '11px',
+                    textAlign: 'center',
+                    padding: '4px'
+                  }}>Change Photo</div>
+                )}
+                <input 
+                  id="onboard-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      setOnboardAvatar(file);
+                      setAvatarPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Banner Dropzone */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Artist Dashboard Banner</label>
+              <div 
+                style={{
+                  height: '160px',
+                  borderRadius: '16px',
+                  border: '2px dashed var(--border-color)',
+                  background: bannerPreview ? `url(${bannerPreview}) center/cover no-repeat` : 'var(--bg-secondary)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s'
+                }}
+                onClick={() => document.getElementById('onboard-banner-input').click()}
+              >
+                {!bannerPreview && (
+                  <>
+                    <UploadCloud className="w-8 h-8" style={{ color: 'var(--text-muted)', marginBottom: '8px' }} />
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Upload Banner (Wide)</span>
+                  </>
+                )}
+                {bannerPreview && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(0,0,0,0.6)',
+                    color: '#fff',
+                    fontSize: '11px',
+                    textAlign: 'center',
+                    padding: '4px'
+                  }}>Change Banner</div>
+                )}
+                <input 
+                  id="onboard-banner-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      setOnboardBanner(file);
+                      setBannerPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Artist Name *</label>
+            <input 
+              type="text"
+              placeholder="e.g. DJ Shadow, Daft Punk, Lana Del Rey"
+              value={onboardName}
+              onChange={(e) => setOnboardName(e.target.value)}
+              required
+              className="form-input"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                color: 'var(--text-primary)',
+                fontSize: '15px'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)' }}>Bio / Description</label>
+            <textarea 
+              placeholder="Tell the world your musical journey, influences, and what drives your sound..."
+              value={onboardBio}
+              onChange={(e) => setOnboardBio(e.target.value)}
+              rows="3"
+              className="form-input"
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                color: 'var(--text-primary)',
+                fontSize: '15px',
+                resize: 'none'
+              }}
+            />
+          </div>
+
+          {/* Social Links & Connections */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Website Link</label>
+              <input 
+                type="url"
+                placeholder="https://myband.com"
+                value={onboardWebsite}
+                onChange={(e) => setOnboardWebsite(e.target.value)}
+                className="form-input"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Instagram Username</label>
+              <input 
+                type="text"
+                placeholder="@myhandle"
+                value={onboardInstagram}
+                onChange={(e) => setOnboardInstagram(e.target.value)}
+                className="form-input"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Twitter Username</label>
+              <input 
+                type="text"
+                placeholder="@myhandle"
+                value={onboardTwitter}
+                onChange={(e) => setOnboardTwitter(e.target.value)}
+                className="form-input"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Facebook Page</label>
+              <input 
+                type="url"
+                placeholder="https://facebook.com/myband"
+                value={onboardFacebook}
+                onChange={(e) => setOnboardFacebook(e.target.value)}
+                className="form-input"
+                style={{
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={isOnboarding}
+            className="btn btn-primary"
+            style={{
+              padding: '14px',
+              borderRadius: '30px',
+              fontSize: '16px',
+              fontWeight: '700',
+              marginTop: '16px',
+              cursor: isOnboarding ? 'not-allowed' : 'pointer',
+              opacity: isOnboarding ? 0.7 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: 'var(--accent-shadow)'
+            }}
+          >
+            {isOnboarding ? 'Launching Creator Profile...' : 'Claim Artist Identity'}
+          </button>
+        </form>
       </div>
     );
   }
@@ -154,7 +501,7 @@ const ArtistDashboard = () => {
               <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Tracks</h2>
             </div>
             {loading ? (
-              <div>Loading tracks...</div>
+              <SkeletonLoader type="table" count={3} />
             ) : tracks.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {tracks.map((track, idx) => (
@@ -187,7 +534,7 @@ const ArtistDashboard = () => {
               <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Your Albums</h2>
             </div>
             {loading ? (
-              <div>Loading albums...</div>
+              <SkeletonLoader type="table" count={2} />
             ) : albums.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {albums.map((album, idx) => (

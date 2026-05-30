@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppContext';
 import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const Home = () => {
   const { 
@@ -536,9 +537,7 @@ const Home = () => {
           </div>
           
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-              <div className="spinner"></div>
-            </div>
+            <SkeletonLoader type="grid" count={8} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="grid-container carousel-desktop">

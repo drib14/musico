@@ -201,8 +201,8 @@ const RightSidebar = () => {
 
   const parsedLines = parseLyrics();
 
-  // Only auto-scroll if it's NOT a jamendo track (meaning it has real time sync)
-  const isJamendoTrack = currentTrack.isJamendo || false;
+  // Enable time-scrolling for all tracks (now that Jamendo tracks have proportional timestamps)
+  const isJamendoTrack = false;
 
   // Find active line index based on playback time
   let activeIndex = -1;

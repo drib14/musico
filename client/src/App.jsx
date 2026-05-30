@@ -23,6 +23,7 @@ import AllPlaylists from './pages/AllPlaylists';
 import AllTracks from './pages/AllTracks';
 import ArtistDashboard from './pages/ArtistDashboard';
 import LoadingScreen from './components/LoadingScreen';
+import SplashScreen from './components/SplashScreen';
 
 const MainAppContent = () => {
   const { 
@@ -39,6 +40,23 @@ const MainAppContent = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Entrance Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+  const [fadeOutSplash, setFadeOutSplash] = useState(false);
+
+  useEffect(() => {
+    // Keep splash active for at least 2.2 seconds, then trigger fade out
+    const timer = setTimeout(() => {
+      setFadeOutSplash(true);
+      const removeTimer = setTimeout(() => {
+        setShowSplash(false);
+      }, 600);
+      return () => clearTimeout(removeTimer);
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auth modal management state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -97,12 +115,14 @@ const MainAppContent = () => {
     );
   };
 
-  if (isInitializingAuth) {
-    return <LoadingScreen />;
-  }
-
   return (
-    <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
+    <>
+      {showSplash && <SplashScreen fadeOut={fadeOutSplash} />}
+      
+      {isInitializingAuth ? (
+        <LoadingScreen />
+      ) : (
+        <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
       {/* Sidebar navigation */}
       <Sidebar onOpenAuth={openAuthModal} />
 
@@ -235,7 +255,9 @@ const MainAppContent = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 
