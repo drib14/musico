@@ -832,54 +832,6 @@ const Upload = () => {
                     ⏱️ Stamp Current Time
                   </button>
                   
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      if (!lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
-                      const lines = lyrics.split('\n');
-                      let time = 0;
-                      const stamped = lines.map(line => {
-                        if (line.trim().length === 0) return line;
-                        const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
-                        const mins = Math.floor(time / 60).toString().padStart(2, '0');
-                        const secs = Math.floor(time % 60).toString().padStart(2, '0');
-                        const res = `[${mins}:${secs}] ${clean}`;
-                        time += 4;
-                        return res;
-                      });
-                      setLyrics(stamped.join('\n'));
-                      showToast('Auto-generated template timestamps every 4 seconds!');
-                    }}
-                    style={{
-                      padding: '8px 14px',
-                      fontSize: '12.5px',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🪄 Auto-Stamp Template
-                  </button>
-
-                  <a
-                    href="https://github.com/m-bain/whisperX"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-secondary"
-                    style={{
-                      padding: '8px 14px',
-                      fontSize: '12.5px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                      color: 'inherit'
-                    }}
-                  >
-                    🤖 WhisperX AI Sync Tool
-                  </a>
                 </div>
                 <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                   💡 <strong>Tip:</strong> Play your song above. Click <strong>Stamp Current Time</strong> at the exact start of a line to insert the <code>[mm:ss]</code> timestamp. Timed lyrics let listeners scrub through your song by tapping lines!
@@ -1340,47 +1292,6 @@ const Upload = () => {
                             ⏱️ Stamp Current Time
                           </button>
                           
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => {
-                              if (!track.lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
-                              const lines = track.lyrics.split('\n');
-                              let time = 0;
-                              const stamped = lines.map(line => {
-                                if (line.trim().length === 0) return line;
-                                const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
-                                const mins = Math.floor(time / 60).toString().padStart(2, '0');
-                                const secs = Math.floor(time % 60).toString().padStart(2, '0');
-                                const res = `[${mins}:${secs}] ${clean}`;
-                                time += 4;
-                                return res;
-                              });
-                              handleUpdateTrackRow(idx, 'lyrics', stamped.join('\n'));
-                              showToast('Auto-generated template timestamps every 4 seconds!');
-                            }}
-                            style={{ padding: '4px 10px', fontSize: '11px' }}
-                          >
-                            🪄 Auto-Stamp Template
-                          </button>
-
-                          <a
-                            href="https://github.com/m-bain/whisperX"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              textDecoration: 'none',
-                              color: 'inherit'
-                            }}
-                          >
-                            🤖 WhisperX AI Sync
-                          </a>
                         </div>
                       </div>
                     )}

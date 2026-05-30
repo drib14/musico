@@ -1633,21 +1633,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 768px) {
-  .app-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 60px;
-    grid-template-areas:
-      "main"
-      "sidebar";
-  }
-  
-  .app-container.has-player {
-    grid-template-rows: 1fr var(--player-height) 60px !important;
-    grid-template-areas:
-      "main"
-      "player"
-      "sidebar" !important;
-  }
   
   .sidebar {
     grid-area: sidebar;
@@ -1659,11 +1644,6 @@ h1, h2, h3, h4, h5, h6 {
     border-top: 1px solid var(--border-color);
     justify-content: space-around;
     align-items: center;
-  }
-  
-  .logo-container, .user-sidebar-card {
-    display: none;
-  }
   
   .nav-group {
     flex-direction: row;
@@ -1684,14 +1664,6 @@ h1, h2, h3, h4, h5, h6 {
     width: 100%;
   }
   
-  .music-player {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    grid-template-areas:
-      "left right"
-      "center center";
-    padding: 12px 16px;
-    height: auto;
   }
   
   .player-left {
@@ -1771,14 +1743,6 @@ h1, h2, h3, h4, h5, h6 {
     display: none !important;
   }
   
-  /* Simplified Music Player for Mobile thumb action controls */
-  .music-player {
-    grid-template-columns: 1fr auto !important;
-    grid-template-rows: auto !important;
-    grid-template-areas: "left center" !important;
-    padding: 0 16px !important;
-    height: 72px !important;
-  }
   
   .player-right {
     display: none !important; /* Hide speaker controls and waveforms on xs screens */
@@ -2339,66 +2303,6 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Global Mobile Fixes for Layout Constraints */
-@media (max-width: 768px) {
-  /* Fix player controls wrapping on small screens */
-  .music-player {
-    grid-template-columns: 1fr auto !important;
-    grid-template-rows: auto !important;
-    grid-template-areas: "left center" !important;
-    padding: 10px 16px !important;
-    height: 72px !important;
-    gap: 12px !important;
-  }
-
-  .player-right {
-    display: none !important;
-  }
-
-  .player-center {
-    width: auto !important;
-    margin-top: 0 !important;
-  }
-
-  .player-scrubber {
-    display: none !important;
-  }
-
-  .player-controls {
-    gap: 12px !important;
-  }
-
-  /* Optimize layout spacing for grid lists in search/library */
-  .grid-container {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-    gap: 16px !important;
-  }
-
-  .song-card {
-    padding: 12px !important;
-  }
-
-  .song-card-cover-wrapper {
-    margin-bottom: 10px !important;
-  }
-
-  .song-card-title {
-    font-size: 13px !important;
-  }
-
-  .song-card-artist {
-    font-size: 11px !important;
-  }
-
-  .hero-banner {
-    padding: 32px 24px !important;
-  }
-
-  .hero-title {
-    font-size: 28px !important;
-  }
-}
-
 /* 3-panel responsive tablet/mobile adjust */
 @media (max-width: 1200px) {
   .right-sidebar {
@@ -2471,32 +2375,8 @@ h1, h2, h3, h4, h5, h6 {
     display: flex !important;
     overflow-x: auto !important;
     scroll-snap-type: x mandatory;
-    gap: 20px;
-    padding: 20px 10px !important;
-    perspective: 1000px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .grid-container::-webkit-scrollbar,
-  .artist-grid-container::-webkit-scrollbar,
-  .genre-grid-container::-webkit-scrollbar,
-  .concert-grid-container::-webkit-scrollbar {
-    display: none !important;
-  }
-  .song-card,
-  .artist-card,
-  .genre-card,
-  .concert-card {
-    flex: 0 0 220px !important;
-    scroll-snap-align: center;
-    transform: rotateY(-8deg) translateZ(0px);
-    transition: transform var(--transition-normal), background-color var(--transition-normal);
-  }
-  .song-card:hover, .song-card:active,
-  .artist-card:hover, .artist-card:active,
-  .genre-card:hover, .genre-card:active,
-  .concert-card:hover, .concert-card:active {
-    transform: rotateY(0deg) scale(1.04) translateZ(15px) !important;
-  }
+}
+
 }
 
 /* Desktop Horizontal Carousel Extension */
@@ -2672,9 +2552,28 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid var(--border-color) !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
     grid-template-columns: 1fr auto !important;
+    grid-template-rows: auto !important;
     grid-template-areas: "left center" !important;
     height: 64px !important;
     padding: 8px 16px !important;
+    gap: 12px !important;
+  }
+
+  .player-right {
+    display: none !important;
+  }
+
+  .player-center {
+    width: auto !important;
+    margin-top: 0 !important;
+  }
+
+  .player-scrubber {
+    display: none !important;
+  }
+
+  .player-controls {
+    gap: 12px !important;
   }
 
   .main-content {

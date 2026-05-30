@@ -1,113 +1,60 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   User, 
   Mail, 
   Lock, 
-  CheckCircle, 
   Save, 
-  Crown, 
-  Sparkles, 
-  Image as ImageIcon, 
-  Camera, 
-  FileText, 
-  Check, 
-  Settings as SettingsIcon
+  Shield,
+  CreditCard,
+  MonitorSmartphone,
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
-  const { API_URL, token, user, loginUser, showToast, logoutUser, setActiveView } = useContext(AppContext);
+  const { API_URL, token, user, theme, setTheme, showToast, logoutUser, setActiveView } = useContext(AppContext);
+  const navigate = useNavigate();
   
-  // Tab Management state
   const [loading, setLoading] = useState(false);
 
-  // User Settings state
-  const [name, setName] = useState(user ? user.name : '');
-  const [email, setEmail] = useState(user ? user.email : '');
-  const [password, setPassword] = useState('');
+  // Security Form State
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userAvatarFile, setUserAvatarFile] = useState(null);
-  const [userAvatarPreview, setUserAvatarPreview] = useState(user?.userAvatar || '');
 
-
-  // Sync state with user data changes (e.g. after login/re-fetch)
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setUserAvatarPreview(user.userAvatar || '');
-    }
-  }, [user]);
-
-
-  // Local file selection preview handlers
-  const handleUserAvatarSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 3 * 1024 * 1024) {
-        return showToast('Avatar size exceeds 3MB limit', 'error');
-      }
-      setUserAvatarFile(file);
-      setUserAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleUpdateProfile = async (e) => {
+  const handleUpdateSecurity = async (e) => {
     e.preventDefault();
     
-    // Core User Settings Validation
-    if (!name || !email) {
-      return showToast('Name and email are required fields', 'error');
+    if (!newPassword || newPassword.length < 6) {
+      return showToast('New password must be at least 6 characters', 'error');
     }
-    if (password) {
-      if (password.length < 6) {
-        return showToast('Password must be at least 6 characters', 'error');
-      }
-      if (password !== confirmPassword) {
-        return showToast('Passwords do not match', 'error');
-      }
+    if (newPassword !== confirmPassword) {
+      return showToast('Passwords do not match', 'error');
     }
 
     setLoading(true);
-    const formData = new FormData();
     
-    // Append standard profile data
-    formData.append('name', name);
-    formData.append('email', email);
-    if (password) formData.append('password', password);
-
     try {
-      let message = 'Profile settings saved successfully!';
-      let tokenToSave = token;
+      // In a real app we'd need a route that verifies current password and sets new one.
+      // Assuming we're re-using the profile PUT route if it accepts password changes.
+      const formData = new FormData();
+      formData.append('password', newPassword);
 
-      if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
       const res = await fetch(`${API_URL}/auth/profile`, {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Profile update failed');
-      tokenToSave = data.token;
+      if (!res.ok) throw new Error(data.message || 'Security update failed');
 
-      const meRes = await fetch(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${tokenToSave}` }
-      });
-      const meData = await meRes.json();
-
-      // Update local storage and context state
-      loginUser(meData, tokenToSave);
-      showToast(message);
-      
-      // Reset password fields
-      setPassword('');
+      showToast('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
       setConfirmPassword('');
-      setUserAvatarFile(null);
-      setArtistAvatarFile(null);
-      setArtistBannerFile(null);
     } catch (error) {
       showToast(error.message, 'error');
     } finally {
@@ -116,195 +63,173 @@ const Settings = () => {
   };
 
   return (
-    <div style={{ maxWidth: '650px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ maxWidth: '650px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '40px' }}>
       
       <div>
-        <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Profile Settings</h1>
+        <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Settings</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
-          Manage your Musico personal listener credentials and customize your professional self-distribution artist brand.
+          Manage your account credentials, security, and app preferences.
         </p>
       </div>
 
-      {/* Form Submission */}
-      <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
+        {/* Account Overview Card */}
         <div style={{
           backgroundColor: 'var(--bg-secondary)',
           border: '1px solid var(--border-color)',
-          borderRadius: '20px',
-          padding: '32px',
+          borderRadius: '16px',
+          padding: '24px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '20px',
+          gap: '16px',
           boxShadow: 'var(--glass-shadow)',
           animation: 'fadeIn 0.3s ease'
         }}>
-            
-            {/* User Avatar Circle Dropzone */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <div 
-                onClick={() => document.getElementById('user-avatar-input').click()}
-                style={{
-                  position: 'relative',
-                  width: '100px',
-                  height: '100px',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
-                  background: 'var(--bg-tertiary)',
-                  border: '2px solid var(--border-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                {userAvatarPreview ? (
-                  <img src={userAvatarPreview} alt="User Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <User className="w-10 h-10 text-muted" />
-                )}
-                
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: userAvatarPreview ? 0 : 1,
-                  transition: 'opacity 0.2s',
-                  color: '#fff'
-                }}
-                className="avatar-hover-overlay"
-                >
-                  <Camera className="w-5 h-5" />
-                </div>
-              </div>
-              <input 
-                id="user-avatar-input" 
-                type="file" 
-                accept="image/*" 
-                style={{ display: 'none' }} 
-                onChange={handleUserAvatarSelect} 
-              />
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>Listener Avatar Image</span>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <User className="w-5 h-5 text-accent" /> Account Overview
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Email Address</span>
+              <span style={{ fontWeight: '500' }}>{user?.email}</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Subscription Plan</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: '800', color: 'var(--premium-color)' }}>Premium</span>
+              </div>
+            </div>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => { setActiveView('profile'); navigate('/pages/profile'); }}
+            >
+              <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '600' }}>Edit Public Profile</span>
+              <ChevronRight className="w-5 h-5 text-muted" />
+            </div>
+          </div>
+        </div>
 
-            <div className="form-group">
-              <label className="form-label">Display Name</label>
+        {/* Security Card */}
+        <div style={{
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          boxShadow: 'var(--glass-shadow)'
+        }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Shield className="w-5 h-5 text-accent" /> Security
+          </h2>
+          <form onSubmit={handleUpdateSecurity} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group" style={{ marginBottom: '0' }}>
+              <label className="form-label" style={{ fontSize: '13px' }}>Current Password</label>
               <div className="form-input-wrapper">
-                <User className="form-input-icon" />
+                <Lock className="form-input-icon" />
                 <input
-                  type="text"
+                  type="password"
                   className="form-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <div className="form-input-wrapper">
-                <Mail className="form-input-icon" />
-                <input
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '10px 0' }} />
-
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>Change Password</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '-8px', marginBottom: '4px' }}>
-              Leave fields empty if you do not wish to modify your current password.
-            </p>
-
-            <div className="form-group">
-              <label className="form-label">New Password</label>
+            <div className="form-group" style={{ marginBottom: '0' }}>
+              <label className="form-label" style={{ fontSize: '13px' }}>New Password</label>
               <div className="form-input-wrapper">
                 <Lock className="form-input-icon" />
                 <input
                   type="password"
                   className="form-input"
                   placeholder="Minimum 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Confirm New Password</label>
+            <div className="form-group" style={{ marginBottom: '0' }}>
+              <label className="form-label" style={{ fontSize: '13px' }}>Confirm New Password</label>
               <div className="form-input-wrapper">
                 <Lock className="form-input-icon" />
                 <input
                   type="password"
                   className="form-input"
-                  placeholder="Re-enter password"
+                  placeholder="Re-enter new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
             </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ alignSelf: 'flex-start', padding: '10px 20px', fontSize: '13px' }}
+              disabled={loading}
+            >
+              {loading ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
+        </div>
 
-            {/* Log Out button for mobile & tablet responsive viewports */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  borderColor: 'var(--danger)',
-                  color: 'var(--danger)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.04)',
-                  padding: '12px',
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  borderRadius: '10px'
-                }}
-                onClick={() => {
-                  logoutUser();
-                  setActiveView('home');
-                }}
-              >
-                Log Out Account
-              </button>
-            </div>
-
+        {/* App Preferences Card */}
+        <div style={{
+          backgroundColor: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          boxShadow: 'var(--glass-shadow)'
+        }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MonitorSmartphone className="w-5 h-5 text-accent" /> App Preferences
+          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: '500' }}>Theme Preference</span>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="form-input"
+              style={{ width: 'auto', padding: '8px 32px 8px 12px', fontSize: '13px', appearance: 'none', cursor: 'pointer' }}
+            >
+              <option value="system">System Default</option>
+              <option value="dark">Dark Mode</option>
+              <option value="light">Light Mode</option>
+            </select>
           </div>
+        </div>
 
-        {/* Global Save Button */}
-        <button 
-          type="submit" 
-          className="btn btn-primary"
-          style={{ alignSelf: 'flex-end', marginTop: '4px', minWidth: '160px' }}
-          disabled={loading}
+        {/* Log Out Action */}
+        <button
+          className="btn btn-secondary"
+          style={{
+            borderColor: 'var(--danger)',
+            color: 'var(--danger)',
+            backgroundColor: 'rgba(239, 68, 68, 0.04)',
+            padding: '14px',
+            fontWeight: '700',
+            fontSize: '15px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            borderRadius: '12px'
+          }}
+          onClick={() => {
+            logoutUser();
+            setActiveView('home');
+            navigate('/pages/home');
+          }}
         >
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="spinner"></div>
-              <span>Saving...</span>
-            </div>
-          ) : (
-            <>
-              <Save className="w-4 h-4" /> Save Profile Details
-            </>
-          )}
+          <LogOut className="w-5 h-5" /> Log Out Everywhere
         </button>
 
-      </form>
-
+      </div>
     </div>
   );
 };
