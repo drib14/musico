@@ -112,7 +112,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: t.lyrics ? await generateWhisperTimestamps(t.audio, t.lyrics, t.duration || 180) : '',
+      lyrics: t.lyrics ? await generateWhisperTimestamps(t.audio, t.lyrics, t.duration || 180, t.name, t.artist_name) : '',
       contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
@@ -309,14 +309,16 @@ router.post(
         }
       }
 
-      // Process lyrics using Whisper or Smart Aligner fallback
+      // Process lyrics using LRCLIB Sync Engine
       let syncedLyrics = '';
       if (lyrics) {
-        console.log('Processing track lyrics through Whisper Sync Engine...');
+        console.log('Processing track lyrics through LRCLIB Sync Engine...');
         syncedLyrics = await generateWhisperTimestamps(
           audioFile.buffer,
           lyrics,
-          audioResult.duration || 0
+          audioResult.duration || 0,
+          title,
+          req.user.artistProfile.artistName
         );
       }
 
@@ -596,11 +598,13 @@ router.put('/:id', protect, async (req, res) => {
     track.genre = genre || track.genre;
     
     if (lyrics !== undefined && lyrics !== track.lyrics) {
-      console.log('Track lyrics modified. Re-processing with Whisper Sync Engine...');
+      console.log('Track lyrics modified. Re-processing with LRCLIB Sync Engine...');
       track.lyrics = await generateWhisperTimestamps(
-        track.audioUrl, // Pass the remote audioUrl so Whisper can download and align it!
+        track.audioUrl, // Pass the remote audioUrl so LRCLIB can download and align it if needed!
         lyrics,
-        track.duration || 0
+        track.duration || 0,
+        track.title,
+        track.artistName
       );
     }
 

@@ -339,12 +339,7 @@ const RightSidebar = () => {
                 ✓
               </span>
             )}
-            {artistInfo?.isPremium && (
-              <span className="user-badge" style={{ fontSize: '9px', padding: '1px 5px', margin: 0 }}>
-                <Crown style={{ width: '8px', height: '8px' }} />
-                Premium
-              </span>
-            )}
+
           </div>
           <div style={{
             fontSize: '11px',

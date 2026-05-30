@@ -251,7 +251,7 @@ const Profile = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', zIndex: '5' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="user-badge" style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', margin: 0 }}>
-              <Crown style={{ width: '12px', height: '12px' }} /> Premium Listener
+              Listener Account
             </span>
           </div>
 

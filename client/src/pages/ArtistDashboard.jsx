@@ -29,7 +29,8 @@ const ArtistDashboard = () => {
     artistBio: '',
     website: '',
     instagram: '',
-    twitter: ''
+    twitter: '',
+    concerts: []
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -57,7 +58,8 @@ const ArtistDashboard = () => {
         artistBio: activeProfile.artistBio || '',
         website: activeProfile.website || '',
         instagram: activeProfile.instagram || '',
-        twitter: activeProfile.twitter || ''
+        twitter: activeProfile.twitter || '',
+        concerts: activeProfile.concerts || []
       });
     }
   }, [publicProfile, currentUser, isOwnProfile]);
@@ -126,6 +128,7 @@ const ArtistDashboard = () => {
     formData.append('website', editForm.website);
     formData.append('instagram', editForm.instagram);
     formData.append('twitter', editForm.twitter);
+    formData.append('concerts', JSON.stringify(editForm.concerts));
 
     try {
       const res = await fetch(`${API_URL}/artists`, {
@@ -564,44 +567,57 @@ const ArtistDashboard = () => {
     <div className="artist-dashboard fade-in" style={{ padding: '32px' }}>
 
       {/* Banner / Header */}
-      <div style={{
-        display: 'flex',
-        gap: '24px',
-        alignItems: 'flex-end',
-        paddingBottom: '32px',
-        borderBottom: '1px solid var(--border-color)',
-        marginBottom: '32px'
-      }}>
+      <div 
+        className="artist-header-wrapper"
+        style={{
+          display: 'flex',
+          gap: '24px',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          padding: '32px',
+          background: 'linear-gradient(135deg, rgba(8, 12, 26, 0.75) 0%, rgba(22, 33, 62, 0.2) 100%)',
+          borderRadius: '20px',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--glass-shadow)',
+          marginBottom: '32px',
+          justifyContent: 'center',
+          textAlign: 'center'
+        }}
+      >
         <div style={{
-          width: '180px',
-          height: '180px',
+          width: '150px',
+          height: '150px',
           borderRadius: '50%',
           overflow: 'hidden',
-          boxShadow: 'var(--glass-shadow)',
-          border: '4px solid var(--bg-tertiary)',
-          flexShrink: 0
+          boxShadow: '0 0 20px rgba(0, 242, 254, 0.2), var(--glass-shadow)',
+          border: '3px solid var(--accent)',
+          flexShrink: 0,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           {profile.artistAvatar ? (
             <img src={profile.artistAvatar} alt={profile.artistName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ width: '100%', height: '100%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', color: 'var(--text-muted)' }}>
+            <div style={{ width: '100%', height: '100%', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '54px', color: '#fff', fontWeight: '800', fontFamily: 'Outfit' }}>
               {profile.artistName?.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: '1 1 300px', minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>
               {isOwnProfile ? 'Creator Dashboard' : 'Artist Profile'}
             </span>
             {profile.isArtistVerified && (
-              <span className="user-badge" style={{ fontSize: '10px', padding: '2px 8px', margin: 0, display: 'flex', alignItems: 'center', gap: '3px', backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.4)' }}>
+              <span className="user-badge" style={{ fontSize: '10px', padding: '2px 8px', margin: 0, display: 'flex', alignItems: 'center', gap: '3px', backgroundColor: 'rgba(0, 242, 254, 0.15)', color: 'var(--accent)', border: '1px solid rgba(0, 242, 254, 0.3)' }}>
                 <CheckCircle className="w-3 h-3 fill-current" /> Verified Artist
               </span>
             )}
           </div>
-          <h1 style={{ fontSize: '42px', margin: '8px 0', fontWeight: '900', color: '#fff', fontFamily: 'Outfit' }}>{profile.artistName}</h1>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: '1.6', fontSize: '14px', margin: 0 }}>
+          <h1 style={{ fontSize: '38px', margin: '4px 0', fontWeight: '900', color: '#fff', fontFamily: 'Outfit', textAlign: 'center' }}>{profile.artistName}</h1>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: '1.6', fontSize: '14px', margin: '0 auto', textAlign: 'center' }}>
             {profile.artistBio || 'Welcome to the artist catalog.'}
           </p>
         </div>
@@ -610,7 +626,7 @@ const ArtistDashboard = () => {
           <button
             className="btn btn-secondary"
             onClick={() => setIsEditModalOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '30px', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '30px', flexShrink: 0, margin: '0 auto' }}
           >
             <Edit2 className="w-4 h-4" /> Edit Creator Profile
           </button>
@@ -618,7 +634,7 @@ const ArtistDashboard = () => {
           <button
             className="btn btn-primary"
             onClick={toggleFollow}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '30px', flexShrink: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '30px', flexShrink: 0, margin: '0 auto' }}
           >
             {isFollowing ? 'Unfollow Creator' : 'Follow Creator'}
           </button>
@@ -792,13 +808,10 @@ const ArtistDashboard = () => {
                  {isOwnProfile && (
                    <button 
                      className="btn btn-secondary btn-sm" 
-                     onClick={() => {
-                       setActiveView(`profile`);
-                       navigate(`/pages/profile`);
-                     }}
+                     onClick={() => setIsEditModalOpen(true)}
                      style={{ padding: '6px 12px', borderRadius: '12px', fontSize: '12px' }}
                    >
-                     Add Event via Profile
+                     Manage Tour Events
                    </button>
                  )}
                </div>
@@ -861,6 +874,108 @@ const ArtistDashboard = () => {
                   className="input-field"
                   style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
+              </div>
+
+              {/* Live shows inline gigs editor */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <label style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent)' }}>Live Shows & Gigs</label>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary btn-sm" 
+                    onClick={() => setEditForm({
+                      ...editForm,
+                      concerts: [...editForm.concerts, { title: 'Live Concert', venue: 'Grand Arena', city: 'City Name', date: new Date().toLocaleDateString(), url: '' }]
+                    })}
+                    style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '4px' }}
+                  >
+                    + Add Gig
+                  </button>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {editForm.concerts.map((gig, idx) => (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)' }}>Gig #{idx + 1}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setEditForm({
+                            ...editForm,
+                            concerts: editForm.concerts.filter((_, i) => i !== idx)
+                          })}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <input 
+                        type="text" 
+                        placeholder="Show Title (e.g. Summer Festival)" 
+                        value={gig.title} 
+                        onChange={(e) => {
+                          const updated = [...editForm.concerts];
+                          updated[idx].title = e.target.value;
+                          setEditForm({ ...editForm, concerts: updated });
+                        }}
+                        style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: '4px', fontSize: '12px' }} 
+                      />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          placeholder="Venue" 
+                          value={gig.venue} 
+                          onChange={(e) => {
+                            const updated = [...editForm.concerts];
+                            updated[idx].venue = e.target.value;
+                            setEditForm({ ...editForm, concerts: updated });
+                          }}
+                          style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: '4px', fontSize: '12px' }} 
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="City" 
+                          value={gig.city} 
+                          onChange={(e) => {
+                            const updated = [...editForm.concerts];
+                            updated[idx].city = e.target.value;
+                            setEditForm({ ...editForm, concerts: updated });
+                          }}
+                          style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: '4px', fontSize: '12px' }} 
+                        />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          placeholder="Date (e.g. Oct 24, 2026)" 
+                          value={gig.date} 
+                          onChange={(e) => {
+                            const updated = [...editForm.concerts];
+                            updated[idx].date = e.target.value;
+                            setEditForm({ ...editForm, concerts: updated });
+                          }}
+                          style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: '4px', fontSize: '12px' }} 
+                        />
+                        <input 
+                          type="url" 
+                          placeholder="Ticket Link (Optional)" 
+                          value={gig.url || ''} 
+                          onChange={(e) => {
+                            const updated = [...editForm.concerts];
+                            updated[idx].url = e.target.value;
+                            setEditForm({ ...editForm, concerts: updated });
+                          }}
+                          style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: '4px', fontSize: '12px' }} 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {editForm.concerts.length === 0 && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                      No tour events added yet.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>

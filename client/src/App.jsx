@@ -148,11 +148,7 @@ const MainAppContent = () => {
                 ) : (
                   user.name.charAt(0).toUpperCase()
                 )}
-                {user.isPremium && (
-                  <div className="mobile-avatar-crown-indicator">
-                    <Crown className="w-2.5 h-2.5" />
-                  </div>
-                )}
+
               </div>
             ) : (
               <div 
