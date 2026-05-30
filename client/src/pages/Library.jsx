@@ -316,10 +316,25 @@ const Library = () => {
           {/* TAB: LIKED SONGS */}
           {activeTab === 'liked' && (
             likedSongs.length === 0 ? (
-              <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                <FolderHeart className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
-                <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>Songs you like will appear here</h3>
-                <p style={{ fontSize: '14px' }}>Save tracks to your collection by clicking the heart icon on the music player.</p>
+              <div style={{ 
+                backgroundColor: 'var(--bg-secondary)', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '16px', 
+                padding: '48px', 
+                textAlign: 'center', 
+                color: 'var(--text-secondary)',
+                boxShadow: 'var(--glass-shadow)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '16px'
+              }}>
+                <FolderHeart className="w-12 h-12" style={{ color: 'var(--accent)', opacity: 0.6 }} />
+                <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>Songs you like will appear here</h3>
+                <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>Save tracks to your collection by clicking the heart icon on the music player.</p>
+                <button className="btn btn-primary" onClick={() => setActiveView('search')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+                  Discover Tracks
+                </button>
               </div>
             ) : (
               <table className="track-table">
@@ -430,10 +445,25 @@ const Library = () => {
                 )}
 
                 {myUploads.length === 0 ? (
-                  <div style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    <UploadCloud className="w-12 h-12 text-accent" style={{ margin: '0 auto 16px auto', opacity: 0.6 }} />
-                    <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', marginBottom: '8px' }}>No direct uploads found</h3>
-                    <p style={{ fontSize: '14px' }}>Got audio tracks ready to stream? Distribute them instantly in the Upload center!</p>
+                  <div style={{ 
+                    backgroundColor: 'var(--bg-secondary)', 
+                    border: '1px solid var(--border-color)', 
+                    borderRadius: '16px', 
+                    padding: '48px', 
+                    textAlign: 'center', 
+                    color: 'var(--text-secondary)',
+                    boxShadow: 'var(--glass-shadow)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '16px'
+                  }}>
+                    <UploadCloud className="w-12 h-12" style={{ color: 'var(--accent)', opacity: 0.6 }} />
+                    <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>No direct uploads found</h3>
+                    <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>Got audio tracks ready to stream? Distribute them instantly in the Upload center!</p>
+                    <button className="btn btn-primary" onClick={() => setActiveView('upload')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+                      Distribute Your First Song
+                    </button>
                   </div>
                 ) : (
                   <table className="track-table">

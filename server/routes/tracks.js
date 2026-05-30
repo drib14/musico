@@ -112,7 +112,8 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180), contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+      lyrics: t.lyrics ? await generateWhisperTimestamps(t.audio, t.lyrics, t.duration || 180) : '',
+      contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
     return track;

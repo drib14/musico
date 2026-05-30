@@ -368,8 +368,25 @@ const Profile = () => {
             </table>
           </section>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            No liked songs yet.
+          <div style={{ 
+            backgroundColor: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '16px', 
+            padding: '48px', 
+            textAlign: 'center', 
+            color: 'var(--text-secondary)',
+            boxShadow: 'var(--glass-shadow)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <Heart className="w-12 h-12" style={{ color: 'var(--accent)', opacity: 0.6 }} />
+            <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>No Liked Songs Yet</h3>
+            <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>Songs you like will appear here. Find tracks and save them to your collection!</p>
+            <button className="btn btn-primary" onClick={() => setActiveView('search')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+              Explore Music
+            </button>
           </div>
         )
       )}
@@ -399,8 +416,27 @@ const Profile = () => {
             </div>
           </section>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            No playlists found on this profile.
+          <div style={{ 
+            backgroundColor: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '16px', 
+            padding: '48px', 
+            textAlign: 'center', 
+            color: 'var(--text-secondary)',
+            boxShadow: 'var(--glass-shadow)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <Music className="w-12 h-12" style={{ color: 'var(--accent)', opacity: 0.6 }} />
+            <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>No Playlists Distributed</h3>
+            <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>No playlists are public on this profile yet.</p>
+            {isOwnProfile && (
+              <button className="btn btn-primary" onClick={() => setActiveView('library')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+                Go to Library to Create
+              </button>
+            )}
           </div>
         )
       )}
@@ -417,12 +453,24 @@ const Profile = () => {
                   onClick={() => {
                     setActiveView(`profile/${f._id}`);
                   }}
-                  style={{ height: '160px', padding: '16px', cursor: 'pointer' }}
+                  style={{ 
+                    height: '160px', 
+                    padding: '16px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    background: 'var(--glass-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '12px'
+                  }}
                 >
                   {f.userAvatar ? (
-                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto' }} />
                   ) : (
-                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold', margin: '0 auto' }}>
                       {f.name?.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -431,8 +479,24 @@ const Profile = () => {
               ))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-              No followers yet.
+            <div style={{ 
+              backgroundColor: 'var(--bg-secondary)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '16px', 
+              padding: '48px', 
+              textAlign: 'center', 
+              color: 'var(--text-secondary)',
+              boxShadow: 'var(--glass-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>No Followers Yet</h3>
+              <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>Connect with other listeners on Musico by sharing your profile!</p>
+              <button className="btn btn-primary" onClick={() => setActiveView('search')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+                Find Friends
+              </button>
             </div>
           )}
         </section>
@@ -450,12 +514,24 @@ const Profile = () => {
                   onClick={() => {
                     setActiveView(`profile/${f._id}`);
                   }}
-                  style={{ height: '160px', padding: '16px', cursor: 'pointer' }}
+                  style={{ 
+                    height: '160px', 
+                    padding: '16px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    background: 'var(--glass-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '12px'
+                  }}
                 >
                   {f.userAvatar ? (
-                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <img src={f.userAvatar} alt={f.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto' }} />
                   ) : (
-                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-gradient)', color: '#fff', display: 'flex', alignItems: 'center', justify: 'center', fontSize: '20px', fontWeight: 'bold', margin: '0 auto' }}>
                       {f.name?.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -464,8 +540,24 @@ const Profile = () => {
               ))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-              Not following anyone yet.
+            <div style={{ 
+              backgroundColor: 'var(--bg-secondary)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '16px', 
+              padding: '48px', 
+              textAlign: 'center', 
+              color: 'var(--text-secondary)',
+              boxShadow: 'var(--glass-shadow)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px'
+            }}>
+              <h3 style={{ fontSize: '18px', color: 'var(--text-primary)', fontFamily: 'Outfit' }}>Not Following Anyone</h3>
+              <p style={{ fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>Follow artists and creators to stay updated with their latest uploads!</p>
+              <button className="btn btn-primary" onClick={() => setActiveView('search')} style={{ marginTop: '8px', padding: '10px 24px', borderRadius: '24px' }}>
+                Browse Creators
+              </button>
             </div>
           )}
         </section>

@@ -22,33 +22,33 @@
 
 /* Core Design Tokens & Palette Config */
 :root {
-  /* Default Navy Dark Mode variables */
-  --bg-primary: #070a13;
-  --bg-secondary: #0d1326;
-  --bg-tertiary: #141d36;
+  /* Premium Neon Navy theme colors */
+  --bg-primary: #040712;
+  --bg-secondary: #080c1a;
+  --bg-tertiary: #0e1428;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #1e293b;
-  --border-focus: #3b82f6;
+  --text-muted: #627289;
+  --border-color: #16203d;
+  --border-focus: #00f2fe;
   
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --accent-light: rgba(59, 130, 246, 0.1);
-  --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  --success: #10b981;
-  --danger: #ef4444;
-  --premium-color: #f59e0b;
+  --accent: #00f2fe;
+  --accent-hover: #0984e3;
+  --accent-light: rgba(0, 242, 254, 0.08);
+  --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  --success: #00ffcc;
+  --danger: #ff0055;
+  --premium-color: #ffd700;
   
-  --glass-bg: rgba(13, 19, 38, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --backdrop-blur: blur(16px);
+  --glass-bg: rgba(8, 12, 26, 0.75);
+  --glass-border: rgba(0, 242, 254, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 242, 254, 0.08);
+  --backdrop-blur: blur(20px);
   
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --sidebar-width: 220px;
+  --sidebar-width: 260px; /* Re-expanded Left Sidebar */
   --player-height: 90px;
 }
 
@@ -61,30 +61,32 @@ body.theme-light {
   --text-secondary: #475569;
   --text-muted: #64748b;
   --border-color: #cbd5e1;
-  --border-focus: #2563eb;
+  --border-focus: #00b4d8;
   
-  --accent-light: rgba(37, 99, 235, 0.1);
-  --accent-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --accent: #00b4d8;
+  --accent-hover: #0077b6;
+  --accent-light: rgba(0, 180, 216, 0.1);
+  --accent-gradient: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
   
   --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border: rgba(0, 180, 216, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
 }
 
 /* Explicit Dark Mode Override */
 body.theme-dark {
-  --bg-primary: #070a13;
-  --bg-secondary: #0d1326;
-  --bg-tertiary: #141d36;
+  --bg-primary: #040712;
+  --bg-secondary: #080c1a;
+  --bg-tertiary: #0e1428;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border-color: #1e293b;
-  --border-focus: #3b82f6;
+  --text-muted: #627289;
+  --border-color: #16203d;
+  --border-focus: #00f2fe;
   
-  --glass-bg: rgba(13, 19, 38, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-bg: rgba(8, 12, 26, 0.75);
+  --glass-border: rgba(0, 242, 254, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 242, 254, 0.08);
 }
 
 /* Global Reset & Base Setup */
@@ -138,7 +140,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .app-container.has-right-panel.has-player {
-  grid-template-columns: var(--sidebar-width) 1fr 340px;
+  grid-template-columns: var(--sidebar-width) 1fr 300px;
   grid-template-areas: 
     "sidebar main rightpanel"
     "player player player";
@@ -148,14 +150,15 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar {
   grid-area: sidebar;
   background-color: var(--bg-secondary);
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 10;
-  transition: background-color var(--transition-normal);
+  box-shadow: inset 0 0 12px rgba(0, 242, 254, 0.02), 0 8px 32px rgba(0, 0, 0, 0.6);
+  transition: all var(--transition-normal);
 }
 
 .logo-container {
@@ -170,7 +173,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 32px;
   height: 32px;
   color: var(--accent);
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+  filter: drop-shadow(0 0 12px rgba(0, 242, 254, 0.8));
 }
 
 .logo-text {
@@ -200,19 +203,24 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
   border-radius: 8px;
   cursor: pointer;
+  border: 1px solid transparent;
   transition: all var(--transition-fast);
 }
 
 .nav-item:hover {
   background-color: var(--accent-light);
   color: var(--accent);
+  border-color: rgba(0, 242, 254, 0.15);
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.15);
   transform: translateX(4px);
 }
 
 .nav-item.active {
-  background: var(--accent-gradient);
-  color: #ffffff;
-  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(79, 172, 254, 0.04) 100%);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.35);
+  font-weight: 700;
 }
 
 .nav-item svg {
@@ -295,15 +303,15 @@ h1, h2, h3, h4, h5, h6 {
   border: none !important;
   border-radius: 8px;
   height: 100%;
-  width: 400px;
-  min-width: 400px;
+  width: 300px;
+  min-width: 300px;
   flex-shrink: 0;
 }
 
 @media (min-width: 1600px) {
   .right-sidebar {
-    width: 450px;
-    min-width: 450px;
+    width: 300px;
+    min-width: 300px;
   }
 }
 
