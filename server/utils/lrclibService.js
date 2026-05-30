@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 /**
- * Voice-onset-simulating Smart Time Aligner (proportional fallback)
+ * Fallback: voice-onset-simulating Smart Time Aligner
  * Allocates lyrics line durations proportionally based on word count & character length,
  * adding onset padding to match real song start tempos.
  */
@@ -106,7 +106,6 @@ const generateLRCLibLyrics = async (audioSource, rawLyrics, duration, title, art
 };
 
 module.exports = {
-  generateWhisperTimestamps: generateLRCLibLyrics,
   generateLRCLibLyrics,
   smartProportionalAlign
 };

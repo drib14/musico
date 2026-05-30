@@ -15,7 +15,9 @@ const Settings = () => {
   const { 
     user, 
     logoutUser, 
-    setActiveView 
+    setActiveView,
+    theme,
+    setTheme
   } = useContext(AppContext);
   
   const navigate = useNavigate();
@@ -26,7 +28,6 @@ const Settings = () => {
   const [equalizer, setEqualizer] = useState('Bass Boost');
   const [quality, setQuality] = useState('High (320kbps)');
   const [volumeNorm, setVolumeNorm] = useState(true);
-  const [themeMode, setThemeMode] = useState('dark');
   const [language, setLanguage] = useState('English');
   const [shareListening, setShareListening] = useState(true);
   const [publicSearch, setPublicSearch] = useState(true);
@@ -254,15 +255,8 @@ const Settings = () => {
                             App Theme Mode
                           </label>
                           <select 
-                            value={themeMode} 
-                            onChange={(e) => {
-                              setThemeMode(e.target.value);
-                              if (e.target.value === 'light') {
-                                document.body.className = 'theme-light';
-                              } else {
-                                document.body.className = 'theme-dark';
-                              }
-                            }} 
+                            value={theme} 
+                            onChange={(e) => setTheme(e.target.value)} 
                             className="form-input" 
                             style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
                           >

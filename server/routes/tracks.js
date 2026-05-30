@@ -9,7 +9,7 @@ const Playlist = require('../models/Playlist');
 const PlayLog = require('../models/PlayLog');
 const Album = require('../models/Album');
 const { protect } = require('../middleware/authMiddleware');
-const { generateWhisperTimestamps, smartProportionalAlign } = require('../utils/whisperService');
+const { generateLRCLibLyrics, smartProportionalAlign } = require('../utils/lrclibService');
 
 const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
@@ -112,7 +112,7 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: t.lyrics ? await generateWhisperTimestamps(t.audio, t.lyrics, t.duration || 180, t.name, t.artist_name) : '',
+      lyrics: t.lyrics ? await generateLRCLibLyrics(t.audio, t.lyrics, t.duration || 180, t.name, t.artist_name) : '',
       contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
@@ -313,7 +313,7 @@ router.post(
       let syncedLyrics = '';
       if (lyrics) {
         console.log('Processing track lyrics through LRCLIB Sync Engine...');
-        syncedLyrics = await generateWhisperTimestamps(
+        syncedLyrics = await generateLRCLibLyrics(
           audioFile.buffer,
           lyrics,
           audioResult.duration || 0,
@@ -599,7 +599,7 @@ router.put('/:id', protect, async (req, res) => {
     
     if (lyrics !== undefined && lyrics !== track.lyrics) {
       console.log('Track lyrics modified. Re-processing with LRCLIB Sync Engine...');
-      track.lyrics = await generateWhisperTimestamps(
+      track.lyrics = await generateLRCLibLyrics(
         track.audioUrl, // Pass the remote audioUrl so LRCLIB can download and align it if needed!
         lyrics,
         track.duration || 0,
