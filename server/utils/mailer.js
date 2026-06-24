@@ -16,27 +16,34 @@ const sendVerificationEmail = async (email, code, name) => {
     to: email,
     subject: 'Verify Your Musico Account',
     html: `
-      <div style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #070a13; color: #ffffff; padding: 40px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #3b82f6; font-size: 32px; margin: 0; font-weight: bold; letter-spacing: 1px;">MUSICO</h1>
-          <p style="color: #94a3b8; font-size: 14px;">Elevating Your Music Experience</p>
-        </div>
-        <div style="background-color: #111827; padding: 30px; border-radius: 8px; border: 1px solid #1f2937;">
-          <h2 style="color: #ffffff; font-size: 20px; margin-top: 0; font-weight: 600;">Hello ${name},</h2>
-          <p style="color: #d1d5db; font-size: 16px; line-height: 1.5; margin-bottom: 25px;">
-            Thank you for registering at Musico. To activate your account and access custom uploads and playlists, please verify your email with the 6-digit confirmation code below:
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <span style="font-size: 36px; font-weight: bold; color: #3b82f6; letter-spacing: 6px; background-color: #1f2937; padding: 12px 30px; border-radius: 6px; border: 1px solid #374151;">${code}</span>
+          <div style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: 60px; height: 60px; border-radius: 50%; margin-bottom: 16px; line-height: 60px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3220/3220736.png" style="width: 30px; vertical-align: middle; filter: brightness(0) invert(1);" alt="Musico Logo">
           </div>
-          <p style="color: #94a3b8; font-size: 14px; margin-top: 25px;">
-            This verification code is valid for 15 minutes. If you did not request this code, please ignore this email.
-          </p>
-          <p style="font-size: 14px; color: #64748b; margin-top: 24px;">If you're having trouble with the code, you can also log in directly and enter it there:</p>
-          <a href="${CLIENT_URL}" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Open Musico App</a>
+          <h1 style="color: #ffffff; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: 2px;">MUSICO</h1>
+          <p style="color: #3b82f6; font-size: 14px; font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;">Elevating Your Music Experience</p>
         </div>
-        <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 12px;">
-          &copy; 2026 Musico, Inc. All rights reserved.
+        <div style="background-color: #121826; padding: 40px 30px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <h2 style="color: #ffffff; font-size: 22px; margin-top: 0; font-weight: 700;">Welcome to Musico, ${name}!</h2>
+          <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            We're thrilled to have you join our platform. To fully activate your account and start uploading tracks or curating your ultimate playlists, please verify your email address using the code below.
+          </p>
+          <div style="text-align: center; margin: 35px 0;">
+            <div style="display: inline-block; background-color: #1e293b; padding: 15px 40px; border-radius: 8px; border: 1px solid #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+              <span style="font-size: 42px; font-weight: 800; color: #3b82f6; letter-spacing: 8px;">${code}</span>
+            </div>
+          </div>
+          <p style="color: #64748b; font-size: 14px; margin-top: 30px; text-align: center;">
+            This verification code is securely generated and will expire in <strong>15 minutes</strong>. If you did not create an account, please disregard this email.
+          </p>
+          <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <a href="${CLIENT_URL}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; border-radius: 30px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">Open Musico App</a>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; color: #475569; font-size: 12px; line-height: 1.5;">
+          <p>Musico, Inc. &bull; Your Direct Audio Streaming Platform</p>
+          <p>&copy; ${new Date().getFullYear()} Musico. All rights reserved.</p>
         </div>
       </div>
     `,
@@ -57,27 +64,34 @@ const sendResetPasswordEmail = async (email, code, name) => {
     to: email,
     subject: 'Reset Your Musico Password',
     html: `
-      <div style="font-family: Arial, sans-serif; background-color: #0b0f19; color: #ffffff; padding: 40px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #070a13; color: #ffffff; padding: 40px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #3b82f6; font-size: 32px; margin: 0; font-weight: bold; letter-spacing: 1px;">MUSICO</h1>
-          <p style="color: #94a3b8; font-size: 14px;">Elevating Your Music Experience</p>
-        </div>
-        <div style="background-color: #111827; padding: 30px; border-radius: 8px; border: 1px solid #1f2937;">
-          <h2 style="color: #ffffff; font-size: 20px; margin-top: 0; font-weight: 600;">Hello ${name},</h2>
-          <p style="color: #d1d5db; font-size: 16px; line-height: 1.5; margin-bottom: 25px;">
-            We received a request to reset your password for your Musico account. Please enter the 6-digit confirmation code on the verification screen to reset your password:
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <span style="font-size: 36px; font-weight: bold; color: #3b82f6; letter-spacing: 6px; background-color: #1f2937; padding: 12px 30px; border-radius: 6px; border: 1px solid #374151;">${code}</span>
+          <div style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: 60px; height: 60px; border-radius: 50%; margin-bottom: 16px; line-height: 60px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3220/3220736.png" style="width: 30px; vertical-align: middle; filter: brightness(0) invert(1);" alt="Musico Logo">
           </div>
-          <p style="color: #94a3b8; font-size: 14px; margin-top: 25px;">
-            This recovery code is valid for 15 minutes. If you did not request this reset, you can safely ignore this email.
-          </p>
-          <p style="font-size: 14px; color: #64748b; margin-top: 24px;">Click the button below to return to the application and enter your code:</p>
-          <a href="${CLIENT_URL}" style="display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600;">Return to Musico</a>
+          <h1 style="color: #ffffff; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: 2px;">MUSICO</h1>
+          <p style="color: #3b82f6; font-size: 14px; font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px;">Elevating Your Music Experience</p>
         </div>
-        <div style="text-align: center; margin-top: 30px; color: #64748b; font-size: 12px;">
-          &copy; 2026 Musico, Inc. All rights reserved.
+        <div style="background-color: #121826; padding: 40px 30px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <h2 style="color: #ffffff; font-size: 22px; margin-top: 0; font-weight: 700;">Password Reset Request</h2>
+          <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin-bottom: 30px;">
+            Hello ${name},<br><br>We received a request to reset the password for your Musico account. Please enter the 6-digit confirmation code below on the verification screen to proceed:
+          </p>
+          <div style="text-align: center; margin: 35px 0;">
+            <div style="display: inline-block; background-color: #1e293b; padding: 15px 40px; border-radius: 8px; border: 1px solid #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+              <span style="font-size: 42px; font-weight: 800; color: #3b82f6; letter-spacing: 8px;">${code}</span>
+            </div>
+          </div>
+          <p style="color: #64748b; font-size: 14px; margin-top: 30px; text-align: center;">
+            This recovery code is securely generated and will expire in <strong>15 minutes</strong>. If you did not request a password reset, please safely ignore this email. Your account is secure.
+          </p>
+          <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <a href="${CLIENT_URL}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; border-radius: 30px; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);">Return to Musico</a>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 30px; color: #475569; font-size: 12px; line-height: 1.5;">
+          <p>Musico, Inc. &bull; Your Direct Audio Streaming Platform</p>
+          <p>&copy; ${new Date().getFullYear()} Musico. All rights reserved.</p>
         </div>
       </div>
     `,

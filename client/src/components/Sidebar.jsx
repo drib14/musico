@@ -181,14 +181,7 @@ const Sidebar = ({ onOpenAuth }) => {
             )}
             <div className="user-info" style={{ flex: 1, minWidth: 0 }}>
               <div className="user-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-              {user.isPremium ? (
-                <div className="user-badge">
-                  <Crown style={{ width: '10px', height: '10px' }} />
-                  Premium
-                </div>
-              ) : (
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Free Account</div>
-              )}
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email || 'Listener Account'}</div>
             </div>
             <button 
               className="btn-icon" 

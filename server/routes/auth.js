@@ -416,7 +416,11 @@ router.put(
 // @access  Public
 router.get('/users/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires');
+    const user = await User.findById(req.params.id)
+      .select('-password -email -verificationCode -verificationCodeExpires -resetPasswordCode -resetPasswordCodeExpires')
+      .populate('followers', 'name userAvatar')
+      .populate('following', 'name userAvatar')
+      .populate('likedTracks');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

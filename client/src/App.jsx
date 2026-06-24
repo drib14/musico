@@ -23,6 +23,7 @@ import AllPlaylists from './pages/AllPlaylists';
 import AllTracks from './pages/AllTracks';
 import ArtistDashboard from './pages/ArtistDashboard';
 import LoadingScreen from './components/LoadingScreen';
+import SplashScreen from './components/SplashScreen';
 
 const MainAppContent = () => {
   const { 
@@ -39,6 +40,23 @@ const MainAppContent = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Entrance Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+  const [fadeOutSplash, setFadeOutSplash] = useState(false);
+
+  useEffect(() => {
+    // Keep splash active for at least 2.2 seconds, then trigger fade out
+    const timer = setTimeout(() => {
+      setFadeOutSplash(true);
+      const removeTimer = setTimeout(() => {
+        setShowSplash(false);
+      }, 600);
+      return () => clearTimeout(removeTimer);
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auth modal management state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -65,9 +83,11 @@ const MainAppContent = () => {
   // Sync browser URL path with activeView context state changes (two-way binding)
   useEffect(() => {
     const expectedPath = `/pages/${activeView}`;
-    if (location.pathname !== expectedPath && location.pathname !== '/') {
-      // Use replace to prevent overwhelming the browser history
-      navigate(expectedPath, { replace: true });
+    if (location.pathname !== expectedPath && !location.pathname.startsWith(expectedPath)) {
+      // Prevent unnecessary redirect loops if location is already on a sub-path of expected
+      if (location.pathname !== '/') {
+        navigate(expectedPath, { replace: true });
+      }
     }
   }, [activeView, navigate, location.pathname]);
 
@@ -82,6 +102,7 @@ const MainAppContent = () => {
         <Route path="/pages/upload" element={<Upload />} />
         <Route path="/pages/settings" element={<SettingsView />} />
         <Route path="/pages/profile" element={<Profile />} />
+        <Route path="/pages/profile/:id" element={<Profile />} />
         <Route path="/pages/playlist-details" element={<PlaylistDetails />} />
         <Route path="/pages/chart-details" element={<ChartDetails />} />
         <Route path="/pages/song-details" element={<SongDetails />} />
@@ -90,17 +111,20 @@ const MainAppContent = () => {
         <Route path="/pages/all-tracks" element={<AllTracks />} />
         <Route path="/pages/lyrics" element={<Lyrics />} />
         <Route path="/pages/artist-dashboard" element={<ArtistDashboard />} />
+        <Route path="/pages/artist-dashboard/:id" element={<ArtistDashboard />} />
         <Route path="*" element={<Navigate to="/pages/home" replace />} />
       </Routes>
     );
   };
 
-  if (isInitializingAuth) {
-    return <LoadingScreen />;
-  }
-
   return (
-    <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
+    <>
+      {showSplash && <SplashScreen fadeOut={fadeOutSplash} />}
+      
+      {isInitializingAuth ? (
+        <LoadingScreen />
+      ) : (
+        <div className={`app-container ${currentTrack && currentTrack._id ? 'has-right-panel has-player' : ''}`}>
       {/* Sidebar navigation */}
       <Sidebar onOpenAuth={openAuthModal} />
 
@@ -124,11 +148,7 @@ const MainAppContent = () => {
                 ) : (
                   user.name.charAt(0).toUpperCase()
                 )}
-                {user.isPremium && (
-                  <div className="mobile-avatar-crown-indicator">
-                    <Crown className="w-2.5 h-2.5" />
-                  </div>
-                )}
+
               </div>
             ) : (
               <div 
@@ -233,7 +253,9 @@ const MainAppContent = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 

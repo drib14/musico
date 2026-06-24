@@ -34,6 +34,7 @@ const Upload = () => {
   });
 
   const [audioUrl, setAudioUrl] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const singleAudioRef = React.useRef(null);
   
   useEffect(() => {
@@ -208,12 +209,13 @@ const Upload = () => {
   };
 
   // Form submission for Single Song
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!audioFile) return showToast('Please select an audio track', 'error');
     if (!title) return showToast('Please enter a track title', 'error');
 
     setLoading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('title', title);
     formData.append('genre', genre);
@@ -222,43 +224,59 @@ const Upload = () => {
     formData.append('contributors', JSON.stringify(contributors));
     if (coverFile) formData.append('cover', coverFile);
 
-    try {
-      console.log('Sending direct upload files directly to Cloudinary via server middleware...');
-      const res = await fetch(`${API_URL}/tracks/upload`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
+    console.log('Sending direct upload files directly to Cloudinary via server middleware with XHR progress monitoring...');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/tracks/upload`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Direct upload failed');
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      setLoading(false);
+      setUploadProgress(0);
+      
+      let data = {};
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {
+        data = { message: 'Upload parsing error' };
       }
 
-      showToast('Track published and streaming live inside Musico!');
-      // Clear forms
-      setAudioFile(null);
-      setCoverFile(null);
-      setTitle('');
-      setGenre('Pop');
-      setLyrics('');
-      setContributors({
-        mainVocalist: '',
-        composer: '',
-        lyricist: '',
-        producer: ''
-      });
-      
-      // Update upload limits check and go to Libraryuploads list
-      await checkUploadLimit();
-      setActiveView('library');
-    } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        showToast('Track published and streaming live inside Musico!');
+        // Clear forms
+        setAudioFile(null);
+        setCoverFile(null);
+        setTitle('');
+        setGenre('Pop');
+        setLyrics('');
+        setContributors({
+          mainVocalist: '',
+          composer: '',
+          lyricist: '',
+          producer: ''
+        });
+        
+        checkUploadLimit();
+        setActiveView('library');
+      } else {
+        showToast(data.message || 'Direct upload failed', 'error');
+      }
+    };
+
+    xhr.onerror = () => {
       setLoading(false);
-    }
+      setUploadProgress(0);
+      showToast('Network error during upload', 'error');
+    };
+
+    xhr.send(formData);
   };
 
   // Dynamic Album list rows management
@@ -767,7 +785,28 @@ const Upload = () => {
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Sync your lyrics as you listen</span>
                 </div>
                 
-                <audio ref={singleAudioRef} src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <audio ref={singleAudioRef} src={audioUrl} style={{ display: 'none' }} />
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (singleAudioRef.current) {
+                          if (singleAudioRef.current.paused) {
+                            singleAudioRef.current.play();
+                          } else {
+                            singleAudioRef.current.pause();
+                          }
+                        }
+                      }}
+                      className="btn btn-primary btn-sm"
+                      style={{ padding: '6px 12px', borderRadius: '4px', fontSize: '12px' }}
+                    >
+                      Play / Pause
+                    </button>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Use this player to sync lyrics</span>
+                  </div>
+                </div>
                 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
@@ -811,34 +850,6 @@ const Upload = () => {
                     ⏱️ Stamp Current Time
                   </button>
                   
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      if (!lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
-                      const lines = lyrics.split('\n');
-                      let time = 0;
-                      const stamped = lines.map(line => {
-                        if (line.trim().length === 0) return line;
-                        const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
-                        const mins = Math.floor(time / 60).toString().padStart(2, '0');
-                        const secs = Math.floor(time % 60).toString().padStart(2, '0');
-                        const res = `[${mins}:${secs}] ${clean}`;
-                        time += 4;
-                        return res;
-                      });
-                      setLyrics(stamped.join('\n'));
-                      showToast('Auto-generated template timestamps every 4 seconds!');
-                    }}
-                    style={{
-                      padding: '8px 14px',
-                      fontSize: '12.5px',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    🪄 Auto-Stamp Template
-                  </button>
                 </div>
                 <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                   💡 <strong>Tip:</strong> Play your song above. Click <strong>Stamp Current Time</strong> at the exact start of a line to insert the <code>[mm:ss]</code> timestamp. Timed lyrics let listeners scrub through your song by tapping lines!
@@ -846,6 +857,27 @@ const Upload = () => {
               </div>
             )}
           </div>
+
+          {/* Real-time Upload Progress Bar */}
+          {loading && uploadProgress > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <span>Uploading track elements...</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{uploadProgress}%</span>
+              </div>
+              <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div 
+                  style={{ 
+                    width: `${uploadProgress}%`, 
+                    height: '100%', 
+                    background: 'var(--accent-gradient)', 
+                    borderRadius: '4px',
+                    transition: 'width 0.1s linear'
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Action Publish Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
@@ -1242,12 +1274,29 @@ const Upload = () => {
                           <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--accent)' }}>⏱️ Timed Lyrics Assistant (Track #{idx + 1})</span>
                         </div>
                         
-                        <audio 
-                          id={`album-preview-audio-${idx}`}
-                          src={URL.createObjectURL(track.audioFile)} 
-                          controls 
-                          style={{ width: '100%', height: '36px' }} 
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <audio
+                            id={`album-preview-audio-${idx}`}
+                            src={URL.createObjectURL(track.audioFile)}
+                            style={{ display: 'none' }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'var(--bg-primary)', padding: '6px 10px', borderRadius: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const audioEl = document.getElementById(`album-preview-audio-${idx}`);
+                                if (audioEl) {
+                                  if (audioEl.paused) audioEl.play();
+                                  else audioEl.pause();
+                                }
+                              }}
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '4px 10px', borderRadius: '4px', fontSize: '11px' }}
+                            >
+                              Play / Pause
+                            </button>
+                          </div>
+                        </div>
                         
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
@@ -1282,29 +1331,6 @@ const Upload = () => {
                             ⏱️ Stamp Current Time
                           </button>
                           
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => {
-                              if (!track.lyrics.trim()) return showToast('Please type some lyrics first!', 'error');
-                              const lines = track.lyrics.split('\n');
-                              let time = 0;
-                              const stamped = lines.map(line => {
-                                if (line.trim().length === 0) return line;
-                                const clean = line.replace(/^\[\d{2}:\d{2}\]\s*/, '');
-                                const mins = Math.floor(time / 60).toString().padStart(2, '0');
-                                const secs = Math.floor(time % 60).toString().padStart(2, '0');
-                                const res = `[${mins}:${secs}] ${clean}`;
-                                time += 4;
-                                return res;
-                              });
-                              handleUpdateTrackRow(idx, 'lyrics', stamped.join('\n'));
-                              showToast('Auto-generated template timestamps every 4 seconds!');
-                            }}
-                            style={{ padding: '4px 10px', fontSize: '11px' }}
-                          >
-                            🪄 Auto-Stamp Template
-                          </button>
                         </div>
                       </div>
                     )}

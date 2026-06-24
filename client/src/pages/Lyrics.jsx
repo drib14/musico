@@ -80,6 +80,7 @@ const Lyrics = () => {
     for (let i = 0; i < parsed.length; i++) {
       if (parsed[i].time === null) {
         parsed[i].time = lastTime + 1.5;
+        lastTime = parsed[i].time;
       } else {
         lastTime = parsed[i].time;
       }
@@ -113,35 +114,30 @@ const Lyrics = () => {
 
   const parsedLines = parseLyrics();
 
-  // Find active line index based on playback time (exact vocal synchronization matching Spotify)
+  // Enable time-scrolling for all tracks (now that Jamendo tracks have proportional timestamps)
+  const isJamendoTrack = false;
+
+  // Find active line index based on playback time
   let activeIndex = -1;
-  for (let i = 0; i < parsedLines.length; i++) {
-    if (parsedLines[i].time !== null && currentTime >= parsedLines[i].time) {
-      activeIndex = i;
+  if (!isJamendoTrack) {
+    for (let i = 0; i < parsedLines.length; i++) {
+      if (parsedLines[i].time !== null && currentTime >= parsedLines[i].time) {
+        activeIndex = i;
+      }
     }
   }
 
   // Smooth auto-scroll the active line to the center
   useEffect(() => {
-    if (activeLineRef.current) {
+    if (activeLineRef.current && !isJamendoTrack) {
       activeLineRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
       });
     }
-  }, [activeIndex]);
+  }, [activeIndex, isJamendoTrack]);
 
-  const handleLineClick = (time) => {
-    if (time === null) return;
-    const audio = audioRef?.current;
-    if (audio) {
-      audio.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  // Restrict lines if Free tier user (Bypassed since premium is free!)
-  const visibleLines = isPremium ? parsedLines : parsedLines.slice(0, 3);
+  const visibleLines = parsedLines;
 
   return (
     <div className="lyrics-view-overlay">
@@ -199,27 +195,32 @@ const Lyrics = () => {
         {hasLyrics ? (
           <div className="lyrics-lines-wrapper">
             {visibleLines.map((line, idx) => {
-              const isActive = idx === activeIndex;
-              const isPast = idx < activeIndex;
+              const isActive = isJamendoTrack ? true : idx === activeIndex;
               const isInstrumental = line.isInstrumental || /instrumental|solo|guitar solo|synth solo|music solo/i.test(line.text);
+
+              // Force active styling for display-only mode
+              const stylingClass = isJamendoTrack ? 'lyrics-text-line active display-only' : `lyrics-text-line ${isActive ? 'active' : (idx < activeIndex ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`;
+
               return (
                 <p 
                   key={idx} 
-                  ref={isActive ? activeLineRef : null}
-                  className={`lyrics-text-line ${isActive ? 'active' : (isPast ? 'past' : 'future')} ${isInstrumental ? 'instrumental-solo' : ''}`}
-                  onClick={() => handleLineClick(line.time)}
+                  ref={isActive && !isJamendoTrack ? activeLineRef : null}
+                  className={stylingClass}
                   style={isInstrumental ? {
-                    color: isActive ? 'var(--premium-color)' : 'var(--text-muted)',
+                    color: 'var(--text-muted)',
                     fontStyle: 'italic',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '12px'
-                  } : {}}
+                    gap: '12px',
+                    cursor: 'default'
+                  } : {
+                    cursor: 'default'
+                  }}
                 >
                   {isInstrumental ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '24px' }}>
-                      {isActive && <span className="spinning-music-note">🎵</span>}
+                      {isActive && !isJamendoTrack && <span className="spinning-music-note">🎵</span>}
                       🎵
                     </span>
                   ) : (

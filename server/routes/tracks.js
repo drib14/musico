@@ -9,6 +9,7 @@ const Playlist = require('../models/Playlist');
 const PlayLog = require('../models/PlayLog');
 const Album = require('../models/Album');
 const { protect } = require('../middleware/authMiddleware');
+const { generateLRCLibLyrics, smartProportionalAlign } = require('../utils/lrclibService');
 
 const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
 
@@ -47,34 +48,9 @@ const upload = multer({
   },
 });
 
-// Helper: Distribute timestamps linearly for raw Jamendo lyrics
+// Helper: Distribute timestamps proportionally for raw Jamendo lyrics using Smart Aligner
 const generateSyncedLyrics = (lyrics, duration) => {
-  if (!lyrics || typeof lyrics !== 'string') return lyrics;
-
-  // If it already contains LRC timestamps, return it as is
-  if (/\[\d{2}:\d{2}\]/.test(lyrics)) return lyrics;
-
-  const lines = lyrics.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  if (lines.length === 0) return lyrics;
-
-  const startBuffer = Math.min(10, duration * 0.1);
-  const endBuffer = Math.min(10, duration * 0.1);
-
-  let usableTime = duration - startBuffer - endBuffer;
-  if (usableTime < 10) usableTime = duration;
-
-  const timePerLine = usableTime / lines.length;
-
-  const syncedLines = lines.map((line, index) => {
-    let seconds = startBuffer + (index * timePerLine);
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const formattedMins = mins.toString().padStart(2, '0');
-    const formattedSecs = secs.toString().padStart(2, '0');
-    return `[${formattedMins}:${formattedSecs}.00] ${line}`;
-  });
-
-  return syncedLines.join('\n');
+  return smartProportionalAlign(lyrics, duration);
 };
 
 // Helper stream uploader for Cloudinary
@@ -136,7 +112,8 @@ const getOrCreateMirroredTrack = async (trackId) => {
       isJamendo: true,
       jamendoArtistId: t.artist_id,
       jamendoTrackId: t.id,
-      lyrics: generateSyncedLyrics(t.lyrics || '', t.duration || 180), contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
+      lyrics: await generateLRCLibLyrics(t.audio, t.lyrics || '', t.duration || 180, t.name, t.artist_name),
+      contributors: { mainVocalist: t.musicinfo?.vocalinstrumental === 'vocal' ? t.artist_name : '', composer: t.musicinfo?.tags?.instruments?.join(', ') || '', lyricist: '', producer: '' }
     });
 
     return track;
@@ -332,6 +309,19 @@ router.post(
         }
       }
 
+      // Process lyrics using LRCLIB Sync Engine
+      let syncedLyrics = '';
+      if (lyrics) {
+        console.log('Processing track lyrics through LRCLIB Sync Engine...');
+        syncedLyrics = await generateLRCLibLyrics(
+          audioFile.buffer,
+          lyrics,
+          audioResult.duration || 0,
+          title,
+          req.user.artistProfile.artistName
+        );
+      }
+
       // Create Track in database
       const track = await Track.create({
         title,
@@ -341,7 +331,7 @@ router.post(
         coverUrl,
         duration: audioResult.duration || 0,
         genre: genre || 'Unknown',
-        lyrics: lyrics || '',
+        lyrics: syncedLyrics || '',
         contributors: parsedContributors,
       });
 
@@ -606,7 +596,17 @@ router.put('/:id', protect, async (req, res) => {
 
     track.title = title || track.title;
     track.genre = genre || track.genre;
-    track.lyrics = lyrics !== undefined ? lyrics : track.lyrics;
+    
+    if (lyrics !== undefined && lyrics !== track.lyrics) {
+      console.log('Track lyrics modified. Re-processing with LRCLIB Sync Engine...');
+      track.lyrics = await generateLRCLibLyrics(
+        track.audioUrl, // Pass the remote audioUrl so LRCLIB can download and align it if needed!
+        lyrics,
+        track.duration || 0,
+        track.title,
+        track.artistName
+      );
+    }
 
     const updatedTrack = await track.save();
     res.json(updatedTrack);

@@ -1,422 +1,428 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   User, 
-  Mail, 
-  Lock, 
-  CheckCircle, 
-  Save, 
-  Crown, 
-  Sparkles, 
-  Image as ImageIcon, 
-  Camera, 
-  FileText, 
-  Check, 
-  Settings as SettingsIcon
+  Shield,
+  MonitorSmartphone,
+  LogOut,
+  Sliders,
+  Volume2,
+  Eye
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
-  const { API_URL, token, user, loginUser, showToast, logoutUser, setActiveView } = useContext(AppContext);
+  const { 
+    user, 
+    logoutUser, 
+    setActiveView,
+    theme,
+    setTheme
+  } = useContext(AppContext);
   
-  // Tab Management state
-  const [activeTab, setActiveTab] = useState('user'); // 'user' or 'artist'
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const [expandedCard, setExpandedCard] = useState(null);
 
-  // User Settings state
-  const [name, setName] = useState(user ? user.name : '');
-  const [email, setEmail] = useState(user ? user.email : '');
-  const [password, setPassword] = useState('');
+  // Styled Configuration States
+  const [crossfade, setCrossfade] = useState(6);
+  const [equalizer, setEqualizer] = useState('Bass Boost');
+  const [quality, setQuality] = useState('High (320kbps)');
+  const [volumeNorm, setVolumeNorm] = useState(true);
+  const [language, setLanguage] = useState('English');
+  const [shareListening, setShareListening] = useState(true);
+  const [publicSearch, setPublicSearch] = useState(true);
+  
+  // Security Form States
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userAvatarFile, setUserAvatarFile] = useState(null);
-  const [userAvatarPreview, setUserAvatarPreview] = useState(user?.userAvatar || '');
+  const [passMessage, setPassMessage] = useState('');
 
-  // Artist Settings state
-  const [artistName, setArtistName] = useState(user?.artistProfile?.artistName || '');
-  const [artistBio, setArtistBio] = useState(user?.artistProfile?.artistBio || '');
-  const [isArtistVerified, setIsArtistVerified] = useState(user?.artistProfile?.isArtistVerified || false);
-  const [artistAvatarFile, setArtistAvatarFile] = useState(null);
-  const [artistAvatarPreview, setArtistAvatarPreview] = useState(user?.artistProfile?.artistAvatar || '');
-  const [artistBannerFile, setArtistBannerFile] = useState(null);
-  const [artistBannerPreview, setArtistBannerPreview] = useState(user?.artistProfile?.artistBanner || '');
-  const [website, setWebsite] = useState(user?.artistProfile?.website || '');
-  const [facebook, setFacebook] = useState(user?.artistProfile?.facebook || '');
-  const [twitter, setTwitter] = useState(user?.artistProfile?.twitter || '');
-  const [instagram, setInstagram] = useState(user?.artistProfile?.instagram || '');
-
-  // Sync state with user data changes (e.g. after login/re-fetch)
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setUserAvatarPreview(user.userAvatar || '');
-      if (user.artistProfile) {
-        setArtistName(user.artistProfile.artistName || '');
-        setArtistBio(user.artistProfile.artistBio || '');
-        setIsArtistVerified(user.artistProfile.isArtistVerified || false);
-        setArtistAvatarPreview(user.artistProfile.artistAvatar || '');
-        setArtistBannerPreview(user.artistProfile.artistBanner || '');
-        setWebsite(user.artistProfile.website || '');
-        setFacebook(user.artistProfile.facebook || '');
-        setTwitter(user.artistProfile.twitter || '');
-        setInstagram(user.artistProfile.instagram || '');
-      }
-    }
-  }, [user]);
-
-
-  // Local file selection preview handlers
-  const handleUserAvatarSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 3 * 1024 * 1024) {
-        return showToast('Avatar size exceeds 3MB limit', 'error');
-      }
-      setUserAvatarFile(file);
-      setUserAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleArtistAvatarSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 3 * 1024 * 1024) {
-        return showToast('Avatar size exceeds 3MB limit', 'error');
-      }
-      setArtistAvatarFile(file);
-      setArtistAvatarPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleArtistBannerSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        return showToast('Banner size exceeds 5MB limit', 'error');
-      }
-      setArtistBannerFile(file);
-      setArtistBannerPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleUpdateProfile = async (e) => {
+  const handlePasswordUpdate = (e) => {
     e.preventDefault();
-    
-    // Core User Settings Validation
-    if (activeTab === 'user') {
-      if (!name || !email) {
-        return showToast('Name and email are required fields', 'error');
-      }
-      if (password) {
-        if (password.length < 6) {
-          return showToast('Password must be at least 6 characters', 'error');
-        }
-        if (password !== confirmPassword) {
-          return showToast('Passwords do not match', 'error');
-        }
-      }
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPassMessage('All fields are required');
+      return;
     }
-
-    // Artist Settings Validation
-    if (activeTab === 'artist') {
-      if (!artistName.trim()) {
-        return showToast('Artist Name is a required field', 'error');
-      }
+    if (newPassword !== confirmPassword) {
+      setPassMessage("New passwords don't match");
+      return;
     }
-
-    setLoading(true);
-    const formData = new FormData();
-    
-    // Append standard profile data
-    formData.append('name', name);
-    formData.append('email', email);
-    if (password) formData.append('password', password);
-
-    try {
-      let message = 'Profile settings saved successfully!';
-      let tokenToSave = token;
-
-      if (activeTab === 'user') {
-        if (userAvatarFile) formData.append('userAvatar', userAvatarFile);
-        const res = await fetch(`${API_URL}/auth/profile`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Profile update failed');
-        tokenToSave = data.token;
-      } else {
-        const artistFormData = new FormData();
-        artistFormData.append('artistName', artistName.trim());
-        artistFormData.append('artistBio', artistBio.trim());
-        artistFormData.append('isArtistVerified', isArtistVerified);
-        artistFormData.append('website', website.trim());
-        artistFormData.append('facebook', facebook.trim());
-        artistFormData.append('twitter', twitter.trim());
-        artistFormData.append('instagram', instagram.trim());
-
-        if (artistAvatarFile) artistFormData.append('artistAvatar', artistAvatarFile);
-        if (artistBannerFile) artistFormData.append('artistBanner', artistBannerFile);
-
-        const res = await fetch(`${API_URL}/artists`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: artistFormData
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Artist profile update failed');
-        message = 'Artist profile settings saved successfully!';
-      }
-
-      const meRes = await fetch(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${tokenToSave}` }
-      });
-      const meData = await meRes.json();
-
-      // Update local storage and context state
-      loginUser(meData, tokenToSave);
-      showToast(message);
-      
-      // Reset password fields
-      setPassword('');
-      setConfirmPassword('');
-      setUserAvatarFile(null);
-      setArtistAvatarFile(null);
-      setArtistBannerFile(null);
-    } catch (error) {
-      showToast(error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+    setPassMessage('Password updated successfully!');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setTimeout(() => setPassMessage(''), 3000);
   };
+
+  const settingTools = [
+    {
+      id: 'account',
+      title: 'Account Identity',
+      desc: 'Verify display credentials, email bindings, and active system memberships.',
+      icon: User,
+      status: 'Standard Listener'
+    },
+    {
+      id: 'playback',
+      title: 'Playback Engine',
+      desc: 'Configure linear crossfading presets, equalizer presets, and autoplay queues.',
+      icon: Sliders,
+      status: 'Adjust Settings'
+    },
+    {
+      id: 'quality',
+      title: 'Audio Quality',
+      desc: 'Select high-fidelity audio streams and volume normalizations across channels.',
+      icon: Volume2,
+      status: 'Adjust Quality'
+    },
+    {
+      id: 'interface',
+      title: 'App Interface',
+      desc: 'Customize theme layers (Space Neon vs Ocean Crisp) and system languages.',
+      icon: MonitorSmartphone,
+      status: 'Adjust Theme'
+    },
+    {
+      id: 'privacy',
+      title: 'Privacy & Sharing',
+      desc: 'Toggle social listening activity, followers view, and account privacy options.',
+      icon: Eye,
+      status: 'Adjust Visibility'
+    },
+    {
+      id: 'security',
+      title: 'Access & Security',
+      desc: 'Modify account password credentials, verify 2FA, and manage security logs.',
+      icon: Shield,
+      status: 'Update Security'
+    }
+  ];
 
   return (
-    <div style={{ maxWidth: '650px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '16px', animation: 'fadeIn 0.5s ease-out' }}>
       
-      <div>
-        <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Profile Settings</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
-          Manage your Musico personal listener credentials and customize your professional self-distribution artist brand.
+      {/* Settings Header banner */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: '900', margin: 0, fontFamily: 'Outfit', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          App Settings
+        </h1>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '600px', margin: 0 }}>
+          Manage your account profile, audio player fidelity, playback, and visibility preferences. Click any card to expand tools.
         </p>
       </div>
 
-      {/* Spotify-styled Tabs */}
+      {/* Grid of Settings Tool Cards */}
       <div style={{ 
-        display: 'flex', 
-        borderBottom: '1px solid var(--border-color)',
-        gap: '4px',
-        margin: '-8px 0'
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', 
+        gap: '20px', 
+        width: '100%' 
       }}>
-        <button
-          className={`btn`}
-          onClick={() => setActiveTab('user')}
-          style={{
-            background: 'none',
-            color: activeTab === 'user' ? 'var(--text-primary)' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'user' ? '3px solid var(--accent)' : '3px solid transparent',
-            borderRadius: '0',
-            fontWeight: '700',
-            fontSize: '15px',
-            padding: '12px 24px',
-            boxShadow: 'none'
-          }}
-        >
-          <User className="w-4 h-4" /> User Profile
-        </button>
+        {settingTools.map((tool) => {
+          const Icon = tool.icon;
+          const isExpanded = expandedCard === tool.id;
+          return (
+            <div 
+              key={tool.id} 
+              className={`concert-card ${isExpanded ? 'active-neon-glow' : ''}`}
+              onClick={() => setExpandedCard(isExpanded ? null : tool.id)}
+              style={{
+                height: isExpanded ? 'auto' : '215px',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                borderRadius: '16px',
+                background: 'var(--glass-bg)',
+                backdropFilter: 'blur(16px)',
+                border: isExpanded ? '1px solid var(--accent)' : '1px solid var(--border-color)',
+                boxShadow: isExpanded ? '0 0 20px rgba(0, 242, 254, 0.15), var(--glass-shadow)' : 'var(--glass-shadow)',
+                transition: 'all var(--transition-normal)',
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: 'pointer'
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'var(--accent-light)',
+                    color: 'var(--accent)'
+                  }}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: '#fff', fontFamily: 'Outfit' }}>
+                  {tool.title}
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
+                  {tool.desc}
+                </p>
+
+                {/* Inline Expanded Content Forms */}
+                {isExpanded && (
+                  <div 
+                    onClick={(e) => e.stopPropagation()} 
+                    style={{ 
+                      marginTop: '20px', 
+                      borderTop: '1px solid var(--border-color)', 
+                      paddingTop: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      cursor: 'default',
+                      animation: 'fadeIn 0.3s ease-out'
+                    }}
+                  >
+                    {/* 1. Playback Engine Form */}
+                    {tool.id === 'playback' && (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            Crossfade Duration: {crossfade} seconds
+                          </label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="12" 
+                            value={crossfade} 
+                            onChange={(e) => setCrossfade(e.target.value)} 
+                            style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }} 
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            Equalizer Preset
+                          </label>
+                          <select 
+                            value={equalizer} 
+                            onChange={(e) => setEqualizer(e.target.value)} 
+                            className="form-input" 
+                            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
+                          >
+                            {['Flat', 'Bass Boost', 'Acoustic', 'Vocal', 'Classical', 'Electronic'].map(preset => (
+                              <option key={preset} value={preset} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{preset}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 2. Audio Quality Form */}
+                    {tool.id === 'quality' && (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            Streaming Audio Quality
+                          </label>
+                          <select 
+                            value={quality} 
+                            onChange={(e) => setQuality(e.target.value)} 
+                            className="form-input" 
+                            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
+                          >
+                            {['Low (96kbps)', 'Normal (160kbps)', 'High (320kbps)'].map(q => (
+                              <option key={q} value={q} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{q}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '500' }}>Volume Normalization</span>
+                          <input 
+                            type="checkbox" 
+                            checked={volumeNorm} 
+                            onChange={(e) => setVolumeNorm(e.target.checked)} 
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* 3. App Interface Form */}
+                    {tool.id === 'interface' && (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            App Theme Mode
+                          </label>
+                          <select 
+                            value={theme} 
+                            onChange={(e) => setTheme(e.target.value)} 
+                            className="form-input" 
+                            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
+                          >
+                            <option value="dark" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Space Neon Dark</option>
+                            <option value="light" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Ocean Crisp Light</option>
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            System Language
+                          </label>
+                          <select 
+                            value={language} 
+                            onChange={(e) => setLanguage(e.target.value)} 
+                            className="form-input" 
+                            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
+                          >
+                            {['English', 'Spanish', 'French', 'German'].map(lang => (
+                              <option key={lang} value={lang} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{lang}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 4. Privacy & Sharing Form */}
+                    {tool.id === 'privacy' && (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '500' }}>Share Listening Activity</span>
+                          <input 
+                            type="checkbox" 
+                            checked={shareListening} 
+                            onChange={(e) => setShareListening(e.target.checked)} 
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                          <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '500' }}>Searchable Public Profile</span>
+                          <input 
+                            type="checkbox" 
+                            checked={publicSearch} 
+                            onChange={(e) => setPublicSearch(e.target.checked)} 
+                            style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* 5. Access & Security Form */}
+                    {tool.id === 'security' && (
+                      <form onSubmit={handlePasswordUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <input 
+                          type="password" 
+                          placeholder="Current Password" 
+                          value={currentPassword} 
+                          onChange={(e) => setCurrentPassword(e.target.value)} 
+                          className="form-input" 
+                          style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                        />
+                        <input 
+                          type="password" 
+                          placeholder="New Password" 
+                          value={newPassword} 
+                          onChange={(e) => setNewPassword(e.target.value)} 
+                          className="form-input" 
+                          style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                        />
+                        <input 
+                          type="password" 
+                          placeholder="Confirm New Password" 
+                          value={confirmPassword} 
+                          onChange={(e) => setConfirmPassword(e.target.value)} 
+                          className="form-input" 
+                          style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                        />
+                        {passMessage && (
+                          <div style={{ fontSize: '12px', color: passMessage.includes('success') ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                            {passMessage}
+                          </div>
+                        )}
+                        <button 
+                          type="submit" 
+                          className="btn btn-primary btn-sm" 
+                          style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}
+                        >
+                          Update Password
+                        </button>
+                      </form>
+                    )}
+
+                    {/* 6. Account Identity Details */}
+                    {tool.id === 'account' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Display Name:</span>
+                          <span style={{ fontWeight: 'bold', color: '#fff' }}>{user?.name || 'Listener'}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Email Binding:</span>
+                          <span style={{ fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{user?.email}</span>
+                        </div>
+                        <div style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Account Mode:</span>
+                          <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>Free Uncapped Plan</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {!isExpanded && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '1px solid var(--border-color)',
+                  paddingTop: '12px',
+                  marginTop: '12px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Status</span>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    {tool.status}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Form Submission */}
-      <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        
-        {activeTab === 'user' && (
-          // ==================== TAB 1: USER SETTINGS ====================
-          <div style={{ 
-            backgroundColor: 'var(--bg-secondary)', 
-            border: '1px solid var(--border-color)', 
-            borderRadius: '20px', 
-            padding: '32px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '20px',
-            boxShadow: 'var(--glass-shadow)',
-            animation: 'fadeIn 0.3s ease'
-          }}>
-            
-            {/* User Avatar Circle Dropzone */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <div 
-                onClick={() => document.getElementById('user-avatar-input').click()}
-                style={{
-                  position: 'relative',
-                  width: '100px',
-                  height: '100px',
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
-                  background: 'var(--bg-tertiary)',
-                  border: '2px solid var(--border-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                {userAvatarPreview ? (
-                  <img src={userAvatarPreview} alt="User Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <User className="w-10 h-10 text-muted" />
-                )}
-                
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: userAvatarPreview ? 0 : 1,
-                  transition: 'opacity 0.2s',
-                  color: '#fff'
-                }}
-                className="avatar-hover-overlay"
-                >
-                  <Camera className="w-5 h-5" />
-                </div>
-              </div>
-              <input 
-                id="user-avatar-input" 
-                type="file" 
-                accept="image/*" 
-                style={{ display: 'none' }} 
-                onChange={handleUserAvatarSelect} 
-              />
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>Listener Avatar Image</span>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Display Name</label>
-              <div className="form-input-wrapper">
-                <User className="form-input-icon" />
-                <input
-                  type="text"
-                  className="form-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <div className="form-input-wrapper">
-                <Mail className="form-input-icon" />
-                <input
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '10px 0' }} />
-
-            <h3 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>Change Password</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '-8px', marginBottom: '4px' }}>
-              Leave fields empty if you do not wish to modify your current password.
-            </p>
-
-            <div className="form-group">
-              <label className="form-label">New Password</label>
-              <div className="form-input-wrapper">
-                <Lock className="form-input-icon" />
-                <input
-                  type="password"
-                  className="form-input"
-                  placeholder="Minimum 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Confirm New Password</label>
-              <div className="form-input-wrapper">
-                <Lock className="form-input-icon" />
-                <input
-                  type="password"
-                  className="form-input"
-                  placeholder="Re-enter password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Log Out button for mobile & tablet responsive viewports */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{
-                  width: '100%',
-                  borderColor: 'var(--danger)',
-                  color: 'var(--danger)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.04)',
-                  padding: '12px',
-                  fontWeight: '700',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  borderRadius: '10px'
-                }}
-                onClick={() => {
-                  logoutUser();
-                  setActiveView('home');
-                }}
-              >
-                Log Out Account
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* Global Save Button */}
-        <button 
-          type="submit" 
-          className="btn btn-primary"
-          style={{ alignSelf: 'flex-end', marginTop: '4px', minWidth: '160px' }}
-          disabled={loading}
+      {/* Log Out Action */}
+      <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-start' }}>
+        <button
+          className="btn btn-secondary"
+          style={{
+            borderColor: 'var(--danger)',
+            color: 'var(--danger)',
+            backgroundColor: 'rgba(239, 68, 68, 0.04)',
+            padding: '12px 24px',
+            fontWeight: '800',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderRadius: '24px',
+            cursor: 'pointer',
+            transition: 'background var(--transition-fast)'
+          }}
+          onClick={() => {
+            logoutUser();
+            setActiveView('home');
+            navigate('/pages/home');
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.04)'}
         >
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="spinner"></div>
-              <span>Saving...</span>
-            </div>
-          ) : (
-            <>
-              <Save className="w-4 h-4" /> Save Profile Details
-            </>
-          )}
+          <LogOut className="w-4 h-4" /> Log Out Everywhere
         </button>
-
-      </form>
+      </div>
 
     </div>
   );
 };
 
 export default Settings;
-

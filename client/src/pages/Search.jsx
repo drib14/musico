@@ -4,6 +4,7 @@ import { AppContext } from '../context/AppContext';
 import { Search as SearchIcon, Music, Play, Star, Users, Disc3, Disc } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 const Search = () => {
   const { 
@@ -455,9 +456,7 @@ const Search = () => {
 
         </div>
       ) : loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
-          <div className="spinner"></div>
-        </div>
+        <SkeletonLoader type="grid" count={8} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
           
