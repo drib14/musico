@@ -13,7 +13,10 @@ import {
   Music,
   Mic,
   Plus,
-  ListPlus
+  ListPlus,
+  Server,
+  Wifi,
+  Check
 } from 'lucide-react';
 
 const MusicPlayer = () => {
@@ -44,19 +47,27 @@ const MusicPlayer = () => {
     loadUserPlaylists,
     showToast,
     API_URL,
-    triggerProfileView
+    triggerProfileView,
+    currentServerIndex,
+    getAvailableServers,
+    switchStreamServer
   } = useContext(AppContext);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState(false);
+  const [showServerDropdown, setShowServerDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const serverDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowPlaylistDropdown(false);
+      }
+      if (serverDropdownRef.current && !serverDropdownRef.current.contains(event.target)) {
+        setShowServerDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -400,6 +411,111 @@ const MusicPlayer = () => {
       {/* 3. PLAYER RIGHT: VOLUME & VISUALIZER */}
       <div className="player-right">
         
+        {/* Streaming Server Selector (TMDB/IMDB Style Multi-Server Switcher) */}
+        {(() => {
+          const servers = getAvailableServers(currentTrack);
+          const activeServer = servers[currentServerIndex] || servers[0];
+          return (
+            <div style={{ position: 'relative', marginRight: '10px' }} ref={serverDropdownRef}>
+              <button 
+                className={`control-btn server-pill-btn ${showServerDropdown ? 'active' : ''}`}
+                onClick={() => setShowServerDropdown(!showServerDropdown)}
+                title="Switch Streaming Source Node (Server Alpha, Beta, Gamma, Delta)"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Server className="w-3.5 h-3.5 text-accent" />
+                <span>{activeServer ? activeServer.name.split(' ')[0] + ' ' + activeServer.name.split(' ')[1] : 'Server 1'}</span>
+              </button>
+
+              {showServerDropdown && (
+                <div 
+                  className="server-dropdown-modal"
+                  style={{
+                    position: 'absolute',
+                    bottom: 'calc(100% + 12px)',
+                    right: 0,
+                    width: '260px',
+                    background: 'rgba(18, 18, 24, 0.95)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
+                    zIndex: 100,
+                    animation: 'fadeIn 0.2s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    <Wifi className="w-4 h-4 text-accent" />
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.3px' }}>
+                      Streaming Server Nodes
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {servers.map((srv, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          switchStreamServer(idx);
+                          setShowServerDropdown(false);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          background: currentServerIndex === idx ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.03)',
+                          border: currentServerIndex === idx ? '1px solid var(--accent)' : '1px solid transparent',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentServerIndex !== idx) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentServerIndex !== idx) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span 
+                            style={{
+                              width: '7px',
+                              height: '7px',
+                              borderRadius: '50%',
+                              backgroundColor: currentServerIndex === idx ? '#10B981' : '#6B7280',
+                              boxShadow: currentServerIndex === idx ? '0 0 8px #10B981' : 'none'
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>{srv.name}</div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{srv.region} • {srv.quality}</div>
+                          </div>
+                        </div>
+                        {currentServerIndex === idx && <Check className="w-3.5 h-3.5 text-accent" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Desktop Timed Lyrics Toggle Action */}
         <button 
           className={`control-btn ${showLyrics ? 'active' : ''}`}

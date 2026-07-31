@@ -21,9 +21,64 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: [function() { return !this.spotifyId; }, 'Please provide a password'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
+    },
+    spotifyId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    spotifyUrl: {
+      type: String,
+      default: '',
+    },
+    spotifyAccessToken: {
+      type: String,
+      default: '',
+    },
+    spotifyRefreshToken: {
+      type: String,
+      default: '',
+    },
+    spotifyTokenExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    country: {
+      type: String,
+      default: '',
+    },
+    product: {
+      type: String,
+      default: '',
+    },
+    display_name: {
+      type: String,
+      default: '',
+    },
+    external_urls: {
+      spotify: { type: String, default: '' },
+    },
+    href: {
+      type: String,
+      default: '',
+    },
+    images: [
+      {
+        url: String,
+        width: Number,
+        height: Number,
+      }
+    ],
+    type: {
+      type: String,
+      default: 'user',
+    },
+    uri: {
+      type: String,
+      default: '',
     },
     isVerified: {
       type: Boolean,

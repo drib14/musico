@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, ArrowLeft, Disc, Globe, MapPin, Star, Heart } from 'lucide-react';
+import { Play, Music, ArrowLeft, Disc, Globe, MapPin, Star, Heart, Lock } from 'lucide-react';
 
 const ChartDetails = () => {
   const { 
@@ -346,14 +346,27 @@ const ChartDetails = () => {
                       color: idx === 0 ? 'var(--premium-color)' : idx === 1 ? '#cbd5e1' : idx === 2 ? '#b45309' : 'var(--text-muted)'
                     }}
                   >
-                    {idx + 1}
+                    {track.isJamendo && (!user || !user.spotifyId) ? (
+                      <Lock className="w-4 h-4 text-premium-color" style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+                    ) : (
+                      idx + 1
+                    )}
                   </td>
                   
                   {/* Title & Info Column */}
                   <td>
                     <div className="table-track-info">
                       {track.coverUrl ? (
-                        <img className="table-cover" src={track.coverUrl} alt={track.title} style={{ width: '44px', height: '44px', borderRadius: '6px', objectFit: 'cover' }} />
+                        <img 
+                          className="table-cover" 
+                          src={track.coverUrl} 
+                          alt={track.title} 
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop';
+                          }}
+                          style={{ width: '44px', height: '44px', borderRadius: '6px', objectFit: 'cover' }} 
+                        />
                       ) : (
                         <div className="table-cover" style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justify: 'center', width: '44px', height: '44px', borderRadius: '6px' }}>
                           <Music className="w-5 h-5 text-accent" />
@@ -362,6 +375,20 @@ const ChartDetails = () => {
                       <div>
                         <div className="table-title" style={{ color: isCurrent ? 'var(--accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{track.title}</span>
+                          {track.isJamendo && (!user || !user.spotifyId) && (
+                            <span style={{
+                              fontSize: '9px',
+                              backgroundColor: 'rgba(4, 7, 18, 0.85)',
+                              color: 'var(--premium-color)',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontWeight: '800',
+                              border: '1px solid var(--premium-color)',
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.3)'
+                            }}>
+                              Locked
+                            </span>
+                          )}
                         </div>
                         <div className="table-artist" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span>{track.artistName}</span>

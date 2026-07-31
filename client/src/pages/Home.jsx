@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight } from 'lucide-react';
+import { Play, Music, Crown, Globe, MapPin, Disc, Star, Users, Disc3, ArrowRight, Bot } from 'lucide-react';
 import PlaylistCover from '../components/PlaylistCover';
 import TrackCard from '../components/TrackCard';
 import SkeletonLoader from '../components/SkeletonLoader';
@@ -31,6 +31,7 @@ const Home = () => {
   // Home extra Spotify Tops states
   const [topArtists, setTopArtists] = useState([]);
   const [topPlaylists, setTopPlaylists] = useState([]);
+  const [spotifyCharts, setSpotifyCharts] = useState([]);
 
   // All local pools states
   const [tracks, setTracks] = useState([]);
@@ -123,7 +124,7 @@ const Home = () => {
     }
   };
 
-  // Load Spotify Tops
+  // Load Spotify Tops & Charts
   useEffect(() => {
     const fetchHomeExtras = async () => {
       try {
@@ -137,6 +138,12 @@ const Home = () => {
         if (playlistsRes.ok) {
           const playlistsData = await playlistsRes.json();
           setTopPlaylists(playlistsData.slice(0, 8)); // Top 8 public playlists
+        }
+
+        const chartsRes = await fetch(`${API_URL}/tracks/jamendo/charts?limit=6`);
+        if (chartsRes.ok) {
+          const chartsData = await chartsRes.json();
+          setSpotifyCharts(chartsData);
         }
       } catch (err) {
         console.error('Error loading home featured sections:', err);
@@ -188,19 +195,24 @@ const Home = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
       
       {/* 1. HERO BANNER */}
-      <div className="hero-banner">
-        <span className="hero-subtitle">Musico Self-Distribution</span>
-        <h1 className="hero-title">Skip the Middleman. Upload Direct.</h1>
-        <p className="hero-desc">
-          Tired of third-party distributors? At Musico, creators upload files directly to our platform, getting immediate streaming metrics and feedback.
-        </p>
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => setActiveView('upload')}
-          >
-            Upload Song Now
-          </button>
+      <div className="hero-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+        <div style={{ flex: 1 }}>
+          <span className="hero-subtitle">Musico Self-Distribution</span>
+          <h1 className="hero-title">Skip the Middleman. Upload Direct.</h1>
+          <p className="hero-desc">
+            Tired of third-party distributors? At Musico, creators upload files directly to our platform, getting immediate streaming metrics and feedback.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setActiveView('upload')}
+            >
+              Upload Song Now
+            </button>
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, padding: '24px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', boxShadow: '0 8px 32px rgba(0, 242, 254, 0.15)', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid rgba(0,242,254,0.3)' }}>
+          <Bot className="w-24 h-24 text-accent" />
         </div>
       </div>
 
@@ -302,6 +314,10 @@ const Home = () => {
                   <img
                     src={artist.artistAvatar || artist.userAvatar}
                     alt={artist.artistName || artist.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop';
+                    }}
                     style={{
                       width: '90px',
                       height: '90px',
@@ -499,6 +515,38 @@ const Home = () => {
           })}
         </div>
       </section>
+
+      {/* 5.5 DYNAMIC SPOTIFY TOP CHART PLAYLISTS */}
+      {spotifyCharts.length > 0 && (
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '22px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Crown className="w-6 h-6 text-premium-color fill-current" /> Official Spotify Top Charts
+            </h2>
+          </div>
+          <div className="grid-container carousel-desktop">
+            {spotifyCharts.map((pl) => (
+              <div
+                key={pl._id}
+                className="song-card"
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
+                style={{ height: '320px' }}
+              >
+                <div className="song-card-cover-wrapper">
+                  <img src={pl.coverUrl} alt={pl.name} className="song-card-cover" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+                </div>
+                <div className="song-card-title" style={{ marginTop: '8px', fontWeight: 'bold' }}>{pl.name}</div>
+                <div className="song-card-artist" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                  {pl.description.length > 60 ? pl.description.slice(0, 60) + '...' : pl.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 6. RECENT LISTEN HISTORY (LOCAL) */}
       {history.length > 0 && (

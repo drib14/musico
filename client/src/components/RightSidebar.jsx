@@ -299,7 +299,15 @@ const RightSidebar = () => {
           }}
         >
           {currentTrack.coverUrl ? (
-            <img src={currentTrack.coverUrl} alt={currentTrack.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img 
+              src={currentTrack.coverUrl} 
+              alt={currentTrack.title} 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop';
+              }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
           ) : (
             <div style={{ width: '100%', height: '100%', backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Music className="w-16 h-16 text-accent" />
@@ -383,6 +391,10 @@ const RightSidebar = () => {
               <img
                 src={artistInfo.artistAvatar || artistInfo.userAvatar}
                 alt={artistInfo.artistName || artistInfo.name}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop';
+                }}
                 style={{ 
                   width: '54px', 
                   height: '54px', 

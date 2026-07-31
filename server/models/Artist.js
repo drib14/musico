@@ -63,6 +63,45 @@ const artistSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    spotifyId: {
+      type: String,
+      default: '',
+    },
+    genres: [String],
+    popularity: {
+      type: Number,
+      default: 0,
+    },
+    uri: {
+      type: String,
+      default: '',
+    },
+    name: {
+      type: String,
+      default: '',
+    },
+    external_urls: {
+      spotify: { type: String, default: '' }
+    },
+    spotifyFollowers: {
+      href: { type: String, default: '' },
+      total: { type: Number, default: 0 }
+    },
+    href: {
+      type: String,
+      default: '',
+    },
+    images: [
+      {
+        url: String,
+        width: Number,
+        height: Number
+      }
+    ],
+    type: {
+      type: String,
+      default: 'artist',
+    },
     // Jamendo parity structure
     stats: {
       playcount_total: { type: Number, default: 0 },

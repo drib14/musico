@@ -36,6 +36,56 @@ const albumSchema = new mongoose.Schema(
       default: 'Unknown',
       trim: true,
     },
+    spotifyId: {
+      type: String,
+      default: '',
+    },
+    album_type: {
+      type: String,
+      default: 'album',
+    },
+    images: [
+      {
+        url: String,
+        width: Number,
+        height: Number
+      }
+    ],
+    release_date: {
+      type: String,
+      default: '',
+    },
+    uri: {
+      type: String,
+      default: '',
+    },
+    total_tracks: {
+      type: Number,
+      default: 0,
+    },
+    available_markets: [String],
+    external_urls: {
+      spotify: { type: String, default: '' }
+    },
+    href: {
+      type: String,
+      default: '',
+    },
+    release_date_precision: {
+      type: String,
+      default: 'day',
+    },
+    type: {
+      type: String,
+      default: 'album',
+    },
+    artists: [
+      {
+        id: { type: String, default: '' },
+        name: { type: String, default: '' },
+        uri: { type: String, default: '' }
+      }
+    ],
   },
   {
     timestamps: true,
