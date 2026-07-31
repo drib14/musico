@@ -343,6 +343,24 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
               </button>
             </form>
 
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-spotify"
+              onClick={() => {
+                window.location.href = `${API_URL}/auth/spotify`;
+              }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.565.387-.86.207-2.377-1.454-5.37-1.783-8.894-.982-.336.076-.67-.135-.746-.47-.077-.337.135-.67.472-.747 3.856-.88 7.15-.496 9.822 1.14.296.18.387.563.206.852zm1.226-2.724c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.08-1.182-.413.125-.847-.107-.972-.52-.125-.413.108-.847.52-.972 3.67-1.114 8.243-.57 11.346 1.334.367.226.488.707.26 1.08zm.106-2.833C14.385 8.8 8.497 8.6 5.056 9.643c-.53.16-1.086-.14-1.247-.67-.16-.53.14-1.087.67-1.247 3.96-1.202 10.457-.978 14.545 1.45.476.282.63.896.347 1.372-.28.477-.894.632-1.37.35z"/>
+              </svg>
+              Continue with Spotify
+            </button>
+
             <div className="form-footer">
               Don't have an account? <span onClick={() => setMode('register')}>Register here</span>
             </div>
@@ -408,6 +426,24 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 {loading ? <div className="spinner"></div> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
               </button>
             </form>
+
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-spotify"
+              onClick={() => {
+                window.location.href = `${API_URL}/auth/spotify`;
+              }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.565.387-.86.207-2.377-1.454-5.37-1.783-8.894-.982-.336.076-.67-.135-.746-.47-.077-.337.135-.67.472-.747 3.856-.88 7.15-.496 9.822 1.14.296.18.387.563.206.852zm1.226-2.724c-.226.367-.707.487-1.074.26-2.72-1.672-6.87-2.157-10.08-1.182-.413.125-.847-.107-.972-.52-.125-.413.108-.847.52-.972 3.67-1.114 8.243-.57 11.346 1.334.367.226.488.707.26 1.08zm.106-2.833C14.385 8.8 8.497 8.6 5.056 9.643c-.53.16-1.086-.14-1.247-.67-.16-.53.14-1.087.67-1.247 3.96-1.202 10.457-.978 14.545 1.45.476.282.63.896.347 1.372-.28.477-.894.632-1.37.35z"/>
+              </svg>
+              Continue with Spotify
+            </button>
 
             <div className="form-footer">
               Already have an account? <span onClick={() => setMode('login')}>Sign in</span>

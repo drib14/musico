@@ -34,9 +34,9 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com", "*.cloudinary.com", "https://*.jamendo.com", "https://jamendo.com"],
-      mediaSrc: ["'self'", "https://res.cloudinary.com", "*.cloudinary.com", "https://www.soundhelix.com", "https://*.jamendo.com", "https://jamendo.com"],
-      connectSrc: ["'self'", "https://us1.locationiq.com", "https://api.cloudinary.com", "https://app.ticketmaster.com", "https://*.jamendo.com", "https://jamendo.com"]
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com", "*.cloudinary.com", "https://*.jamendo.com", "https://jamendo.com", "https://*.scdn.co", "https://*.spotify.com"],
+      mediaSrc: ["'self'", "https://res.cloudinary.com", "*.cloudinary.com", "https://www.soundhelix.com", "https://*.jamendo.com", "https://jamendo.com", "https://*.scdn.co", "https://*.spotify.com", "https://p.scdn.co"],
+      connectSrc: ["'self'", "https://us1.locationiq.com", "https://api.cloudinary.com", "https://app.ticketmaster.com", "https://*.jamendo.com", "https://jamendo.com", "https://*.spotify.com", "https://api.spotify.com"]
     }
   },
   crossOriginEmbedderPolicy: false
@@ -91,3 +91,5 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
 }
 
 module.exports = app;
+// Force nodemon environment variables reload touch
+

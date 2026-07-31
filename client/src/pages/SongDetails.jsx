@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Play, Music, ArrowLeft, Calendar, CheckCircle, Ticket, Heart, Globe, Facebook, Twitter, Instagram } from 'lucide-react';
+import { Play, Music, ArrowLeft, Calendar, CheckCircle, Ticket, Heart, Globe, Facebook, Twitter, Instagram, Server, Wifi, Check, Zap } from 'lucide-react';
 import TrackCard from '../components/TrackCard';
 
 const SongDetails = () => {
@@ -15,7 +15,10 @@ const SongDetails = () => {
     toggleLike,
     user,
     userPlaylists,
-    loadUserPlaylists
+    loadUserPlaylists,
+    currentServerIndex,
+    getAvailableServers,
+    switchStreamServer
   } = useContext(AppContext);
 
   const [artistInfo, setArtistInfo] = useState(null);
@@ -291,6 +294,107 @@ const SongDetails = () => {
 
         </div>
       </div>
+
+      {/* Streaming Source Nodes & Servers Section */}
+      <section style={{
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '16px',
+        padding: '24px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Server className="w-5 h-5 text-accent" />
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>
+              Audio Streaming Server Nodes
+            </h3>
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: '12px' }}>
+            Multi-Server High Availability (TMDB Style)
+          </span>
+        </div>
+
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: 0, marginBottom: '20px' }}>
+          Select your preferred audio streaming server or node. If one server experiences buffering or network restrictions, Musico automatically fails over to the next available stream.
+        </p>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '14px'
+        }}>
+          {getAvailableServers(currentTrack).map((srv, idx) => {
+            const isActive = currentServerIndex === idx;
+            return (
+              <div
+                key={idx}
+                onClick={() => switchStreamServer(idx)}
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                  border: isActive ? '1.5px solid var(--accent)' : '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.borderColor = 'var(--border-color)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: isActive ? '#10B981' : '#6B7280',
+                        boxShadow: isActive ? '0 0 8px #10B981' : 'none'
+                      }}
+                    />
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                      {srv.name}
+                    </span>
+                  </div>
+                  {isActive && <Check className="w-4 h-4 text-accent" />}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
+                  <span style={{ fontSize: '11px', background: 'rgba(255, 255, 255, 0.08)', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-secondary)' }}>
+                    {srv.quality}
+                  </span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {srv.region}
+                  </span>
+                </div>
+
+                <button 
+                  className={`btn ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{
+                    marginTop: '14px',
+                    width: '100%',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  {isActive ? 'Currently Active' : 'Switch to Server'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>

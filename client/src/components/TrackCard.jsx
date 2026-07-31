@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { Play, MoreVertical, Heart, Music, Plus, User, Disc, Info, CheckCircle } from 'lucide-react';
+import { Play, MoreVertical, Heart, Music, Plus, User, Disc, Info, CheckCircle, Lock } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 
 const TrackCard = ({ track, trackList = [] }) => {
@@ -93,16 +93,52 @@ const TrackCard = ({ track, trackList = [] }) => {
       onClick={() => playTrack(track, trackList)}
       style={{ position: 'relative' }}
     >
-      <div className="song-card-cover-wrapper">
+      <div className="song-card-cover-wrapper" style={{ position: 'relative' }}>
         {track.coverUrl ? (
-          <img className="song-card-cover" src={track.coverUrl} alt={track.title} />
+          <img 
+            className="song-card-cover" 
+            src={track.coverUrl} 
+            alt={track.title} 
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop';
+            }}
+          />
         ) : (
           <div style={{ backgroundColor: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
             <Music className="w-12 h-12 text-accent" />
           </div>
         )}
+        {track.isJamendo && (!user || !user.spotifyId) && (
+          <div style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            backgroundColor: 'rgba(4, 7, 18, 0.85)',
+            color: 'var(--premium-color)',
+            padding: '4px 8px',
+            borderRadius: '12px',
+            fontSize: '9px',
+            fontWeight: '800',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            border: '1px solid var(--premium-color)',
+            zIndex: 3,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+          }}>
+            <Lock className="w-3 h-3" /> Locked
+          </div>
+        )}
         <div className="song-card-play-hover">
-          <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
+          {track.isJamendo && (!user || !user.spotifyId) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', color: 'var(--premium-color)' }}>
+              <Lock className="w-6 h-6" />
+              <span style={{ fontSize: '9px', textTransform: 'uppercase', fontWeight: '800', letterSpacing: '0.5px' }}>Spotify Login Required</span>
+            </div>
+          ) : (
+            <Play fill="white" className="w-6 h-6" style={{ transform: 'translateX(1px)' }} />
+          )}
         </div>
       </div>
 

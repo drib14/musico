@@ -7,7 +7,8 @@ import {
   LogOut,
   Sliders,
   Volume2,
-  Eye
+  Eye,
+  Server
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +18,9 @@ const Settings = () => {
     logoutUser, 
     setActiveView,
     theme,
-    setTheme
+    setTheme,
+    preferredServer,
+    setPreferredServer
   } = useContext(AppContext);
   
   const navigate = useNavigate();
@@ -76,6 +79,13 @@ const Settings = () => {
       desc: 'Select high-fidelity audio streams and volume normalizations across channels.',
       icon: Volume2,
       status: 'Adjust Quality'
+    },
+    {
+      id: 'servers',
+      title: 'Streaming Servers & Nodes',
+      desc: 'Choose default stream server node (Server Alpha, Beta, Gamma, Delta) & auto-failover parameters.',
+      icon: Server,
+      status: 'Select Node'
     },
     {
       id: 'interface',
@@ -244,6 +254,32 @@ const Settings = () => {
                             style={{ width: '18px', height: '18px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
                           />
                         </div>
+                      </>
+                    )}
+
+                    {/* 2.5 Streaming Server Nodes Form */}
+                    {tool.id === 'servers' && (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                            Default Stream Server Node
+                          </label>
+                          <select 
+                            value={preferredServer} 
+                            onChange={(e) => setPreferredServer(e.target.value)} 
+                            className="form-input" 
+                            style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '8px', outline: 'none' }}
+                          >
+                            <option value="auto" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>⚡ Auto-Select & Auto-Failover (Recommended)</option>
+                            <option value="0" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Server Alpha (Primary Stream CDN)</option>
+                            <option value="1" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Server Beta (Edge Audio Node)</option>
+                            <option value="2" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Server Gamma (Fast Mirror Node)</option>
+                            <option value="3" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Server Delta (Backup Stream Node)</option>
+                          </select>
+                        </div>
+                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                          In Auto-Select mode, Musico automatically benchmarks network response times and switches to the fastest stream node.
+                        </p>
                       </>
                     )}
 

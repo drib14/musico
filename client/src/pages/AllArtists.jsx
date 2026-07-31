@@ -125,6 +125,10 @@ const AllArtists = () => {
                   <img
                     src={artist.artistAvatar || artist.userAvatar}
                     alt={artist.artistName || artist.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop';
+                    }}
                     style={{
                       width: '100px',
                       height: '100px',

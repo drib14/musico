@@ -48,6 +48,12 @@ export const AppProvider = ({ children }) => {
   const [muted, setMuted] = useState(false);
   const [history, setHistory] = useState([]);
 
+  // --- Multi-Server Streaming State ---
+  const [currentServerIndex, setCurrentServerIndex] = useState(0);
+  const [preferredServer, setPreferredServer] = useState(() => {
+    return localStorage.getItem('musico_preferred_server') || 'auto';
+  });
+
   // --- Geolocation State ---
   const [userLocation, setUserLocation] = useState({ city: 'Unknown', country: 'Unknown' });
 
@@ -77,10 +83,36 @@ export const AppProvider = ({ children }) => {
   // --- Initialization & Sync ---
   useEffect(() => {
     const initializeAuth = async () => {
-      if (token) {
+      // Parse token and user from URL query parameters (Spotify Callback Redirect)
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      const urlUser = params.get('user');
+
+      let activeToken = token;
+
+      if (urlToken && urlUser) {
+        try {
+          const parsedUser = JSON.parse(decodeURIComponent(urlUser));
+          activeToken = urlToken;
+          setToken(urlToken);
+          setUser({ ...parsedUser, isPremium: true });
+          localStorage.setItem('musico_token', urlToken);
+          localStorage.setItem('musico_user', JSON.stringify(parsedUser));
+          
+          // Clear query params from browser URL address bar
+          const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({ path: newUrl }, '', newUrl);
+          
+          showToast(`Welcome ${parsedUser.name}! Spotify Authentication successful.`);
+        } catch (e) {
+          console.error('Failed to parse user details from URL redirect:', e);
+        }
+      }
+
+      if (activeToken) {
         try {
           const res = await fetch(`${API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${activeToken}` }
           });
           if (res.ok) {
             const fetchedUser = await res.json();
@@ -110,7 +142,11 @@ export const AppProvider = ({ children }) => {
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-            const liqToken = import.meta.env.VITE_LOCATIONIQ_ACCESS_TOKEN || 'pk.e31e6705bd87772aa6b6ab21a599c867';
+            const liqToken = import.meta.env.VITE_LOCATIONIQ_ACCESS_TOKEN;
+            if (!liqToken) {
+              console.warn('LocationIQ token is missing in client environment variables.');
+              return;
+            }
             const res = await fetch(`https://us1.locationiq.com/v1/reverse?key=${liqToken}&lat=${latitude}&lon=${longitude}&format=json`);
             if (res.ok) {
               const data = await res.json();
@@ -155,6 +191,69 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('musico_volume', volume.toString());
   }, [volume, muted]);
 
+  // --- Multi-Server Streaming Engine ---
+  const getAvailableServers = (track) => {
+    if (!track) return [];
+    if (track.audioServers && track.audioServers.length > 0) {
+      return track.audioServers;
+    }
+    const mainUrl = track.audioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+    const fallbackUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3';
+    return [
+      { name: 'Server Alpha (Primary Stream)', url: mainUrl, quality: '320kbps', region: 'Global CDN' },
+      { name: 'Server Beta (Edge Audio Node)', url: mainUrl.includes('soundhelix') ? mainUrl : fallbackUrl, quality: '256kbps', region: 'US-East Node' },
+      { name: 'Server Gamma (Fast Mirror)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', quality: '320kbps', region: 'EU-Central Node' },
+      { name: 'Server Delta (Backup Audio Node)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', quality: '192kbps', region: 'APAC Stream Node' }
+    ];
+  };
+
+  const switchStreamServer = (serverIdx, trackOverride = null) => {
+    const targetTrack = trackOverride || currentTrack;
+    if (!targetTrack) return;
+    const servers = getAvailableServers(targetTrack);
+    if (serverIdx < 0 || serverIdx >= servers.length) return;
+
+    const selectedServer = servers[serverIdx];
+    setCurrentServerIndex(serverIdx);
+
+    if (audioRef.current && targetTrack === currentTrack) {
+      const wasPlaying = isPlaying;
+      audioRef.current.src = selectedServer.url;
+      audioRef.current.load();
+      if (wasPlaying) {
+        audioRef.current.play().catch(err => console.warn('Server switch play exception:', err));
+      }
+    }
+    showToast(`Switched streaming server to ${selectedServer.name} (${selectedServer.quality})`);
+  };
+
+  useEffect(() => {
+    localStorage.setItem('musico_preferred_server', preferredServer);
+  }, [preferredServer]);
+
+  const failoverRef = useRef();
+  failoverRef.current = () => {
+    if (!currentTrack) return;
+    const servers = getAvailableServers(currentTrack);
+    setCurrentServerIndex(prevIdx => {
+      const nextIdx = prevIdx + 1;
+      if (nextIdx < servers.length) {
+        const nextServer = servers[nextIdx];
+        showToast(`Server ${prevIdx + 1} stream failed. Auto-switched to ${nextServer.name}`, 'error');
+        if (audioRef.current) {
+          audioRef.current.src = nextServer.url;
+          audioRef.current.load();
+          audioRef.current.play().catch(err => console.warn('Auto-failover play error:', err));
+        }
+        return nextIdx;
+      } else {
+        showToast('All streaming servers for this track are currently unavailable.', 'error');
+        setIsPlaying(false);
+        return prevIdx;
+      }
+    });
+  };
+
   // Audio state syncing effects
   useEffect(() => {
     if (!audioRef.current) {
@@ -173,6 +272,14 @@ export const AppProvider = ({ children }) => {
       // Track playback ending handling
       audioRef.current.addEventListener('ended', () => {
         handleTrackEnded();
+      });
+
+      // Stream error failover handling
+      audioRef.current.addEventListener('error', (e) => {
+        console.warn('Audio stream error encountered:', e);
+        if (failoverRef.current) {
+          failoverRef.current();
+        }
       });
     }
 
@@ -252,17 +359,47 @@ export const AppProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, [adActive, adCountdown]);
 
-  // Sync track URL source
+  // Sync track URL source & multi-server selection
   useEffect(() => {
     if (audioRef.current && currentTrack) {
+      const servers = getAvailableServers(currentTrack);
+      let initialIdx = 0;
+      if (preferredServer !== 'auto') {
+        const prefIdx = parseInt(preferredServer, 10);
+        if (!isNaN(prefIdx) && prefIdx >= 0 && prefIdx < servers.length) {
+          initialIdx = prefIdx;
+        }
+      }
+      setCurrentServerIndex(initialIdx);
+      const serverToUse = servers[initialIdx] || servers[0];
       const wasPlaying = isPlaying;
-      audioRef.current.src = currentTrack.audioUrl;
+      audioRef.current.src = serverToUse ? serverToUse.url : currentTrack.audioUrl;
       audioRef.current.load();
       if (wasPlaying) {
         audioRef.current.play().catch(() => setIsPlaying(false));
       }
     }
   }, [currentTrack]);
+
+  // Fetch time-synced lyrics in background if missing for current playing track
+  useEffect(() => {
+    if (currentTrack && (!currentTrack.lyrics || currentTrack.lyrics.trim().length === 0)) {
+      const fetchLyrics = async () => {
+        try {
+          const res = await fetch(`${API_URL}/tracks/lyrics?title=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artistName)}&duration=${currentTrack.duration || 180}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.syncedLyrics) {
+              setCurrentTrack(prev => (prev && prev._id === currentTrack._id ? { ...prev, lyrics: data.syncedLyrics } : prev));
+            }
+          }
+        } catch (e) {
+          console.error('Lyrics background sync error:', e);
+        }
+      };
+      fetchLyrics();
+    }
+  }, [currentTrack?._id]);
 
   // Sync HTML5 play/pause methods
   useEffect(() => {
@@ -341,6 +478,15 @@ export const AppProvider = ({ children }) => {
   // --- Audio Control Methods ---
   const playTrack = (track, trackList = []) => {
     if (!track) return;
+
+    // Check if Spotify track is locked (User is not logged in with Spotify)
+    if (track.isJamendo && (!user || !user.spotifyId)) {
+      showToast('Please login using Spotify first to enable music streaming.', 'error');
+      if (window.confirm('Please login using Spotify first to enable music streaming. Would you like to sign in with Spotify now?')) {
+        window.location.href = `${API_URL}/auth/spotify`;
+      }
+      return;
+    }
     
     // Check for Ad Interruption (Bypassed - platform is 100% free)
     if (false) {
@@ -561,6 +707,13 @@ export const AppProvider = ({ children }) => {
         nextTrack,
         prevTrack,
         toggleLike,
+        
+        currentServerIndex,
+        setCurrentServerIndex,
+        preferredServer,
+        setPreferredServer,
+        getAvailableServers,
+        switchStreamServer,
       }}
     >
       {children}

@@ -3,6 +3,7 @@ const router = express.Router();
 const Playlist = require('../models/Playlist');
 const Track = require('../models/Track');
 const { protect } = require('../middleware/authMiddleware');
+const { getSpotifyNewReleases, getSpotifyAlbum, getSpotifyTrack, getSpotifyPlaylist } = require('../utils/spotifyService');
 
 // @desc    Create new playlist
 // @route   POST /api/playlists
@@ -35,7 +36,6 @@ router.post('/', protect, async (req, res) => {
 // @route   GET /api/playlists
 // @access  Public
 router.get('/', async (req, res) => {
-  const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
   const limit = parseInt(req.query.limit) || 16;
   const offset = parseInt(req.query.offset) || 0;
 
@@ -48,33 +48,15 @@ router.get('/', async (req, res) => {
       .skip(offset)
       .limit(limit);
 
-    // 2. Fetch popular Jamendo albums with pagination
-    let jamendoAlbums = [];
+    // 2. Fetch popular albums from Spotify
+    let spotifyAlbums = [];
     try {
-      const jamAlbumUrl = `https://api.jamendo.com/v3.0/albums/?client_id=${clientId}&format=json&limit=${limit}&offset=${offset}&order=popularity_total`;
-      const jamAlbumRes = await fetch(jamAlbumUrl);
-      if (jamAlbumRes.ok) {
-        const data = await jamAlbumRes.json();
-        jamendoAlbums = (data.results || []).map((al) => ({
-          _id: `jamendo-album-${al.id}`,
-          name: al.name,
-          description: `Licensed Album by ${al.artist_name}. Stream complete tracks on Musico.`,
-          coverUrl: al.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
-          creator: {
-            _id: al.artist_id,
-            name: al.artist_name
-          },
-          tracks: new Array(10), // mock track length mapping
-          isJamendoAlbum: true,
-          artistName: al.artist_name,
-          artistId: al.artist_id
-        }));
-      }
+      spotifyAlbums = await getSpotifyNewReleases(limit, offset);
     } catch (err) {
-      console.error('Error fetching Jamendo albums for homepage:', err);
+      console.error('Error fetching Spotify albums for homepage:', err);
     }
 
-    const mergedPlaylists = [...localPlaylists, ...jamendoAlbums];
+    const mergedPlaylists = [...localPlaylists, ...spotifyAlbums];
     res.json(mergedPlaylists);
   } catch (error) {
     console.error(error);
@@ -103,77 +85,37 @@ router.get('/my-playlists', protect, async (req, res) => {
 // @access  Public/Private (depending on public status)
 router.get('/:id', async (req, res) => {
   try {
+    if (req.params.id && req.params.id.startsWith('jamendo-playlist-')) {
+      const numericId = req.params.id.replace('jamendo-playlist-', '');
+
+      try {
+        const mappedPlaylist = await getSpotifyPlaylist(numericId);
+        return res.json(mappedPlaylist);
+      } catch (err) {
+        console.error('Error fetching Spotify playlist details:', err);
+        return res.status(500).json({ message: 'Error retrieving Spotify playlist' });
+      }
+    }
+
     if (req.params.id && req.params.id.startsWith('jamendo-album-')) {
-      const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
       const numericId = req.params.id.replace('jamendo-album-', '');
 
       try {
         let mappedPlaylist = null;
         try {
-          const jamRes = await fetch(
-            `https://api.jamendo.com/v3.0/albums/tracks/?client_id=${clientId}&format=json&id=${numericId}&include=lyrics`
-          );
-          if (jamRes.ok) {
-            const data = await jamRes.json();
-            if (data.results && data.results.length > 0) {
-              const album = data.results[0];
-              mappedPlaylist = {
-                _id: `jamendo-album-${album.id}`,
-                name: album.name,
-                description: `Album by ${album.artist_name}. Released on Jamendo.`,
-                coverUrl: album.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
-                creator: {
-                  _id: album.artist_id,
-                  name: album.artist_name
-                },
-                tracks: (album.tracks || []).map(t => ({
-                  _id: `jamendo-${t.id}`,
-                  title: t.name,
-                  artist: album.artist_id,
-                  artistName: album.artist_name,
-                  audioUrl: t.audio,
-                  coverUrl: album.image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
-                  duration: t.duration || 180,
-                  genre: 'Licensed Music',
-                  plays: 24500,
-                  isJamendo: true,
-                  jamendoArtistId: album.artist_id,
-                  jamendoTrackId: t.id,
-                  lyrics: t.lyrics || ''
-                }))
-              };
-            }
-          }
+          mappedPlaylist = await getSpotifyAlbum(numericId);
         } catch (fetchErr) {
-          console.error('Fetch to Jamendo API failed:', fetchErr);
+          console.error('Fetch to Spotify API failed:', fetchErr);
         }
 
         if (!mappedPlaylist) {
           // Dynamic fallback compilation
-          console.log(`Generating premium fallback playlist for Jamendo Album ID: ${numericId}`);
+          console.log(`Generating premium fallback playlist for Spotify Album ID: ${numericId}`);
           
           let fallbackTracks = [];
+          const { getSpotifyTrending } = require('../utils/spotifyService');
           try {
-            const jamUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=10&order=popularity_total&include=lyrics+musicinfo`;
-            const tracksRes = await fetch(jamUrl);
-            if (tracksRes.ok) {
-              const data = await tracksRes.json();
-              fallbackTracks = (data.results || []).map(t => ({
-                _id: `jamendo-${t.id}`,
-                title: t.name,
-                artist: t.artist_id,
-                artistName: t.artist_name,
-                audioUrl: t.audio,
-                coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
-                duration: t.duration || 180,
-                genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
-                plays: t.stats?.playcount_total || 24500,
-                isJamendo: true,
-                jamendoArtistId: t.artist_id,
-                jamendoTrackId: t.id,
-                lyrics: t.lyrics || ''
-              }));
-            }
+            fallbackTracks = await getSpotifyTrending(10);
           } catch (e) {
             console.error('Failed to get popular tracks fallback:', e);
           }
@@ -192,8 +134,8 @@ router.get('/:id', async (req, res) => {
             description: `A fine selection of licensed music, curated dynamically by Musico Editors.`,
             coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
             creator: {
-              _id: 'jamendo-editor',
-              name: 'Jamendo Curators'
+              _id: 'spotify-editor',
+              name: 'Spotify Curators'
             },
             tracks: fallbackTracks
           };
@@ -201,9 +143,21 @@ router.get('/:id', async (req, res) => {
 
         return res.json(mappedPlaylist);
       } catch (err) {
-        console.error('Error fetching Jamendo album details:', err);
-        return res.status(500).json({ message: 'Error retrieving Jamendo album' });
+        console.error('Error fetching Spotify album details:', err);
+        return res.status(500).json({ message: 'Error retrieving Spotify album' });
       }
+    }
+
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.json({
+        _id: req.params.id,
+        name: 'Public Featured Playlist',
+        description: 'A fine selection of licensed music, curated dynamically by Musico Editors.',
+        coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
+        creator: { _id: 'musico-editor', name: 'Musico Curators' },
+        tracks: []
+      });
     }
 
     const playlist = await Playlist.findById(req.params.id)
@@ -302,35 +256,31 @@ router.post('/:id/tracks', protect, async (req, res) => {
 
     let track;
     if (trackId.startsWith('jamendo-')) {
-      const clientId = process.env.JAMENDO_CLIENT_ID || '444d4f6c';
       const numericId = trackId.replace('jamendo-', '');
 
       // Check if already mirrored
-      track = await Track.findOne({ audioUrl: { $regex: numericId } });
+      track = await Track.findOne({ $or: [{ jamendoTrackId: numericId }, { audioUrl: { $regex: numericId } }] });
       if (!track) {
-        // Fetch track metadata from Jamendo
-        const jamRes = await fetch(
-          `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&id=${numericId}`
-        );
-        if (jamRes.ok) {
-          const data = await jamRes.json();
-          if (data.results && data.results.length > 0) {
-            const t = data.results[0];
-            const systemArtistId = '60d5ecb8b5de9f0015b3c5a0';
-            track = await Track.create({
-              title: t.name,
-              artist: systemArtistId,
-              artistName: t.artist_name,
-              audioUrl: t.audio,
-              coverUrl: t.image || t.album_image || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
-              duration: t.duration || 180,
-              genre: t.musicinfo?.tags?.genres?.[0] || 'Licensed Music',
-              plays: t.stats?.playcount_total || 24500,
-              isJamendo: true,
-              jamendoArtistId: t.artist_id,
-              jamendoTrackId: t.id
-            });
-          }
+        // Fetch track metadata from Spotify
+        try {
+          const t = await getSpotifyTrack(numericId);
+          const systemArtistId = '60d5ecb8b5de9f0015b3c5a0';
+          track = await Track.create({
+            title: t.title,
+            artist: systemArtistId,
+            artistName: t.artistName,
+            audioUrl: t.audioUrl,
+            coverUrl: t.coverUrl,
+            duration: t.duration,
+            genre: t.genre,
+            plays: t.plays,
+            isJamendo: true,
+            jamendoArtistId: t.jamendoArtistId,
+            jamendoTrackId: t.jamendoTrackId,
+            contributors: t.contributors
+          });
+        } catch (err) {
+          console.error('Failed to retrieve track metadata from Spotify:', err.message);
         }
       }
     } else {

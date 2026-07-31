@@ -31,6 +31,7 @@ const Home = () => {
   // Home extra Spotify Tops states
   const [topArtists, setTopArtists] = useState([]);
   const [topPlaylists, setTopPlaylists] = useState([]);
+  const [spotifyCharts, setSpotifyCharts] = useState([]);
 
   // All local pools states
   const [tracks, setTracks] = useState([]);
@@ -123,7 +124,7 @@ const Home = () => {
     }
   };
 
-  // Load Spotify Tops
+  // Load Spotify Tops & Charts
   useEffect(() => {
     const fetchHomeExtras = async () => {
       try {
@@ -137,6 +138,12 @@ const Home = () => {
         if (playlistsRes.ok) {
           const playlistsData = await playlistsRes.json();
           setTopPlaylists(playlistsData.slice(0, 8)); // Top 8 public playlists
+        }
+
+        const chartsRes = await fetch(`${API_URL}/tracks/jamendo/charts?limit=6`);
+        if (chartsRes.ok) {
+          const chartsData = await chartsRes.json();
+          setSpotifyCharts(chartsData);
         }
       } catch (err) {
         console.error('Error loading home featured sections:', err);
@@ -307,6 +314,10 @@ const Home = () => {
                   <img
                     src={artist.artistAvatar || artist.userAvatar}
                     alt={artist.artistName || artist.name}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop';
+                    }}
                     style={{
                       width: '90px',
                       height: '90px',
@@ -504,6 +515,38 @@ const Home = () => {
           })}
         </div>
       </section>
+
+      {/* 5.5 DYNAMIC SPOTIFY TOP CHART PLAYLISTS */}
+      {spotifyCharts.length > 0 && (
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '22px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Crown className="w-6 h-6 text-premium-color fill-current" /> Official Spotify Top Charts
+            </h2>
+          </div>
+          <div className="grid-container carousel-desktop">
+            {spotifyCharts.map((pl) => (
+              <div
+                key={pl._id}
+                className="song-card"
+                onClick={() => {
+                  setActivePlaylistId(pl._id);
+                  setActiveView('playlist-details');
+                }}
+                style={{ height: '320px' }}
+              >
+                <div className="song-card-cover-wrapper">
+                  <img src={pl.coverUrl} alt={pl.name} className="song-card-cover" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+                </div>
+                <div className="song-card-title" style={{ marginTop: '8px', fontWeight: 'bold' }}>{pl.name}</div>
+                <div className="song-card-artist" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                  {pl.description.length > 60 ? pl.description.slice(0, 60) + '...' : pl.description}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 6. RECENT LISTEN HISTORY (LOCAL) */}
       {history.length > 0 && (

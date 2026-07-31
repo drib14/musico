@@ -31,6 +31,49 @@ const playlistSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    spotifyId: {
+      type: String,
+      default: '',
+    },
+    collaborative: {
+      type: Boolean,
+      default: false,
+    },
+    external_urls: {
+      spotify: { type: String, default: '' }
+    },
+    spotifyFollowers: {
+      href: { type: String, default: '' },
+      total: { type: Number, default: 0 }
+    },
+    href: {
+      type: String,
+      default: '',
+    },
+    images: [
+      {
+        url: String,
+        width: Number,
+        height: Number
+      }
+    ],
+    owner: {
+      id: { type: String, default: '' },
+      display_name: { type: String, default: '' },
+      uri: { type: String, default: '' }
+    },
+    snapshot_id: {
+      type: String,
+      default: '',
+    },
+    type: {
+      type: String,
+      default: 'playlist',
+    },
+    uri: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,
